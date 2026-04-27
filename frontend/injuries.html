@@ -47,23 +47,43 @@
       gap: 1rem;
       min-width: 200px;
     }
-    .player-avatar {
-      width: 50px;
-      height: 50px;
+    .player-image-container {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      margin-right: 1rem;
+    }
+    .player-image {
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
-      background: var(--bg-hover);
+      object-fit: cover;
+      border: 3px solid var(--border);
+    }
+    .player-avatar-fallback {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       font-weight: 700;
+      color: white;
+      border: 3px solid var(--border);
     }
-    .team-shirt-small {
-      width: 50px;
-      height: 50px;
+    .team-shirt-badge {
+      position: absolute;
+      bottom: -5px;
+      right: -5px;
+      width: 28px;
+      height: 28px;
       object-fit: contain;
-      margin-right: 1rem;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+      border-radius: 50%;
+      background: white;
+      padding: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .player-info h4 {
       margin-bottom: 0.25rem;

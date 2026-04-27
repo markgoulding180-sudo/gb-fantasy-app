@@ -130,12 +130,16 @@ function loadInjuries(filter) {
     
     const initials = injury.player.split(' ').map(n => n[0]).join('').substring(0, 2);
     const shirtFile = getTeamShirt(injury.team);
+    const playerImage = getPlayerImage(injury.player);
     
     return `
       <div class="injury-card">
         <div class="injury-player">
-          <img src="shirts/${shirtFile}" alt="${injury.team}" class="team-shirt-small" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-          <div class="player-avatar" style="display: none;">${initials}</div>
+          <div class="player-image-container">
+            <img src="${playerImage}" alt="${injury.player}" class="player-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div class="player-avatar-fallback" style="display: none;">${initials}</div>
+            <img src="shirts/${shirtFile}" alt="${injury.team}" class="team-shirt-badge">
+          </div>
           <div class="player-info">
             <h4>${injury.player}</h4>
             <div class="player-team">${injury.team}</div>
@@ -159,6 +163,12 @@ function loadInjuries(filter) {
       </div>
     `;
   }).join('');
+}
+
+function getPlayerImage(playerName) {
+  // Use UI Avatars for player images - generates initials-based images
+  const encodedName = encodeURIComponent(playerName);
+  return `https://ui-avatars.com/api/?name=${encodedName}&background=random&color=fff&size=128&font-size=0.5&bold=true`;
 }
 
 function getTeamShirt(teamName) {
