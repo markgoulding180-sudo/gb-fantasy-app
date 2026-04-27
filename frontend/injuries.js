@@ -129,11 +129,13 @@ function loadInjuries(filter) {
                       injury.status === 'doubt' ? 'Doubtful' : 'Returning';
     
     const initials = injury.player.split(' ').map(n => n[0]).join('').substring(0, 2);
+    const shirtFile = getTeamShirt(injury.team);
     
     return `
       <div class="injury-card">
         <div class="injury-player">
-          <div class="player-avatar">${initials}</div>
+          <img src="shirts/${shirtFile}" alt="${injury.team}" class="team-shirt-small" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="player-avatar" style="display: none;">${initials}</div>
           <div class="player-info">
             <h4>${injury.player}</h4>
             <div class="player-team">${injury.team}</div>
@@ -157,6 +159,32 @@ function loadInjuries(filter) {
       </div>
     `;
   }).join('');
+}
+
+function getTeamShirt(teamName) {
+  const mapping = {
+    'Arsenal': 'arsenal.webp',
+    'Aston Villa': 'aston villa.webp',
+    'Bournemouth': 'bournmouth.webp',
+    'Brentford': 'brentford.webp',
+    'Brighton': 'brighton.webp',
+    'Burnley': 'burnley.webp',
+    'Chelsea': 'chelsea.webp',
+    'Crystal Palace': 'crystal.webp',
+    'Everton': 'everton.webp',
+    'Fulham': 'fullham.webp',
+    'Liverpool': 'liverpool.webp',
+    'Man City': 'man city.webp',
+    'Man Utd': 'man u.webp',
+    'Newcastle': 'new castle.webp',
+    'Nott\'m Forest': 'nots forest.webp',
+    'Spurs': 'spurs.webp',
+    'West Ham': 'west ham.webp',
+    'Wolves': 'wovles temp.webp',
+    'Leeds': 'leeds.webp',
+    'Sunderland': 'sunderland.webp'
+  };
+  return mapping[teamName] || 'arsenal.webp';
 }
 
 function setupFilters() {
