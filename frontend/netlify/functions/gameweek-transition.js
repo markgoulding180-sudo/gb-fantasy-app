@@ -112,49 +112,111 @@ exports.handler = async (event, context) => {
 };
 
 async function finaliseGameweek(supabase, gameweek) {
-  // Ensure all predictions are scored
+  // Get all finished matches for this gameweek
   const { data: matches } = await supabase
     .from('matches')
     .select('*')
     .eq('gameweek', gameweek)
     .eq('status', 'finished');
 
-  for (const match of matches || []) {
-    const { data: predictions } = await supabase
-      .from('predictions')
-      .select('*')
-      .eq('match_id', match.id);
+  if (!matches || matches.length === 0) return;
 
-    for (const pred of predictions || []) {
-      let points = 0;
+  // Get all users who made predictions this gameweek
+  const { data: userPredictions } = await supabase
+    .from('predictions')
+    .select('user_id')
+    .eq('gameweek', gameweek)
+    .distinct();
 
-      if (pred.predicted_result === match.result) {
-        points += 10;
-        if (pred.home_score === match.home_score && pred.away_score === match.away_score) {
-          points += 10;
-        }
-      }
+  const userIds = userPredictions?.map(p => p.user_id) || [];
 
-      await supabase
+  for (const userId of userIds) {
+    let gwTotalPoints = 0;
+    let gwCorrectResults = 0;
+    let gwCorrectScores = 0;
+    let gwTotalPredictions = 0;
+
+    for (const match of matches) {
+      // Get user's prediction for this match
+      const { data: pred } = await supabase
         .from('predictions')
-        .update({ points_earned: points })
-        .eq('id', pred.id);
+        .select('*')
+        .eq('user_id', userId)
+        .eq('match_id', match.id)
+        .single();
+
+      if (pred) {
+        // Calculate points
+        let points = 0;
+        if (pred.predicted_result === match.result) {
+          points += 10;
+          gwCorrectResults++;
+          if (pred.home_score === match.home_score && pred.away_score === match.away_score) {
+            points += 10;
+            gwCorrectScores++;
+          }
+        }
+        gwTotalPoints += points;
+        gwTotalPredictions++;
+
+        // Save to permanent prediction_history
+        await supabase
+          .from('prediction_history')
+          .upsert({
+            user_id: userId,
+            gameweek: gameweek,
+            match_id: match.id,
+            home_team: match.home_team,
+            away_team: match.away_team,
+            predicted_home_score: pred.home_score,
+            predicted_away_score: pred.away_score,
+            predicted_result: pred.predicted_result,
+            actual_home_score: match.home_score,
+            actual_away_score: match.away_score,
+            actual_result: match.result,
+            points_earned: points,
+            finalised_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,gameweek,match_id'
+          });
+
+        // Update the prediction record
+        await supabase
+          .from('predictions')
+          .update({ points_earned: points })
+          .eq('id', pred.id);
+      }
     }
+
+    // Save gameweek summary for this user
+    await supabase
+      .from('gameweek_summary')
+      .upsert({
+        user_id: userId,
+        gameweek: gameweek,
+        total_predictions: gwTotalPredictions,
+        correct_results: gwCorrectResults,
+        correct_scores: gwCorrectScores,
+        total_points: gwTotalPoints,
+        finalised_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,gameweek'
+      });
   }
 
-  // Update all user totals
+  // Update all user totals (cumulative)
   const { data: users } = await supabase
     .from('users')
     .select('id');
 
   for (const user of users || []) {
-    const { data: preds } = await supabase
-      .from('predictions')
+    const { data: history } = await supabase
+      .from('prediction_history')
       .select('points_earned')
       .eq('user_id', user.id);
 
-    const total = preds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
-    const correct = preds.filter(p => p.points_earned === 20).length;
+    const total = history.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+    const correct = history.filter(p => p.points_earned === 20).length;
 
     await supabase
       .from('users')
