@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register - GB Fantasy</title>
+  <title>Login - GB Fantasy</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,7 +21,8 @@
         <li><a href="predictions.html"><i class="fas fa-futbol"></i> Predictions</a></li>
         <li><a href="leaderboard.html"><i class="fas fa-chart-line"></i> Leaderboard</a></li>
         <li><a href="tournaments.html"><i class="fas fa-trophy"></i> Tournaments</a></li>
-        <li><a href="register.html" class="active"><i class="fas fa-user-plus"></i> Register</a></li>
+        <li><a href="register.html"><i class="fas fa-user-plus"></i> Register</a></li>
+        <li><a href="login.html" class="active"><i class="fas fa-sign-in-alt"></i> Login</a></li>
       </ul>
       <button class="mobile-menu-btn">
         <i class="fas fa-bars"></i>
@@ -32,32 +33,17 @@
   <!-- Main Content -->
   <main class="container">
     <div class="grid grid-2" style="max-width: 900px; margin: 0 auto;">
-      <!-- Registration Form -->
+      <!-- Login Form -->
       <div class="card" style="padding: 2rem;">
         <div class="text-center mb-3">
           <div style="font-size: 3rem; color: var(--accent-green); margin-bottom: 1rem;">
-            <i class="fas fa-user-plus"></i>
+            <i class="fas fa-sign-in-alt"></i>
           </div>
-          <h1>Create Your Account</h1>
-          <p class="text-muted">Join thousands of Premier League predictors</p>
+          <h1>Sign In</h1>
+          <p class="text-muted">Welcome back to GB Fantasy</p>
         </div>
 
-        <form id="register-form">
-          <div class="form-group">
-            <label for="username" class="form-label">
-              <i class="fas fa-user"></i> Username
-            </label>
-            <input type="text" id="username" name="username" class="form-input" placeholder="Choose a unique username" required>
-            <p class="form-hint">3-20 characters, letters, numbers and underscores only</p>
-          </div>
-
-          <div class="form-group">
-            <label for="display-name" class="form-label">
-              <i class="fas fa-id-card"></i> Display Name
-            </label>
-            <input type="text" id="display-name" name="display_name" class="form-input" placeholder="How you'll appear on leaderboards" required>
-          </div>
-
+        <form id="login-form">
           <div class="form-group">
             <label for="email" class="form-label">
               <i class="fas fa-envelope"></i> Email Address
@@ -69,65 +55,43 @@
             <label for="password" class="form-label">
               <i class="fas fa-lock"></i> Password
             </label>
-            <input type="password" id="password" name="password" class="form-input" placeholder="Create a secure password" required>
-            <p class="form-hint">Minimum 8 characters with at least one number</p>
+            <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
           </div>
 
-          <div class="form-group">
-            <label for="confirm-password" class="form-label">
-              <i class="fas fa-lock"></i> Confirm Password
+          <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; color: var(--text-secondary);">
+              <input type="checkbox" name="remember" style="margin: 0;">
+              Remember me
             </label>
-            <input type="password" id="confirm-password" name="confirm_password" class="form-input" placeholder="Confirm your password" required>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;">
-              <input type="checkbox" name="terms" required style="margin-top: 0.25rem;">
-              <span style="font-size: 0.875rem; color: var(--text-secondary);">
-                I agree to the <a href="#" style="color: var(--accent-green);">Terms of Service</a> and <a href="#" style="color: var(--accent-green);">Privacy Policy</a>. 
-                I confirm I am 18 years or older.
-              </span>
-            </label>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;">
-              <input type="checkbox" name="marketing" style="margin-top: 0.25rem;">
-              <span style="font-size: 0.875rem; color: var(--text-secondary);">
-                Send me updates about tournaments, promotions, and new features (optional)
-              </span>
-            </label>
+            <a href="#" style="font-size: 0.875rem; color: var(--accent-green);">Forgot password?</a>
           </div>
 
           <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
-            <i class="fas fa-user-plus"></i> Create Account
+            <i class="fas fa-sign-in-alt"></i> Sign In
           </button>
         </form>
 
         <div class="text-center mt-3">
-          <p class="text-muted">Already have an account? <a href="login.html" style="color: var(--accent-green);">Sign in</a></p>
+          <p class="text-muted">Don't have an account? <a href="register.html" style="color: var(--accent-green);">Register</a></p>
         </div>
       </div>
 
       <!-- Benefits -->
       <div>
         <div class="card mb-2" style="background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%); border-left: 4px solid var(--accent-green);">
-          <h3 class="card-title" style="color: var(--accent-green);"><i class="fas fa-check-circle"></i> Why Join GB Fantasy?</h3>
+          <h3 class="card-title" style="color: var(--accent-green);"><i class="fas fa-check-circle"></i> Welcome Back!</h3>
           <ul style="list-style: none; color: var(--text-secondary);">
             <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fas fa-pound-sign text-green"></i> Win real cash prizes every week
+              <i class="fas fa-futbol text-green"></i> Submit your predictions for this gameweek
             </li>
             <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fas fa-trophy text-amber"></i> Compete in tournaments of all sizes
+              <i class="fas fa-trophy text-amber"></i> Enter cash tournaments
             </li>
             <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fas fa-chart-line text-green"></i> Track your performance with detailed stats
+              <i class="fas fa-chart-line text-green"></i> Check your leaderboard position
             </li>
             <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fas fa-users text-blue"></i> Join a community of football fans
-            </li>
-            <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fas fa-mobile-alt text-green"></i> Play on any device, anywhere
+              <i class="fas fa-pound-sign text-green"></i> Win real cash prizes
             </li>
           </ul>
         </div>
@@ -135,7 +99,7 @@
         <div class="card mb-2">
           <h3 class="card-title"><i class="fas fa-shield-alt text-green"></i> Safe & Secure</h3>
           <p class="text-muted" style="font-size: 0.875rem;">
-            Your data is protected with industry-standard encryption. We are licensed and regulated for fair play.
+            Your account is protected with secure authentication.
           </p>
         </div>
 

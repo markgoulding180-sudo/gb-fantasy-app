@@ -37,6 +37,8 @@ async function initApp() {
     await initTournamentsPage();
   } else if (path.includes('register')) {
     initRegisterPage();
+  } else if (path.includes('login')) {
+    initLoginPage();
   } else {
     await initHomePage();
   }
@@ -124,9 +126,10 @@ function updateAuthUI() {
   if (!navLinks) return;
 
   const registerLink = navLinks.querySelector('a[href="register.html"]');
+  const loginLink = navLinks.querySelector('a[href="login.html"]');
   
   if (authToken && currentUser) {
-    // User is logged in - replace register with user menu
+    // User is logged in - replace Register/Login with username
     if (registerLink) {
       registerLink.innerHTML = `<i class="fas fa-user"></i> ${currentUser.display_name}`;
       registerLink.href = '#';
@@ -134,6 +137,15 @@ function updateAuthUI() {
         e.preventDefault();
         if (confirm('Log out?')) logout();
       };
+    }
+    // Hide login link when logged in
+    if (loginLink) {
+      loginLink.style.display = 'none';
+    }
+  } else {
+    // User is logged out - ensure Login link is visible
+    if (loginLink) {
+      loginLink.style.display = '';
     }
   }
 }
@@ -242,14 +254,31 @@ function initRegisterPage() {
   if (registerForm) {
     registerForm.addEventListener('submit', handleRegisterSubmit);
   }
+}
 
-  // Add login form if it doesn't exist (create a simple modal or redirect)
-  const loginLink = document.querySelector('a[href="#"]');
-  if (loginLink && loginLink.textContent.includes('Sign in')) {
-    loginLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      showLoginModal();
-    });
+function initLoginPage() {
+  // Handle login form submission
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+}
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  
+  const credentials = {
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value
+  };
+
+  const result = await loginUser(credentials);
+
+  if (result.success) {
+    alert('Welcome back, ' + result.user.display_name + '!');
+    window.location.href = 'index.html';
+  } else {
+    alert(result.error);
   }
 }
 
@@ -538,23 +567,7 @@ function renderTournaments(tournaments) {
   });
 }
 
-function showLoginModal() {
-  // Simple login prompt - in production, use a proper modal
-  const email = prompt('Email:');
-  if (!email) return;
-  
-  const password = prompt('Password:');
-  if (!password) return;
 
-  loginUser({ email, password }).then(result => {
-    if (result.success) {
-      alert('Logged in successfully!');
-      updateAuthUI();
-    } else {
-      alert(result.error);
-    }
-  });
-}
 
 // ==================== UTILITY FUNCTIONS ====================
 
