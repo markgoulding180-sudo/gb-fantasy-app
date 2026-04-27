@@ -1,10 +1,26 @@
+-- Teams table (required for players schema)
+CREATE TABLE teams (
+  id INTEGER PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  short_name VARCHAR(3),
+  code INTEGER,
+  strength INTEGER,
+  strength_overall_home INTEGER,
+  strength_overall_away INTEGER,
+  strength_attack_home INTEGER,
+  strength_attack_away INTEGER,
+  strength_defence_home INTEGER,
+  strength_defence_away INTEGER,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Add players table for storing player data including photos
 CREATE TABLE players (
   id INTEGER PRIMARY KEY,
   first_name VARCHAR(100),
   second_name VARCHAR(100),
   web_name VARCHAR(100),
-  team INTEGER,
+  team INTEGER REFERENCES teams(id),
   element_type INTEGER, -- 1=GK, 2=DEF, 3=MID, 4=FWD
   now_cost INTEGER, -- in tenths of millions (e.g., 105 = 10.5m)
   photo VARCHAR(20), -- filename like "51940.jpg"
