@@ -115,6 +115,8 @@ exports.handler = async (event, context) => {
 
       // Validate and format predictions
       const predictionsToInsert = [];
+      const matchIdsToCheck = [];
+      
       for (const pred of predictions) {
         if (!pred.match_id || !pred.predicted_result || pred.home_score === undefined || pred.away_score === undefined) {
           return {
@@ -133,9 +135,55 @@ exports.handler = async (event, context) => {
           };
         }
 
+        // Handle temporary match IDs (format: temp-gameweek-matchnum)
+        let matchId = pred.match_id;
+        if (typeof matchId === 'string' && matchId.startsWith('temp-')) {
+          // Extract match number from temp ID
+          const parts = matchId.split('-');
+          const matchNum = parseInt(parts[2]) || 1;
+          
+          // Check if match exists, if not create it
+          const { data: existingMatch } = await supabase
+            .from('matches')
+            .select('id')
+            .eq('gameweek', gameweek)
+            .order('kickoff_time', { ascending: true })
+            .range(matchNum - 1, matchNum - 1)
+            .single();
+          
+          if (existingMatch) {
+            matchId = existingMatch.id;
+          } else {
+            // Create a placeholder match
+            const { data: newMatch, error: createError } = await supabase
+              .from('matches')
+              .insert({
+                gameweek: parseInt(gameweek),
+                home_team: `Home Team ${matchNum}`,
+                away_team: `Away Team ${matchNum}`,
+                home_team_code: 'HOM',
+                away_team_code: 'AWY',
+                venue: 'TBD',
+                kickoff_time: new Date(Date.now() + matchNum * 86400000).toISOString(),
+                status: 'upcoming'
+              })
+              .select()
+              .single();
+            
+            if (createError || !newMatch) {
+              return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ error: 'Failed to create match', details: createError?.message })
+              };
+            }
+            matchId = newMatch.id;
+          }
+        }
+
         predictionsToInsert.push({
           user_id: user.id,
-          match_id: pred.match_id,
+          match_id: matchId,
           gameweek: parseInt(gameweek),
           predicted_result: pred.predicted_result,
           home_score: parseInt(pred.home_score),

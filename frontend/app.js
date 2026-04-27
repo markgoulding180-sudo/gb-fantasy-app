@@ -384,27 +384,34 @@ async function handlePredictionSubmit(e) {
   // Collect all predictions
   for (let i = 1; i <= 10; i++) {
     const result = document.querySelector(`input[name="match${i}_result"]:checked`);
-    const homeScore = document.querySelector(`input[name="match${i}_home_score"]`).value;
-    const awayScore = document.querySelector(`input[name="match${i}_away_score"]`).value;
+    const homeScoreInput = document.querySelector(`input[name="match${i}_home_score"]`);
+    const awayScoreInput = document.querySelector(`input[name="match${i}_away_score"]`);
+    
+    const homeScore = homeScoreInput ? homeScoreInput.value : '';
+    const awayScore = awayScoreInput ? awayScoreInput.value : '';
     
     if (!result || homeScore === '' || awayScore === '') {
       alert(`Please complete prediction for Match ${i}`);
       return;
     }
 
-    // Get match ID from stored matches data
-    const matchId = window.currentMatches && window.currentMatches[i - 1] 
+    // Get match ID from stored matches data or use a temporary ID based on gameweek
+    let matchId = window.currentMatches && window.currentMatches[i - 1] 
       ? window.currentMatches[i - 1].id 
       : null;
 
-    if (matchId) {
-      predictions.push({
-        match_id: matchId,
-        predicted_result: result.value,
-        home_score: parseInt(homeScore),
-        away_score: parseInt(awayScore)
-      });
+    // If no match ID from API, create a temporary one based on gameweek and match number
+    // This allows predictions to work even before matches are seeded in the database
+    if (!matchId) {
+      matchId = `temp-${gameweek}-${i}`;
     }
+
+    predictions.push({
+      match_id: matchId,
+      predicted_result: result.value,
+      home_score: parseInt(homeScore),
+      away_score: parseInt(awayScore)
+    });
   }
 
   try {
