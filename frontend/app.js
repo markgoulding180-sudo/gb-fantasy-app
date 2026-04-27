@@ -191,6 +191,9 @@ async function initHomePage() {
 async function initPredictionsPage() {
   const gameweekSelect = document.getElementById('gameweek');
   
+  // Load current gameweek info and deadline
+  await loadGameweekInfo();
+  
   // Load fixtures for selected gameweek
   await loadFixtures(gameweekSelect ? gameweekSelect.value : '34');
 
@@ -206,6 +209,9 @@ async function initPredictionsPage() {
   if (predictionsForm) {
     predictionsForm.addEventListener('submit', handlePredictionSubmit);
   }
+  
+  // Start deadline countdown
+  startDeadlineCountdown();
 
   // Prediction option selection visual feedback
   const predictionOptions = document.querySelectorAll('.prediction-option input');
@@ -283,6 +289,67 @@ async function handleLoginSubmit(e) {
 }
 
 // ==================== DATA LOADING FUNCTIONS ====================
+
+let gameweekInfo = null;
+
+async function loadGameweekInfo() {
+  try {
+    const response = await fetch(`${API_BASE}/current-gameweek`);
+    if (response.ok) {
+      gameweekInfo = await response.json();
+      
+      // Update gameweek selector if on predictions page
+      const gwSelect = document.getElementById('gameweek');
+      if (gwSelect && gameweekInfo.next_gameweek) {
+        // Set to next gameweek for predictions
+        gwSelect.value = gameweekInfo.next_gameweek;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load gameweek info:', error);
+  }
+}
+
+function startDeadlineCountdown() {
+  if (!gameweekInfo || !gameweekInfo.deadline_epoch) return;
+  
+  const deadlineEl = document.getElementById('deadline-countdown');
+  if (!deadlineEl) return;
+  
+  function update() {
+    const now = Math.floor(Date.now() / 1000);
+    const diff = gameweekInfo.deadline_epoch - now;
+    
+    if (diff <= 0) {
+      deadlineEl.innerHTML = '<span style="color: var(--accent-red);">DEADLINE PASSED - Predictions Locked</span>';
+      lockPredictionForm();
+      return;
+    }
+    
+    const days = Math.floor(diff / 86400);
+    const hours = Math.floor((diff % 86400) / 3600);
+    const minutes = Math.floor((diff % 3600) / 60);
+    
+    deadlineEl.innerHTML = `Deadline: <strong>${days}d ${hours}h ${minutes}m</strong>`;
+  }
+  
+  update();
+  setInterval(update, 60000); // Update every minute
+}
+
+function lockPredictionForm() {
+  const form = document.getElementById('predictions-form');
+  if (form) {
+    const inputs = form.querySelectorAll('input, button');
+    inputs.forEach(input => input.disabled = true);
+    
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.textContent = 'Deadline Passed';
+      submitBtn.classList.add('btn-disabled');
+    }
+  }
+}
 
 async function loadFixtures(gameweek) {
   try {

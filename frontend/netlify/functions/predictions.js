@@ -4,6 +4,24 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
+const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
+
+async function getCurrentGameweekInfo() {
+  try {
+    const response = await fetch(FPL_BOOTSTRAP_URL);
+    const data = await response.json();
+    const nextEvent = data.events.find(e => e.is_next);
+    return {
+      current: data.events.find(e => e.is_current)?.id,
+      next: nextEvent?.id,
+      deadline: nextEvent?.deadline_time,
+      deadline_epoch: nextEvent?.deadline_time_epoch
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
 exports.handler = async (event, context) => {
   // CORS headers
   const headers = {
@@ -111,6 +129,23 @@ exports.handler = async (event, context) => {
           headers,
           body: JSON.stringify({ error: 'Gameweek and predictions array are required' })
         };
+      }
+
+      // Check deadline
+      const gwInfo = await getCurrentGameweekInfo();
+      if (gwInfo && gwInfo.deadline_epoch) {
+        const now = Math.floor(Date.now() / 1000);
+        if (now >= gwInfo.deadline_epoch) {
+          return {
+            statusCode: 403,
+            headers,
+            body: JSON.stringify({ 
+              error: 'Deadline passed', 
+              message: 'The gameweek deadline has passed. Predictions are now locked.',
+              deadline: gwInfo.deadline
+            })
+          };
+        }
       }
 
       // Validate and format predictions
