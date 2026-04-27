@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Premier League Table - GB Fantasy</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .pl-table-container {
+      overflow-x: auto;
+    }
+    .pl-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .pl-table th {
+      background: var(--bg-hover);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      border-bottom: 2px solid var(--border);
+    }
+    .pl-table td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .pl-table tr:hover {
+      background: var(--bg-hover);
+    }
+    .team-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .team-shirt-small {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+    }
+    .position {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+    .pos-champions { background: var(--accent-green); color: #000; }
+    .pos-europa { background: var(--accent-blue); color: #fff; }
+    .pos-conference { background: #8b5cf6; color: #fff; }
+    .pos-mid { background: var(--bg-hover); color: var(--text-secondary); }
+    .pos-relegation { background: var(--accent-red); color: #fff; }
+    .form-indicator {
+      display: inline-flex;
+      width: 20px;
+      height: 20px;
+      border-radius: 3px;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      font-weight: 700;
+      margin-right: 2px;
+    }
+    .form-w { background: var(--accent-green); color: #000; }
+    .form-d { background: #94a3b8; color: #000; }
+    .form-l { background: var(--accent-red); color: #fff; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .stat-card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+    .stat-card-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+    .legend {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .pl-table th, .pl-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.875rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="logo">
+        <i class="fas fa-trophy"></i>
+        GB Fantasy
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="predictions.html"><i class="fas fa-futbol"></i> Predictions</a></li>
+        <li><a href="table.html" class="active"><i class="fas fa-table"></i> PL Table</a></li>
+        <li><a href="injuries.html"><i class="fas fa-medkit"></i> Injuries</a></li>
+        <li><a href="leaderboard.html"><i class="fas fa-chart-line"></i> Leaderboard</a></li>
+        <li><a href="tournaments.html"><i class="fas fa-trophy"></i> Tournaments</a></li>
+        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+        <li><a href="admin.html"><i class="fas fa-cog"></i> Admin</a></li>
+      </ul>
+      <button class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container">
+    <h1><i class="fas fa-table text-green"></i> Premier League Table 2025/26</h1>
+    <p class="text-muted mb-3">Live standings and team statistics.</p>
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-value" id="total-matches">0</div>
+        <div class="stat-card-label">Matches Played</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value" id="total-goals">0</div>
+        <div class="stat-card-label">Goals Scored</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value" id="avg-goals">0</div>
+        <div class="stat-card-label">Avg Goals/Match</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value" id="current-gameweek">GW1</div>
+        <div class="stat-card-label">Current Gameweek</div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot pos-champions"></div>
+        <span>Champions League</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot pos-europa"></div>
+        <span>Europa League</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot pos-conference"></div>
+        <span>Conference League</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot pos-relegation"></div>
+        <span>Relegation</span>
+      </div>
+    </div>
+
+    <!-- League Table -->
+    <div class="card pl-table-container">
+      <table class="pl-table">
+        <thead>
+          <tr>
+            <th>Pos</th>
+            <th>Team</th>
+            <th>P</th>
+            <th>W</th>
+            <th>D</th>
+            <th>L</th>
+            <th>GF</th>
+            <th>GA</th>
+            <th>GD</th>
+            <th>Pts</th>
+            <th>Form</th>
+          </tr>
+        </thead>
+        <tbody id="league-table-body">
+          <tr>
+            <td colspan="11" class="text-center" style="padding: 3rem;">
+              <i class="fas fa-spinner fa-spin"></i> Loading table data...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Last Updated -->
+    <p class="text-muted text-right mt-2" style="font-size: 0.875rem;">
+      <i class="fas fa-sync"></i> Last updated: <span id="last-updated">--</span>
+    </p>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2026 GB Fantasy. Premier League Table.</p>
+    </div>
+  </footer>
+
+  <script src="table.js"></script>
+</body>
+</html>
