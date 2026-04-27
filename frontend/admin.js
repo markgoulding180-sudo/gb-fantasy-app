@@ -15,7 +15,7 @@ function checkAdminAuth() {
   const isAdmin = localStorage.getItem('gbf_is_admin');
   if (!isAdmin) {
     const key = prompt('Enter admin key:');
-    if (key === 'admin123') { // Change this in production!
+    if (key === '1066') {
       localStorage.setItem('gbf_is_admin', 'true');
     } else {
       alert('Access denied');
