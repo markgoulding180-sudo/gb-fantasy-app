@@ -1,5 +1,5 @@
 // Premier League Table
-const API_BASE = '/.netlify/functions';
+const API_BASE = '/api';
 const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 
 document.addEventListener('DOMContentLoaded', function() {

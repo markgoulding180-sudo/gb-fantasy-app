@@ -1,6 +1,6 @@
 // Injury Updates - Fetches real data from database with FPL player photos
 
-const API_BASE = '/.netlify/functions';
+const API_BASE = '/api';
 
 // Fallback mock data if API fails
 const mockInjuries = [

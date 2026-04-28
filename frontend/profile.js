@@ -1,6 +1,6 @@
 // GB Fantasy - User Profile Page
 
-const API_BASE = '/.netlify/functions';
+const API_BASE = '/api';
 
 // Auth state
 let currentUser = null;

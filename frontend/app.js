@@ -1,8 +1,8 @@
 // GB Fantasy - Main JavaScript
 // Premier League Prediction Website
 
-// API Base URL - Netlify Functions
-const API_BASE = '/.netlify/functions';
+// API Base URL - Vercel API Routes
+const API_BASE = '/api';
 
 // Supabase client configuration (anon key for frontend)
 const SUPABASE_URL = 'https://your-project.supabase.co'; // Will be replaced by Netlify env

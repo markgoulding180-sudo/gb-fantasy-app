@@ -1,6 +1,6 @@
 // GB Fantasy - Admin Panel JavaScript
 
-const API_BASE = '/.netlify/functions';
+const API_BASE = '/api';
 
 // Admin authentication check
 const ADMIN_KEY = 'gbf_admin_key';
