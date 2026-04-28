@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
       fixtureList.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Loading fixtures...</div>';
       
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('gbf_token');
       const headers = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   async function submitPredictions(gameweek) {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('gbf_token');
       if (!token) {
         alert('Please log in to submit predictions');
         window.location.href = '/login';
