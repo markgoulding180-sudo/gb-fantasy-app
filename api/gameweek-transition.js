@@ -125,12 +125,12 @@ async function finaliseGameweek(supabase, gameweek) {
 
     for (const match of matches) {
       // Get user's prediction for this match
-      const { data: pred } = await supabase
+      const { data: pred, error: predError } = await supabase
         .from('predictions')
         .select('*')
         .eq('user_id', userId)
         .eq('match_id', match.id)
-        .single();
+        .maybeSingle();
 
       if (pred) {
         // Calculate points
@@ -191,19 +191,16 @@ async function finaliseGameweek(supabase, gameweek) {
       });
   }
 
-  // Update all user totals (cumulative)
-  const { data: users } = await supabase
-    .from('users')
-    .select('id');
-
-  for (const user of users || []) {
-    const { data: history } = await supabase
-      .from('prediction_history')
+  // Update all user totals (cumulative) from all finished gameweeks
+  for (const userId of userIds) {
+    const { data: allPredictions } = await supabase
+      .from('predictions')
       .select('points_earned')
-      .eq('user_id', user.id);
+      .eq('user_id', userId)
+      .not('points_earned', 'is', null);
 
-    const total = (history || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
-    const correct = (history || []).filter(p => p.points_earned === 20).length;
+    const total = (allPredictions || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
+    const correct = (allPredictions || []).filter(p => p.points_earned === 20).length;
 
     await supabase
       .from('users')
@@ -212,7 +209,7 @@ async function finaliseGameweek(supabase, gameweek) {
         correct_scores: correct,
         updated_at: new Date().toISOString()
       })
-      .eq('id', user.id);
+      .eq('id', userId);
   }
 }
 
