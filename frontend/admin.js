@@ -52,7 +52,6 @@ async function launchTournament() {
     // Step 1: Sync fixtures
     log('Syncing fixtures from FPL API...');
     const syncResponse = await fetch('/api/sync-fixtures', {
-      method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` }
     });
     

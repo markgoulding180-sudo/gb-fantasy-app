@@ -307,7 +307,7 @@ async function handleLoginSubmit(e) {
 
   if (result.success) {
     alert('Welcome back, ' + result.user.display_name + '!');
-    window.location.href = 'index.html';
+    window.location.href = 'profile.html';
   } else {
     alert(result.error);
   }
