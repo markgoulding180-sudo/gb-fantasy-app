@@ -12,6 +12,16 @@ const SUPABASE_KEY = 'your-anon-key'; // Will be replaced by Netlify env
 let currentUser = null;
 let authToken = localStorage.getItem('gbf_token') || null;
 
+// Load user from localStorage on startup
+const storedUser = localStorage.getItem('gbf_user');
+if (storedUser) {
+  try {
+    currentUser = JSON.parse(storedUser);
+  } catch (e) {
+    console.error('Failed to parse stored user:', e);
+  }
+}
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
   initApp();
@@ -117,34 +127,46 @@ function logout() {
   localStorage.removeItem('gbf_token');
   localStorage.removeItem('gbf_refresh');
   localStorage.removeItem('gbf_user');
-  updateAuthUI();
+  window.location.href = 'index.html';
 }
+
+// Make logout globally accessible
+window.logout = logout;
 
 function updateAuthUI() {
   // Update navigation based on auth state
   const navLinks = document.querySelector('.nav-links');
   if (!navLinks) return;
 
+  // Get user from localStorage if not in memory
+  if (!currentUser) {
+    const storedUser = localStorage.getItem('gbf_user');
+    if (storedUser) {
+      try {
+        currentUser = JSON.parse(storedUser);
+      } catch (e) {
+        console.error('Failed to parse stored user:', e);
+      }
+    }
+  }
+
   const registerLink = navLinks.querySelector('a[href="register.html"]');
   const loginLink = navLinks.querySelector('a[href="login.html"]');
+  const profileLink = navLinks.querySelector('a[href="profile.html"]');
   
   if (authToken && currentUser) {
-    // User is logged in - replace Register/Login with username
+    // User is logged in
+    // Replace Register link with username
     if (registerLink) {
-      registerLink.innerHTML = `<i class="fas fa-user"></i> ${currentUser.display_name}`;
-      registerLink.href = '#';
-      registerLink.onclick = (e) => {
-        e.preventDefault();
-        if (confirm('Log out?')) logout();
-      };
+      registerLink.outerHTML = `<li><a href="profile.html" class="nav-user"><i class="fas fa-user"></i> ${currentUser.display_name || currentUser.username}</a></li>`;
     }
-    // Hide login link when logged in
+    // Replace Login link with Logout
     if (loginLink) {
-      loginLink.style.display = 'none';
+      loginLink.outerHTML = `<li><a href="#" class="nav-logout" onclick="logout(); return false;"><i class="fas fa-sign-out-alt"></i> Logout</a></li>`;
     }
   } else {
-    // User is logged out - ensure Login link is visible
-    if (loginLink) {
+    // User is logged out - ensure Login and Register links are visible
+    if (loginLink && loginLink.style.display === 'none') {
       loginLink.style.display = '';
     }
   }
