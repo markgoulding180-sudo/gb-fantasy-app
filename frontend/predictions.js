@@ -80,6 +80,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         const resultDisplay = isFinished ? 
           `<span class="final-score">${match.home_score} - ${match.away_score}</span>` : '';
         
+        // Determine winner for finished matches
+        let homeWinnerClass = '';
+        let awayWinnerClass = '';
+        let resultIndicator = '';
+        if (isFinished) {
+          if (match.result === 'H') {
+            homeWinnerClass = 'team-winner';
+            resultIndicator = '<span class="result-indicator">1</span>';
+          } else if (match.result === 'A') {
+            awayWinnerClass = 'team-winner';
+            resultIndicator = '<span class="result-indicator">2</span>';
+          } else if (match.result === 'D') {
+            resultIndicator = '<span class="result-indicator">X</span>';
+          }
+        }
+        
         // Find existing prediction if any
         const existingPred = data.predictions?.find(p => p.match_id === match.id);
         const homeScore = existingPred ? existingPred.home_score : '';
@@ -92,17 +108,17 @@ document.addEventListener('DOMContentLoaded', async function() {
           <div class="fixture ${finishedClass}" data-match-id="${match.id}">
             <div class="fixture-header">
               <span><i class="far fa-clock"></i> ${dateStr}, ${timeStr}</span>
-              ${isFinished ? '<span class="badge badge-success">FINISHED</span>' : '<span class="text-muted">' + (match.venue || 'TBC') + '</span>'}
+              ${isFinished ? '<span class="badge badge-success">FINISHED</span>' + resultIndicator : '<span class="text-muted">' + (match.venue || 'TBC') + '</span>'}
             </div>
             <div class="fixture-teams">
               <div class="team home">
-                <div class="team-name">${match.home_team}</div>
+                <div class="team-name ${homeWinnerClass}">${match.home_team}</div>
                 <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.style.display='none'">
               </div>
               <span class="vs">VS ${resultDisplay}</span>
               <div class="team away">
                 <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.style.display='none'">
-                <div class="team-name">${match.away_team}</div>
+                <div class="team-name ${awayWinnerClass}">${match.away_team}</div>
               </div>
             </div>
             <div class="prediction-form">
