@@ -1,62 +1,40 @@
-// Netlify Function: Register User
-// POST /.netlify/functions/register
+// Vercel API Route: Register User
+// POST /api/register
 
 const { createClient } = require('@supabase/supabase-js');
 
-exports.handler = async (event, context) => {
+module.exports = async (req, res) => {
   // CORS headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { username, display_name, email, password } = JSON.parse(event.body);
+    const { username, display_name, email, password } = req.body;
 
     // Validation
     if (!username || !display_name || !email || !password) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'All fields are required' })
-      };
+      return res.status(400).json({ error: 'All fields are required' });
     }
 
     if (username.length < 3 || username.length > 20) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Username must be 3-20 characters' })
-      };
+      return res.status(400).json({ error: 'Username must be 3-20 characters' });
     }
 
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Username can only contain letters, numbers, and underscores' })
-      };
+      return res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores' });
     }
 
     if (password.length < 8) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Password must be at least 8 characters' })
-      };
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
     // Initialize Supabase with service role key (server-side only)
@@ -73,11 +51,7 @@ exports.handler = async (event, context) => {
       .single();
 
     if (existingUser) {
-      return {
-        statusCode: 409,
-        headers,
-        body: JSON.stringify({ error: 'Username already taken' })
-      };
+      return res.status(409).json({ error: 'Username already taken' });
     }
 
     // Create user in Supabase Auth
@@ -88,11 +62,7 @@ exports.handler = async (event, context) => {
     });
 
     if (authError) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: authError.message })
-      };
+      return res.status(400).json({ error: authError.message });
     }
 
     // Create user profile in users table
@@ -111,32 +81,21 @@ exports.handler = async (event, context) => {
     if (profileError) {
       // Rollback: delete auth user if profile creation fails
       await supabase.auth.admin.deleteUser(authData.user.id);
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Failed to create user profile' })
-      };
+      return res.status(500).json({ error: 'Failed to create user profile' });
     }
 
-    return {
-      statusCode: 201,
-      headers,
-      body: JSON.stringify({
-        message: 'Account created successfully',
-        user: {
-          id: authData.user.id,
-          username,
-          display_name,
-          email
-        }
-      })
-    };
+    return res.status(201).json({
+      message: 'Account created successfully',
+      user: {
+        id: authData.user.id,
+        username,
+        display_name,
+        email
+      }
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Internal server error', details: error.message })
-    };
+    console.error('Register error:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 };

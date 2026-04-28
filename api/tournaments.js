@@ -1,19 +1,17 @@
-// Netlify Function: Tournaments (List & Join)
-// GET /.netlify/functions/tournaments - List all tournaments
-// POST /.netlify/functions/tournaments - Join a tournament
+// Vercel Function: Tournaments (List & Join)
+// GET /api/tournaments - List all tournaments
+// POST /api/tournaments - Join a tournament
 
 const { createClient } = require('@supabase/supabase-js');
 
-exports.handler = async (event, context) => {
+module.exports = async (req, res) => {
   // CORS headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   const supabase = createClient(
@@ -22,9 +20,9 @@ exports.handler = async (event, context) => {
   );
 
   // GET - List tournaments
-  if (event.httpMethod === 'GET') {
+  if (req.method === 'GET') {
     try {
-      const params = new URLSearchParams(event.queryStringParameters);
+      const params = new URLSearchParams(req.query);
       const status = params.get('status'); // live, upcoming, closed, finished
       const gameweek = params.get('gameweek');
 
@@ -44,11 +42,7 @@ exports.handler = async (event, context) => {
       const { data, error } = await query;
 
       if (error) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ error: 'Failed to fetch tournaments', details: error.message })
-        };
+        return res.status(500).json({ error: 'Failed to fetch tournaments', details: error.message });
       }
 
       // Calculate time remaining for each tournament
@@ -75,54 +69,35 @@ exports.handler = async (event, context) => {
         };
       });
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          tournaments: formattedData
-        })
-      };
+      return res.status(200).json({
+        tournaments: formattedData
+      });
 
     } catch (error) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Internal server error', details: error.message })
-      };
+      console.error('Tournaments GET error:', error);
+      return res.status(500).json({ error: 'Internal server error', details: error.message });
     }
   }
 
   // POST - Join a tournament
-  if (event.httpMethod === 'POST') {
+  if (req.method === 'POST') {
     try {
-      const authHeader = event.headers.authorization;
+      const authHeader = req.headers.authorization;
       if (!authHeader) {
-        return {
-          statusCode: 401,
-          headers,
-          body: JSON.stringify({ error: 'Authentication required' })
-        };
+        return res.status(401).json({ error: 'Authentication required' });
       }
 
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
       if (authError || !user) {
-        return {
-          statusCode: 401,
-          headers,
-          body: JSON.stringify({ error: 'Invalid or expired token' })
-        };
+        return res.status(401).json({ error: 'Invalid or expired token' });
       }
 
-      const { tournament_id } = JSON.parse(event.body);
+      const { tournament_id } = req.body;
 
       if (!tournament_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'tournament_id is required' })
-        };
+        return res.status(400).json({ error: 'tournament_id is required' });
       }
 
       // Check if tournament exists and is open
@@ -133,27 +108,15 @@ exports.handler = async (event, context) => {
         .single();
 
       if (tournamentError || !tournament) {
-        return {
-          statusCode: 404,
-          headers,
-          body: JSON.stringify({ error: 'Tournament not found' })
-        };
+        return res.status(404).json({ error: 'Tournament not found' });
       }
 
       if (tournament.status !== 'live') {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Tournament is not open for entries' })
-        };
+        return res.status(400).json({ error: 'Tournament is not open for entries' });
       }
 
       if (tournament.max_entries && tournament.current_entries >= tournament.max_entries) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Tournament is full' })
-        };
+        return res.status(400).json({ error: 'Tournament is full' });
       }
 
       // Check if user already entered
@@ -165,11 +128,7 @@ exports.handler = async (event, context) => {
         .single();
 
       if (existingEntry) {
-        return {
-          statusCode: 409,
-          headers,
-          body: JSON.stringify({ error: 'You have already entered this tournament' })
-        };
+        return res.status(409).json({ error: 'You have already entered this tournament' });
       }
 
       // Create entry
@@ -184,11 +143,7 @@ exports.handler = async (event, context) => {
         .single();
 
       if (entryError) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ error: 'Failed to enter tournament', details: entryError.message })
-        };
+        return res.status(500).json({ error: 'Failed to enter tournament', details: entryError.message });
       }
 
       // Update tournament entry count
@@ -197,27 +152,16 @@ exports.handler = async (event, context) => {
         .update({ current_entries: tournament.current_entries + 1 })
         .eq('id', tournament_id);
 
-      return {
-        statusCode: 201,
-        headers,
-        body: JSON.stringify({
-          message: 'Successfully entered tournament',
-          entry
-        })
-      };
+      return res.status(201).json({
+        message: 'Successfully entered tournament',
+        entry
+      });
 
     } catch (error) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Internal server error', details: error.message })
-      };
+      console.error('Tournaments POST error:', error);
+      return res.status(500).json({ error: 'Internal server error', details: error.message });
     }
   }
 
-  return {
-    statusCode: 405,
-    headers,
-    body: JSON.stringify({ error: 'Method not allowed' })
-  };
+  return res.status(405).json({ error: 'Method not allowed' });
 };

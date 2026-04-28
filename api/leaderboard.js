@@ -1,30 +1,24 @@
-// Netlify Function: Leaderboard
-// GET /.netlify/functions/leaderboard?tournament=all&limit=50
+// Vercel Function: Leaderboard
+// GET /api/leaderboard?tournament=all&limit=50
 
 const { createClient } = require('@supabase/supabase-js');
 
-exports.handler = async (event, context) => {
+module.exports = async (req, res) => {
   // CORS headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const params = new URLSearchParams(event.queryStringParameters);
+    const params = new URLSearchParams(req.query);
     const tournament = params.get('tournament') || 'all';
     const limit = parseInt(params.get('limit')) || 50;
     const offset = parseInt(params.get('offset')) || 0;
@@ -60,11 +54,7 @@ exports.handler = async (event, context) => {
     const { data, error, count } = await query;
 
     if (error) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Failed to fetch leaderboard', details: error.message })
-      };
+      return res.status(500).json({ error: 'Failed to fetch leaderboard', details: error.message });
     }
 
     // Format the response
@@ -104,26 +94,19 @@ exports.handler = async (event, context) => {
       .from('users')
       .select('*', { count: 'exact', head: true });
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        tournament: tournament,
-        leaderboard: formattedData,
-        pagination: {
-          offset,
-          limit,
-          total: totalCount || 0,
-          has_more: (offset + limit) < (totalCount || 0)
-        }
-      })
-    };
+    return res.status(200).json({
+      tournament: tournament,
+      leaderboard: formattedData,
+      pagination: {
+        offset,
+        limit,
+        total: totalCount || 0,
+        has_more: (offset + limit) < (totalCount || 0)
+      }
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Internal server error', details: error.message })
-    };
+    console.error('Leaderboard error:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 };

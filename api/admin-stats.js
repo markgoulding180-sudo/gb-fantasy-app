@@ -1,17 +1,15 @@
-// Netlify Function: Admin stats
-// GET /.netlify/functions/admin-stats
+// Vercel Function: Admin stats
+// GET /api/admin-stats
 
 const { createClient } = require('@supabase/supabase-js');
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
@@ -43,23 +41,16 @@ exports.handler = async (event, context) => {
       gwBreakdown[m.gameweek][m.status]++;
     });
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        total_matches: totalMatches || 0,
-        total_predictions: totalPredictions || 0,
-        total_users: totalUsers || 0,
-        total_tournaments: totalTournaments || 0,
-        gameweek_breakdown: gwBreakdown
-      })
-    };
+    return res.status(200).json({
+      total_matches: totalMatches || 0,
+      total_predictions: totalPredictions || 0,
+      total_users: totalUsers || 0,
+      total_tournaments: totalTournaments || 0,
+      gameweek_breakdown: gwBreakdown
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to get stats', details: error.message })
-    };
+    console.error('Admin stats error:', error);
+    return res.status(500).json({ error: 'Failed to get stats', details: error.message });
   }
 };

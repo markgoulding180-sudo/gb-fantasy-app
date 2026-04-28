@@ -1,20 +1,18 @@
-// Netlify Function: Get player injuries with photo URLs
-// GET /.netlify/functions/player-injuries
+// Vercel Function: Get player injuries with photo URLs
+// GET /api/player-injuries
 
 const { createClient } = require('@supabase/supabase-js');
 
 // FPL player photo base URL
 const FPL_PHOTO_URL = 'https://resources.premierleague.com/premierleague/photos/players/110x140/p';
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
@@ -43,11 +41,7 @@ exports.handler = async (event, context) => {
       .order('news_added', { ascending: false });
 
     if (error) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Failed to fetch injuries', details: error.message })
-      };
+      return res.status(500).json({ error: 'Failed to fetch injuries', details: error.message });
     }
 
     // Format with photo URLs
@@ -95,20 +89,13 @@ exports.handler = async (event, context) => {
       };
     });
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        count: injuries.length,
-        injuries: injuries
-      })
-    };
+    return res.status(200).json({
+      count: injuries.length,
+      injuries: injuries
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to fetch injuries', details: error.message })
-    };
+    console.error('Player injuries error:', error);
+    return res.status(500).json({ error: 'Failed to fetch injuries', details: error.message });
   }
 };

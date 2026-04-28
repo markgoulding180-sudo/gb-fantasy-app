@@ -1,6 +1,6 @@
-// Netlify Function: Predictions (Get Fixtures & Submit Predictions)
-// GET /.netlify/functions/predictions?gameweek=34
-// POST /.netlify/functions/predictions
+// Vercel Function: Predictions (Get Fixtures & Submit Predictions)
+// GET /api/predictions?gameweek=34
+// POST /api/predictions
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -22,16 +22,14 @@ async function getCurrentGameweekInfo() {
   }
 }
 
-exports.handler = async (event, context) => {
+module.exports = async (req, res) => {
   // CORS headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   const supabase = createClient(
@@ -40,9 +38,9 @@ exports.handler = async (event, context) => {
   );
 
   // GET - Fetch fixtures for a gameweek
-  if (event.httpMethod === 'GET') {
+  if (req.method === 'GET') {
     try {
-      const params = new URLSearchParams(event.queryStringParameters);
+      const params = new URLSearchParams(req.query);
       const gameweek = params.get('gameweek') || '34';
 
       // Get matches for the gameweek
@@ -53,15 +51,11 @@ exports.handler = async (event, context) => {
         .order('kickoff_time', { ascending: true });
 
       if (matchesError) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ error: 'Failed to fetch matches' })
-        };
+        return res.status(500).json({ error: 'Failed to fetch matches' });
       }
 
       // If user is authenticated, get their predictions too
-      const authHeader = event.headers.authorization;
+      const authHeader = req.headers.authorization;
       let userPredictions = [];
 
       if (authHeader) {
@@ -79,56 +73,37 @@ exports.handler = async (event, context) => {
         }
       }
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          gameweek: parseInt(gameweek),
-          matches: matches || [],
-          predictions: userPredictions
-        })
-      };
+      return res.status(200).json({
+        gameweek: parseInt(gameweek),
+        matches: matches || [],
+        predictions: userPredictions
+      });
 
     } catch (error) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Internal server error', details: error.message })
-      };
+      console.error('Predictions GET error:', error);
+      return res.status(500).json({ error: 'Internal server error', details: error.message });
     }
   }
 
   // POST - Submit predictions
-  if (event.httpMethod === 'POST') {
+  if (req.method === 'POST') {
     try {
-      const authHeader = event.headers.authorization;
+      const authHeader = req.headers.authorization;
       if (!authHeader) {
-        return {
-          statusCode: 401,
-          headers,
-          body: JSON.stringify({ error: 'Authentication required' })
-        };
+        return res.status(401).json({ error: 'Authentication required' });
       }
 
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
       if (authError || !user) {
-        return {
-          statusCode: 401,
-          headers,
-          body: JSON.stringify({ error: 'Invalid or expired token' })
-        };
+        return res.status(401).json({ error: 'Invalid or expired token' });
       }
 
-      const { gameweek, predictions } = JSON.parse(event.body);
+      const { gameweek, predictions } = req.body;
 
       if (!gameweek || !predictions || !Array.isArray(predictions)) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Gameweek and predictions array are required' })
-        };
+        return res.status(400).json({ error: 'Gameweek and predictions array are required' });
       }
 
       // Check deadline
@@ -136,15 +111,11 @@ exports.handler = async (event, context) => {
       if (gwInfo && gwInfo.deadline_epoch) {
         const now = Math.floor(Date.now() / 1000);
         if (now >= gwInfo.deadline_epoch) {
-          return {
-            statusCode: 403,
-            headers,
-            body: JSON.stringify({ 
-              error: 'Deadline passed', 
-              message: 'The gameweek deadline has passed. Predictions are now locked.',
-              deadline: gwInfo.deadline
-            })
-          };
+          return res.status(403).json({ 
+            error: 'Deadline passed', 
+            message: 'The gameweek deadline has passed. Predictions are now locked.',
+            deadline: gwInfo.deadline
+          });
         }
       }
 
@@ -154,20 +125,12 @@ exports.handler = async (event, context) => {
       
       for (const pred of predictions) {
         if (!pred.match_id || !pred.predicted_result || pred.home_score === undefined || pred.away_score === undefined) {
-          return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({ error: 'Each prediction must include match_id, predicted_result, home_score, and away_score' })
-          };
+          return res.status(400).json({ error: 'Each prediction must include match_id, predicted_result, home_score, and away_score' });
         }
 
         // Validate result is H, D, or A
         if (!['H', 'D', 'A'].includes(pred.predicted_result)) {
-          return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({ error: 'predicted_result must be H, D, or A' })
-          };
+          return res.status(400).json({ error: 'predicted_result must be H, D, or A' });
         }
 
         // Handle temporary match IDs (format: temp-gameweek-matchnum)
@@ -206,11 +169,7 @@ exports.handler = async (event, context) => {
               .single();
             
             if (createError || !newMatch) {
-              return {
-                statusCode: 500,
-                headers,
-                body: JSON.stringify({ error: 'Failed to create match', details: createError?.message })
-              };
+              return res.status(500).json({ error: 'Failed to create match', details: createError?.message });
             }
             matchId = newMatch.id;
           }
@@ -236,34 +195,19 @@ exports.handler = async (event, context) => {
         .select();
 
       if (error) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ error: 'Failed to save predictions', details: error.message })
-        };
+        return res.status(500).json({ error: 'Failed to save predictions', details: error.message });
       }
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          message: 'Predictions saved successfully',
-          predictions: data
-        })
-      };
+      return res.status(200).json({
+        message: 'Predictions saved successfully',
+        predictions: data
+      });
 
     } catch (error) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Internal server error', details: error.message })
-      };
+      console.error('Predictions POST error:', error);
+      return res.status(500).json({ error: 'Internal server error', details: error.message });
     }
   }
 
-  return {
-    statusCode: 405,
-    headers,
-    body: JSON.stringify({ error: 'Method not allowed' })
-  };
+  return res.status(405).json({ error: 'Method not allowed' });
 };

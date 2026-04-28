@@ -1,6 +1,6 @@
-// Netlify Function: Sync fixtures from FPL API
-// GET /.netlify/functions/sync-fixtures?gameweek=34
-// This should be called by a scheduled job (Netlify scheduled functions or external cron)
+// Vercel Function: Sync fixtures from FPL API
+// GET /api/sync-fixtures?gameweek=34
+// This should be called by a scheduled job (Vercel cron or external cron)
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -8,27 +8,21 @@ const { createClient } = require('@supabase/supabase-js');
 const FPL_FIXTURES_URL = 'https://fantasy.premierleague.com/api/fixtures/';
 const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const params = new URLSearchParams(event.queryStringParameters);
+    const params = new URLSearchParams(req.query);
     const gameweek = params.get('gameweek');
 
     // Initialize Supabase
@@ -125,22 +119,15 @@ exports.handler = async (event, context) => {
       await calculatePointsForGameweek(supabase, gameweek);
     }
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        message: 'Fixtures synced successfully',
-        gameweek: gameweek || 'all',
-        results
-      })
-    };
+    return res.status(200).json({
+      message: 'Fixtures synced successfully',
+      gameweek: gameweek || 'all',
+      results
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to sync fixtures', details: error.message })
-    };
+    console.error('Sync fixtures error:', error);
+    return res.status(500).json({ error: 'Failed to sync fixtures', details: error.message });
   }
 };
 

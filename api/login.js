@@ -1,37 +1,27 @@
-// Netlify Function: Login User
-// POST /.netlify/functions/login
+// Vercel API Route: Login User
+// POST /api/login
 
 const { createClient } = require('@supabase/supabase-js');
 
-exports.handler = async (event, context) => {
+module.exports = async (req, res) => {
   // CORS headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { email, password } = JSON.parse(event.body);
+    const { email, password } = req.body;
 
     if (!email || !password) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Email and password are required' })
-      };
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
     // Initialize Supabase with anon key for client-side auth
@@ -47,11 +37,7 @@ exports.handler = async (event, context) => {
     });
 
     if (error) {
-      return {
-        statusCode: 401,
-        headers,
-        body: JSON.stringify({ error: 'Invalid credentials' })
-      };
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Get user profile
@@ -62,32 +48,21 @@ exports.handler = async (event, context) => {
       .single();
 
     if (profileError) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Failed to fetch user profile' })
-      };
+      return res.status(500).json({ error: 'Failed to fetch user profile' });
     }
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        message: 'Login successful',
-        session: {
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-          expires_at: data.session.expires_at
-        },
-        user: profile
-      })
-    };
+    return res.status(200).json({
+      message: 'Login successful',
+      session: {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at
+      },
+      user: profile
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Internal server error', details: error.message })
-    };
+    console.error('Login error:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 };

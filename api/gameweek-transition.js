@@ -1,5 +1,5 @@
-// Netlify Function: Check and trigger gameweek transition
-// GET /.netlify/functions/gameweek-transition
+// Vercel Function: Check and trigger gameweek transition
+// GET /api/gameweek-transition
 // Should be called every hour to check if current GW is finished
 
 const { createClient } = require('@supabase/supabase-js');
@@ -7,15 +7,13 @@ const { createClient } = require('@supabase/supabase-js');
 const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 const FPL_FIXTURES_URL = 'https://fantasy.premierleague.com/api/fixtures/';
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
@@ -33,11 +31,7 @@ exports.handler = async (event, context) => {
     const nextEvent = data.events.find(e => e.is_next);
 
     if (!currentEvent) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ message: 'No current gameweek' })
-      };
+      return res.status(200).json({ message: 'No current gameweek' });
     }
 
     // Check if all matches in current GW are finished
@@ -96,18 +90,11 @@ exports.handler = async (event, context) => {
 
     result.actions.push('updated_settings');
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify(result)
-    };
+    return res.status(200).json(result);
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Transition check failed', details: error.message })
-    };
+    console.error('Gameweek transition error:', error);
+    return res.status(500).json({ error: 'Transition check failed', details: error.message });
   }
 };
 

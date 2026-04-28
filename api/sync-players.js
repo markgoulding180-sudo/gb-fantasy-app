@@ -1,19 +1,17 @@
-// Netlify Function: Sync players from FPL API
-// GET /.netlify/functions/sync-players
+// Vercel Function: Sync players from FPL API
+// GET /api/sync-players
 
 const { createClient } = require('@supabase/supabase-js');
 
 const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
@@ -94,21 +92,14 @@ exports.handler = async (event, context) => {
       }
     }
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        message: 'Players synced successfully',
-        total: players.length,
-        results
-      })
-    };
+    return res.status(200).json({
+      message: 'Players synced successfully',
+      total: players.length,
+      results
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to sync players', details: error.message })
-    };
+    console.error('Sync players error:', error);
+    return res.status(500).json({ error: 'Failed to sync players', details: error.message });
   }
 };
