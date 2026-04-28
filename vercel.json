@@ -1,24 +1,3 @@
 {
-  "version": 2,
-  "name": "gb-fantasy",
-  "outputDirectory": "frontend",
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/.netlify/functions/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
-    }
-  ]
+  "outputDirectory": "frontend"
 }
