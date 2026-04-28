@@ -38,6 +38,12 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
+  // Check environment variables
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+    console.error('Missing environment variables: SUPABASE_URL or SUPABASE_KEY');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
   const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_KEY
@@ -57,7 +63,8 @@ module.exports = async (req, res) => {
         .order('kickoff_time', { ascending: true });
 
       if (matchesError) {
-        return res.status(500).json({ error: 'Failed to fetch matches' });
+        console.error('Database error fetching matches:', matchesError);
+        return res.status(500).json({ error: 'Failed to fetch matches', details: matchesError.message });
       }
 
       // If user is authenticated, get their predictions too
@@ -66,16 +73,26 @@ module.exports = async (req, res) => {
 
       if (authHeader) {
         const token = authHeader.replace('Bearer ', '');
-        const { data: { user } } = await supabase.auth.getUser(token);
-
-        if (user) {
-          const { data: predictions } = await supabase
-            .from('predictions')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('gameweek', gameweek);
-
-          userPredictions = predictions || [];
+        try {
+          const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+          
+          if (userError) {
+            console.error('Auth error getting user:', userError);
+          } else if (user) {
+            const { data: predictions, error: predError } = await supabase
+              .from('predictions')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('gameweek', gameweek);
+            
+            if (predError) {
+              console.error('Database error fetching predictions:', predError);
+            } else {
+              userPredictions = predictions || [];
+            }
+          }
+        } catch (authErr) {
+          console.error('Exception getting user from token:', authErr);
         }
       }
 
@@ -94,21 +111,44 @@ module.exports = async (req, res) => {
   // POST - Submit predictions
   if (req.method === 'POST') {
     try {
+      console.log('POST /api/predictions - Starting request processing');
+      
       const authHeader = req.headers.authorization;
       if (!authHeader) {
+        console.error('No authorization header provided');
         return res.status(401).json({ error: 'Authentication required' });
       }
 
       const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-      if (authError || !user) {
-        return res.status(401).json({ error: 'Invalid or expired token' });
+      console.log('Token received, length:', token.length);
+      
+      // Verify the JWT token and get user
+      let user;
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser(token);
+        
+        if (userError) {
+          console.error('Auth error - getUser failed:', userError);
+          return res.status(401).json({ error: 'Invalid or expired token', details: userError.message });
+        }
+        
+        if (!userData.user) {
+          console.error('No user returned from auth');
+          return res.status(401).json({ error: 'Invalid or expired token' });
+        }
+        
+        user = userData.user;
+        console.log('User authenticated:', user.id);
+      } catch (authErr) {
+        console.error('Exception during auth verification:', authErr);
+        return res.status(401).json({ error: 'Authentication failed', details: authErr.message });
       }
 
       const { gameweek, predictions } = req.body;
+      console.log('Request body:', { gameweek, predictionsCount: predictions?.length });
 
       if (!gameweek || !predictions || !Array.isArray(predictions)) {
+        console.error('Invalid request body:', { gameweek, predictions });
         return res.status(400).json({ error: 'Gameweek and predictions array are required' });
       }
 
@@ -127,17 +167,32 @@ module.exports = async (req, res) => {
 
       // Validate and format predictions
       const predictionsToInsert = [];
-      const matchIdsToCheck = [];
       
-      for (const pred of predictions) {
-        if (!pred.match_id || !pred.predicted_result || pred.home_score === undefined || pred.away_score === undefined) {
-          return res.status(400).json({ error: 'Each prediction must include match_id, predicted_result, home_score, and away_score' });
+      for (let i = 0; i < predictions.length; i++) {
+        const pred = predictions[i];
+        console.log(`Processing prediction ${i}:`, pred);
+        
+        if (!pred.match_id) {
+          console.error(`Prediction ${i} missing match_id`);
+          return res.status(400).json({ error: `Prediction ${i} missing match_id` });
+        }
+        
+        // Only require predicted_result - scores are optional for validation
+        if (!pred.predicted_result) {
+          console.error(`Prediction ${i} missing predicted_result`);
+          return res.status(400).json({ error: `Prediction ${i} missing result (1, X, or 2)` });
         }
 
         // Validate result is H, D, or A
         if (!['H', 'D', 'A'].includes(pred.predicted_result)) {
-          return res.status(400).json({ error: 'predicted_result must be H, D, or A' });
+          console.error(`Prediction ${i} invalid result:`, pred.predicted_result);
+          return res.status(400).json({ error: `Prediction ${i}: result must be H, D, or A` });
         }
+        
+        // Scores can be any value - no validation against result
+        // User can predict home win (H) with score 0-1 if they want
+        const homeScore = pred.home_score !== undefined ? parseInt(pred.home_score) : 0;
+        const awayScore = pred.away_score !== undefined ? parseInt(pred.away_score) : 0;
 
         // Handle temporary match IDs (format: temp-gameweek-matchnum)
         let matchId = pred.match_id;
@@ -147,7 +202,7 @@ module.exports = async (req, res) => {
           const matchNum = parseInt(parts[2]) || 1;
           
           // Check if match exists, if not create it
-          const { data: existingMatch } = await supabase
+          const { data: existingMatch, error: findError } = await supabase
             .from('matches')
             .select('id')
             .eq('gameweek', gameweek)
@@ -155,10 +210,16 @@ module.exports = async (req, res) => {
             .range(matchNum - 1, matchNum - 1)
             .single();
           
+          if (findError) {
+            console.error(`Error finding match for temp ID ${matchId}:`, findError);
+          }
+          
           if (existingMatch) {
             matchId = existingMatch.id;
+            console.log(`Resolved temp ID to match:`, matchId);
           } else {
             // Create a placeholder match
+            console.log(`Creating placeholder match for temp ID:`, matchId);
             const { data: newMatch, error: createError } = await supabase
               .from('matches')
               .insert({
@@ -175,9 +236,11 @@ module.exports = async (req, res) => {
               .single();
             
             if (createError || !newMatch) {
+              console.error('Failed to create match:', createError);
               return res.status(500).json({ error: 'Failed to create match', details: createError?.message });
             }
             matchId = newMatch.id;
+            console.log(`Created match with ID:`, matchId);
           }
         }
 
@@ -186,10 +249,12 @@ module.exports = async (req, res) => {
           match_id: matchId,
           gameweek: parseInt(gameweek),
           predicted_result: pred.predicted_result,
-          home_score: parseInt(pred.home_score),
-          away_score: parseInt(pred.away_score)
+          home_score: homeScore,
+          away_score: awayScore
         });
       }
+
+      console.log('Inserting predictions:', predictionsToInsert);
 
       // Upsert predictions (insert or update if exists)
       const { data, error } = await supabase
@@ -201,8 +266,11 @@ module.exports = async (req, res) => {
         .select();
 
       if (error) {
+        console.error('Database error inserting predictions:', error);
         return res.status(500).json({ error: 'Failed to save predictions', details: error.message });
       }
+
+      console.log('Predictions saved successfully:', data);
 
       return res.status(200).json({
         message: 'Predictions saved successfully',
