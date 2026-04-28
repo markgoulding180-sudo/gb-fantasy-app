@@ -168,26 +168,37 @@ document.addEventListener('DOMContentLoaded', async function() {
       const fixtures = document.querySelectorAll('.fixture');
       const predictions = [];
       
+      console.log('Submitting predictions for', fixtures.length, 'fixtures');
+      
       fixtures.forEach((fixture, index) => {
         const matchId = fixture.dataset.matchId;
         const matchNum = index + 1;
         
+        // Get the selected radio button for this match
         const resultRadio = document.querySelector(`input[name="match${matchNum}_result"]:checked`);
-        const homeScore = document.querySelector(`input[name="match${matchNum}_home_score"]`).value;
-        const awayScore = document.querySelector(`input[name="match${matchNum}_away_score"]`).value;
+        const homeScoreInput = document.querySelector(`input[name="match${matchNum}_home_score"]`);
+        const awayScoreInput = document.querySelector(`input[name="match${matchNum}_away_score"]`);
         
-        if (resultRadio && homeScore !== '' && awayScore !== '') {
+        const homeScore = homeScoreInput ? homeScoreInput.value : '';
+        const awayScore = awayScoreInput ? awayScoreInput.value : '';
+        
+        console.log(`Match ${matchNum}:`, { matchId, result: resultRadio?.value, homeScore, awayScore });
+        
+        // Only require a result to be selected - scores default to 0-0 if not entered
+        if (resultRadio && resultRadio.value) {
           predictions.push({
             match_id: matchId,
             predicted_result: resultRadio.value,
-            home_score: parseInt(homeScore),
-            away_score: parseInt(awayScore)
+            home_score: homeScore !== '' ? parseInt(homeScore) : 0,
+            away_score: awayScore !== '' ? parseInt(awayScore) : 0
           });
         }
       });
       
+      console.log('Collected predictions:', predictions);
+      
       if (predictions.length === 0) {
-        alert('Please enter at least one prediction');
+        alert('Please select a result (1, X, or 2) for at least one match');
         return;
       }
       

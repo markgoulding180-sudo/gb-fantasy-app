@@ -138,36 +138,39 @@ function updateAuthUI() {
   const navLinks = document.querySelector('.nav-links');
   if (!navLinks) return;
 
-  // Get user from localStorage if not in memory
-  if (!currentUser) {
-    const storedUser = localStorage.getItem('gbf_user');
-    if (storedUser) {
-      try {
-        currentUser = JSON.parse(storedUser);
-      } catch (e) {
-        console.error('Failed to parse stored user:', e);
-      }
+  // Get auth state from localStorage
+  const token = localStorage.getItem('gbf_token');
+  let user = null;
+  const storedUser = localStorage.getItem('gbf_user');
+  if (storedUser) {
+    try {
+      user = JSON.parse(storedUser);
+    } catch (e) {
+      console.error('Failed to parse stored user:', e);
     }
   }
 
-  const registerLink = navLinks.querySelector('a[href="register.html"]');
-  const loginLink = navLinks.querySelector('a[href="login.html"]');
-  const profileLink = navLinks.querySelector('a[href="profile.html"]');
+  console.log('updateAuthUI - token exists:', !!token, 'user:', user?.display_name);
+
+  // Find the nav items
+  let registerItem = navLinks.querySelector('a[href="register.html"]')?.parentElement;
+  let loginItem = navLinks.querySelector('a[href="login.html"]')?.parentElement;
   
-  if (authToken && currentUser) {
-    // User is logged in
-    // Replace Register link with username
-    if (registerLink) {
-      registerLink.outerHTML = `<li><a href="profile.html" class="nav-user"><i class="fas fa-user"></i> ${currentUser.display_name || currentUser.username}</a></li>`;
+  if (token && user) {
+    // User is logged in - replace Register and Login with User and Logout
+    if (registerItem) {
+      registerItem.innerHTML = `<a href="profile.html"><i class="fas fa-user"></i> ${user.display_name || user.username}</a>`;
     }
-    // Replace Login link with Logout
-    if (loginLink) {
-      loginLink.outerHTML = `<li><a href="#" class="nav-logout" onclick="logout(); return false;"><i class="fas fa-sign-out-alt"></i> Logout</a></li>`;
+    if (loginItem) {
+      loginItem.innerHTML = `<a href="#" onclick="logout(); return false;"><i class="fas fa-sign-out-alt"></i> Logout</a>`;
     }
   } else {
-    // User is logged out - ensure Login and Register links are visible
-    if (loginLink && loginLink.style.display === 'none') {
-      loginLink.style.display = '';
+    // User is logged out - ensure Login and Register links are present
+    if (registerItem && !registerItem.querySelector('a[href="register.html"]')) {
+      registerItem.innerHTML = `<a href="register.html"><i class="fas fa-user-plus"></i> Register</a>`;
+    }
+    if (loginItem && !loginItem.querySelector('a[href="login.html"]')) {
+      loginItem.innerHTML = `<a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>`;
     }
   }
 }
