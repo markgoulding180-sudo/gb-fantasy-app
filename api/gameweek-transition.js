@@ -202,8 +202,8 @@ async function finaliseGameweek(supabase, gameweek) {
       .select('points_earned')
       .eq('user_id', user.id);
 
-    const total = history.reduce((sum, p) => sum + (p.points_earned || 0), 0);
-    const correct = history.filter(p => p.points_earned === 20).length;
+    const total = (history || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
+    const correct = (history || []).filter(p => p.points_earned === 20).length;
 
     await supabase
       .from('users')
