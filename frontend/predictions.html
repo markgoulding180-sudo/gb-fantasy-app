@@ -23,6 +23,37 @@
         height: 40px;
       }
     }
+    .fixture-finished {
+      opacity: 0.8;
+      background: #f8f9fa;
+    }
+    .fixture-finished .prediction-form {
+      pointer-events: none;
+    }
+    .final-score {
+      background: #28a745;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .badge-success {
+      background: #28a745;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    .text-red {
+      color: #dc3545;
+    }
+    .text-center {
+      text-align: center;
+    }
+    .p-4 {
+      padding: 1.5rem;
+    }
   </style>
 </head>
 <body>
@@ -59,7 +90,11 @@
       <div class="gw-selector">
         <label for="gameweek" class="text-muted">Gameweek:</label>
         <select id="gameweek" class="gw-select">
-          <option value="34">Gameweek 34</option>
+          <option value="38">Gameweek 38</option>
+          <option value="37">Gameweek 37</option>
+          <option value="36">Gameweek 36</option>
+          <option value="35">Gameweek 35</option>
+          <option value="34" selected>Gameweek 34</option>
           <option value="33">Gameweek 33</option>
           <option value="32">Gameweek 32</option>
           <option value="31">Gameweek 31</option>
@@ -80,424 +115,9 @@
     <!-- Fixtures & Predictions -->
     <form id="predictions-form">
       <div class="fixture-list">
-        <!-- Fixture 1 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sat 26 Apr, 12:30</span>
-            <span class="text-muted">Emirates Stadium</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Arsenal</div>
-              <img src="shirts/arsenal.webp" alt="Arsenal" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/brighton.webp" alt="Brighton" class="team-shirt">
-              <div class="team-name">Brighton</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match1_result" id="match1_h" value="H">
-                  <label for="match1_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match1_result" id="match1_d" value="D">
-                  <label for="match1_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match1_result" id="match1_a" value="A">
-                  <label for="match1_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match1_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match1_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 2 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sat 26 Apr, 15:00</span>
-            <span class="text-muted">Villa Park</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Aston Villa</div>
-              <img src="shirts/aston villa.webp" alt="Aston Villa" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/new castle.webp" alt="Newcastle" class="team-shirt">
-              <div class="team-name">Newcastle</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match2_result" id="match2_h" value="H">
-                  <label for="match2_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match2_result" id="match2_d" value="D">
-                  <label for="match2_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match2_result" id="match2_a" value="A">
-                  <label for="match2_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match2_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match2_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 3 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sat 26 Apr, 15:00</span>
-            <span class="text-muted">Vitality Stadium</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Bournemouth</div>
-              <img src="shirts/bournmouth.webp" alt="Bournemouth" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/man u.webp" alt="Man United" class="team-shirt">
-              <div class="team-name">Man United</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match3_result" id="match3_h" value="H">
-                  <label for="match3_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match3_result" id="match3_d" value="D">
-                  <label for="match3_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match3_result" id="match3_a" value="A">
-                  <label for="match3_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match3_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match3_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 4 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sat 26 Apr, 15:00</span>
-            <span class="text-muted">Elland Road</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Leeds</div>
-              <img src="shirts/leeds.webp" alt="Leeds" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/everton.webp" alt="Everton" class="team-shirt">
-              <div class="team-name">Everton</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match4_result" id="match4_h" value="H">
-                  <label for="match4_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match4_result" id="match4_d" value="D">
-                  <label for="match4_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match4_result" id="match4_a" value="A">
-                  <label for="match4_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match4_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match4_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 5 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sat 26 Apr, 15:00</span>
-            <span class="text-muted">Stadium of Light</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Sunderland</div>
-              <img src="shirts/sunderland.webp" alt="Sunderland" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/liverpool.webp" alt="Liverpool" class="team-shirt">
-              <div class="team-name">Liverpool</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match5_result" id="match5_h" value="H">
-                  <label for="match5_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match5_result" id="match5_d" value="D">
-                  <label for="match5_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match5_result" id="match5_a" value="A">
-                  <label for="match5_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match5_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match5_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 6 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sat 26 Apr, 17:30</span>
-            <span class="text-muted">St James' Park</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Newcastle</div>
-              <img src="shirts/new castle.webp" alt="Newcastle" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/brentford.webp" alt="Brentford" class="team-shirt">
-              <div class="team-name">Brentford</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match6_result" id="match6_h" value="H">
-                  <label for="match6_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match6_result" id="match6_d" value="D">
-                  <label for="match6_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match6_result" id="match6_a" value="A">
-                  <label for="match6_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match6_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match6_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 7 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sun 27 Apr, 14:00</span>
-            <span class="text-muted">Stamford Bridge</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Chelsea</div>
-              <img src="shirts/chelsea.webp" alt="Chelsea" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/west ham.webp" alt="West Ham" class="team-shirt">
-              <div class="team-name">West Ham</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match7_result" id="match7_h" value="H">
-                  <label for="match7_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match7_result" id="match7_d" value="D">
-                  <label for="match7_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match7_result" id="match7_a" value="A">
-                  <label for="match7_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match7_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match7_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 8 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sun 27 Apr, 14:00</span>
-            <span class="text-muted">Goodison Park</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Everton</div>
-              <img src="shirts/everton.webp" alt="Everton" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/fullham.webp" alt="Fulham" class="team-shirt">
-              <div class="team-name">Fulham</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match8_result" id="match8_h" value="H">
-                  <label for="match8_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match8_result" id="match8_d" value="D">
-                  <label for="match8_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match8_result" id="match8_a" value="A">
-                  <label for="match8_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match8_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match8_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 9 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Sun 27 Apr, 16:30</span>
-            <span class="text-muted">Etihad Stadium</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Man City</div>
-              <img src="shirts/man city.webp" alt="Man City" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/spurs.webp" alt="Tottenham" class="team-shirt">
-              <div class="team-name">Tottenham</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match9_result" id="match9_h" value="H">
-                  <label for="match9_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match9_result" id="match9_d" value="D">
-                  <label for="match9_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match9_result" id="match9_a" value="A">
-                  <label for="match9_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match9_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match9_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Fixture 10 -->
-        <div class="fixture">
-          <div class="fixture-header">
-            <span><i class="far fa-clock"></i> Mon 28 Apr, 20:00</span>
-            <span class="text-muted">Molineux</span>
-          </div>
-          <div class="fixture-teams">
-            <div class="team home">
-              <div class="team-name">Wolves</div>
-              <img src="shirts/wovles temp.webp" alt="Wolves" class="team-shirt">
-            </div>
-            <span class="vs">VS</span>
-            <div class="team away">
-              <img src="shirts/crystal.webp" alt="Crystal Palace" class="team-shirt">
-              <div class="team-name">Crystal Palace</div>
-            </div>
-          </div>
-          <div class="prediction-form">
-            <div class="prediction-row">
-              <div class="prediction-1x2">
-                <div class="prediction-option">
-                  <input type="radio" name="match10_result" id="match10_h" value="H">
-                  <label for="match10_h">1</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match10_result" id="match10_d" value="D">
-                  <label for="match10_d">X</label>
-                </div>
-                <div class="prediction-option">
-                  <input type="radio" name="match10_result" id="match10_a" value="A">
-                  <label for="match10_a">2</label>
-                </div>
-              </div>
-              <div class="score-inputs">
-                <input type="number" class="score-input" name="match10_home_score" min="0" max="20" placeholder="0">
-                <span class="score-separator">-</span>
-                <input type="number" class="score-input" name="match10_away_score" min="0" max="20" placeholder="0">
-              </div>
-            </div>
-          </div>
+        <!-- Fixtures loaded dynamically from API -->
+        <div class="text-center p-4">
+          <i class="fas fa-spinner fa-spin"></i> Loading fixtures...
         </div>
       </div>
 
@@ -518,6 +138,6 @@
     </div>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="predictions.js"></script>
 </body>
 </html>
