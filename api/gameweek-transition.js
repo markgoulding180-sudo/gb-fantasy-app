@@ -112,10 +112,10 @@ async function finaliseGameweek(supabase, gameweek) {
   const { data: userPredictions } = await supabase
     .from('predictions')
     .select('user_id')
-    .eq('gameweek', gameweek)
-    .distinct();
+    .eq('gameweek', gameweek);
 
-  const userIds = userPredictions?.map(p => p.user_id) || [];
+  // Get unique user IDs
+  const userIds = [...new Set(userPredictions?.map(p => p.user_id) || [])];
 
   for (const userId of userIds) {
     let gwTotalPoints = 0;
