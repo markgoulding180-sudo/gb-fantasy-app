@@ -44,9 +44,14 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
+  // Use SUPABASE_SECRET for POST to bypass RLS
+  const supabaseKey = req.method === 'POST' 
+    ? process.env.SUPABASE_SECRET 
+    : process.env.SUPABASE_KEY;
+  
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_KEY
+    supabaseKey
   );
 
   // GET - Fetch fixtures for a gameweek
