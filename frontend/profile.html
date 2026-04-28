@@ -314,19 +314,14 @@
 
       <!-- Right Column -->
       <div>
-        <!-- My Tournaments -->
-        <div class="dashboard-card mb-3">
-          <h3><i class="fas fa-trophy text-amber"></i> My Tournaments</h3>
-          <div id="my-tournaments">
+        <!-- Active Tournament -->
+        <div class="dashboard-card mb-3" id="active-tournament-card" style="border: 2px solid var(--accent-green);">
+          <h3><i class="fas fa-trophy text-green"></i> Active Tournament</h3>
+          <div id="active-tournament">
             <div class="empty-state">
-              <i class="fas fa-trophy"></i>
-              <p>No tournament entries yet</p>
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>Loading tournament...</p>
             </div>
-          </div>
-          <div style="margin-top: 1rem; text-align: center;">
-            <a href="tournaments.html" class="btn btn-amber btn-sm">
-              <i class="fas fa-plus"></i> Enter Tournament
-            </a>
           </div>
         </div>
 
@@ -365,6 +360,7 @@
     </div>
   </footer>
 
+  <script src="auth-gate.js"></script>
   <script src="profile.js"></script>
 </body>
 </html>
