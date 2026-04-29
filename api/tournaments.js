@@ -153,6 +153,9 @@ module.exports = async (req, res) => {
       }
 
       // JOIN tournament (user action)
+      console.log('Join tournament - tournament_id:', tournament_id);
+      console.log('Join tournament - user.id:', user.id);
+      
       if (!tournament_id) {
         return res.status(400).json({ error: 'tournament_id is required' });
       }
@@ -189,6 +192,8 @@ module.exports = async (req, res) => {
       }
 
       // Create entry
+      console.log('Creating entry with:', { tournament_id, user_id: user.id });
+      
       const { data: entry, error: entryError } = await supabase
         .from('tournament_entries')
         .insert({
@@ -200,7 +205,12 @@ module.exports = async (req, res) => {
         .single();
 
       if (entryError) {
-        return res.status(500).json({ error: 'Failed to enter tournament', details: entryError.message });
+        console.error('Entry creation error:', entryError);
+        return res.status(500).json({ 
+          error: 'Failed to enter tournament', 
+          details: entryError.message,
+          code: entryError.code
+        });
       }
 
       // Update tournament entry count
