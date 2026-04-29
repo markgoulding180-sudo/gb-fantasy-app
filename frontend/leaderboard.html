@@ -38,15 +38,12 @@
   <!-- Main Content -->
   <main class="container">
     <!-- Page Header -->
-    <div class="flex flex-between items-center mb-3">
+    <div class="flex flex-between items-center mb-3" style="flex-wrap: wrap; gap: 1rem;">
       <h1><i class="fas fa-chart-line text-green"></i> Leaderboard</h1>
-      <div class="gw-selector">
+      <div class="gw-selector" style="max-width: 100%; flex-shrink: 0;">
         <label for="tournament-filter" class="text-muted">Tournament:</label>
-        <select id="tournament-filter" class="gw-select">
+        <select id="tournament-filter" class="gw-select" style="max-width: 100%; width: auto; min-width: 150px;">
           <option value="all">All Tournaments</option>
-          <option value="mega">GW 34 Mega Pot</option>
-          <option value="weekend">Weekend Warrior</option>
-          <option value="season">Season Long</option>
         </select>
       </div>
     </div>

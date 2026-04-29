@@ -1,5 +1,6 @@
 // Leaderboard page - Load live leaderboard data
 document.addEventListener('DOMContentLoaded', async function() {
+  await loadTournamentsDropdown();
   await loadLeaderboard();
   
   // Handle tournament filter change
@@ -10,6 +11,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 });
+
+async function loadTournamentsDropdown() {
+  const dropdown = document.getElementById('tournament-filter');
+  if (!dropdown) return;
+  
+  try {
+    const response = await fetch('/api/tournaments?status=live');
+    if (!response.ok) throw new Error('Failed to load tournaments');
+    
+    const data = await response.json();
+    
+    // Keep the "All Tournaments" option, add real tournaments
+    let options = '<option value="all">All Tournaments</option>';
+    
+    if (data.tournaments && data.tournaments.length > 0) {
+      data.tournaments.forEach(t => {
+        options += `<option value="${t.id}">${t.name}</option>`;
+      });
+    }
+    
+    dropdown.innerHTML = options;
+    
+  } catch (error) {
+    console.error('Error loading tournaments:', error);
+    // Keep default "All Tournaments" only on error
+  }
+}
 
 async function loadLeaderboard(tournament = 'all') {
   const tbody = document.querySelector('.leaderboard-table tbody');
@@ -32,20 +60,23 @@ async function loadLeaderboard(tournament = 'all') {
     
     const data = await response.json();
     
+    // Update count text
+    if (countSpan) {
+      const total = data.pagination?.total || data.leaderboard?.length || 0;
+      countSpan.textContent = total > 0 
+        ? `Showing 1-${Math.min(data.leaderboard.length, 50)} of ${total} players`
+        : 'No players yet';
+    }
+    
+    // Update Top 3 Podium with real data or placeholders
+    updatePodium(data.leaderboard || []);
+    
+    // Render full leaderboard or empty state
     if (!data.leaderboard || data.leaderboard.length === 0) {
       tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-muted">No leaderboard data available.</td></tr>';
       return;
     }
     
-    // Update count text
-    if (countSpan) {
-      countSpan.textContent = `Showing 1-${data.leaderboard.length} of ${data.pagination?.total || data.leaderboard.length} players`;
-    }
-    
-    // Update Top 3 Podium
-    updatePodium(data.leaderboard.slice(0, 3));
-    
-    // Render full leaderboard
     tbody.innerHTML = data.leaderboard.map((entry, index) => {
       const rank = entry.rank || index + 1;
       const rankClass = rank <= 3 ? `rank-${rank}` : 'rank';
@@ -82,35 +113,50 @@ async function loadLeaderboard(tournament = 'all') {
   }
 }
 
-function updatePodium(top3) {
+function updatePodium(leaderboard) {
   const podium = document.querySelector('.grid.grid-3.mb-3');
-  if (!podium || top3.length === 0) return;
+  if (!podium) return;
   
   const medals = ['🥇', '🥈', '🥉'];
-  const scales = ['1.05', '1', '1'];
   const sizes = ['64px', '56px', '56px'];
   const fontSizes = ['1.5rem', '1.25rem', '1.25rem'];
   const pointSizes = ['2rem', '1.75rem', '1.75rem'];
   
-  top3.forEach((entry, index) => {
-    const card = podium.children[index];
-    if (!card) return;
+  // Update all 3 podium positions
+  for (let i = 0; i < 3; i++) {
+    const card = podium.children[i];
+    if (!card) continue;
     
-    const initials = entry.user?.avatar_initials || 
-                    (entry.user?.display_name || entry.user?.username || '?').substring(0, 2).toUpperCase();
-    const displayName = entry.user?.display_name || 'Unknown';
-    const username = entry.user?.username || 'unknown';
-    const points = entry.total_points || 0;
+    const entry = leaderboard[i];
     
-    card.innerHTML = `
-      <div style="font-size: ${index === 0 ? '3rem' : '2.5rem'}; margin-bottom: 0.5rem;">${medals[index]}</div>
-      <div class="player-avatar" style="margin: 0 auto 1rem; width: ${sizes[index]}; height: ${sizes[index]}; font-size: ${fontSizes[index]}; background-color: ${getAvatarColor(index + 1)};">${initials}</div>
-      <div style="font-size: ${index === 0 ? '1.25rem' : '1.1rem'}; font-weight: ${index === 0 ? '700' : '600'};">${displayName}</div>
-      <div class="text-muted mb-2">@${username}</div>
-      <div style="font-size: ${pointSizes[index]}; font-weight: 700; color: ${index === 0 ? 'var(--accent-green)' : 'var(--text-primary)'};">${points.toLocaleString()}</div>
-      <div class="text-muted">Total Points</div>
-    `;
-  });
+    if (entry) {
+      // Real player data
+      const initials = entry.user?.avatar_initials || 
+                      (entry.user?.display_name || entry.user?.username || '?').substring(0, 2).toUpperCase();
+      const displayName = entry.user?.display_name || 'Unknown';
+      const username = entry.user?.username || 'unknown';
+      const points = entry.total_points || 0;
+      
+      card.innerHTML = `
+        <div style="font-size: ${i === 0 ? '3rem' : '2.5rem'}; margin-bottom: 0.5rem;">${medals[i]}</div>
+        <div class="player-avatar" style="margin: 0 auto 1rem; width: ${sizes[i]}; height: ${sizes[i]}; font-size: ${fontSizes[i]}; background-color: ${getAvatarColor(i + 1)};">${initials}</div>
+        <div style="font-size: ${i === 0 ? '1.25rem' : '1.1rem'}; font-weight: ${i === 0 ? '700' : '600'};">${displayName}</div>
+        <div class="text-muted mb-2">@${username}</div>
+        <div style="font-size: ${pointSizes[i]}; font-weight: 700; color: ${i === 0 ? 'var(--accent-green)' : 'var(--text-primary)'};">${points.toLocaleString()}</div>
+        <div class="text-muted">Total Points</div>
+      `;
+    } else {
+      // Empty slot - show medal but no fake data
+      card.innerHTML = `
+        <div style="font-size: ${i === 0 ? '3rem' : '2.5rem'}; margin-bottom: 0.5rem;">${medals[i]}</div>
+        <div class="player-avatar" style="margin: 0 auto 1rem; width: ${sizes[i]}; height: ${sizes[i]}; font-size: ${fontSizes[i]}; background-color: var(--bg-hover); color: var(--text-secondary);">—</div>
+        <div style="font-size: ${i === 0 ? '1.25rem' : '1.1rem'}; font-weight: ${i === 0 ? '700' : '600'}; color: var(--text-secondary);">—</div>
+        <div class="text-muted mb-2">—</div>
+        <div style="font-size: ${pointSizes[i]}; font-weight: 700; color: var(--text-secondary);">—</div>
+        <div class="text-muted">Total Points</div>
+      `;
+    }
+  }
 }
 
 function getAvatarColor(rank) {
