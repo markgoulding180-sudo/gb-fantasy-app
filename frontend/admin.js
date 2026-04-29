@@ -49,6 +49,13 @@ async function launchTournament() {
   try {
     const token = localStorage.getItem('gbf_token');
     
+    // Get current gameweek first
+    log('Getting current gameweek...');
+    const gwResponse = await fetch('/api/current-gameweek');
+    const gwData = await gwResponse.json();
+    const currentGameweek = gwData.next_gameweek || gwData.current_gameweek || 35;
+    log(`Current gameweek: ${currentGameweek}`);
+    
     // Step 1: Sync fixtures
     log('Syncing fixtures from FPL API...');
     const syncResponse = await fetch('/api/sync-fixtures', {
@@ -76,10 +83,10 @@ async function launchTournament() {
       },
       body: JSON.stringify({
         action: 'create',
-        name: `GW Tournament - £20 Entry`,
+        name: `GW${currentGameweek} Tournament - £20 Entry`,
         entry_fee: 20,
         prize_pool: 0,
-        gameweek: syncData.gameweek || 34,
+        gameweek: currentGameweek,
         max_entries: 100,
         closes_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
       })
