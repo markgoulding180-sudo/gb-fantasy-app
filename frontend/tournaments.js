@@ -31,9 +31,9 @@ async function loadTournaments() {
       tournamentsHTML += `
         <div class="tournament-card live" style="padding: 2rem; border: 2px solid var(--accent-green); margin-bottom: 1rem; position: relative;">
           ${isEntered ? `
-            <div style="position: absolute; top: 1rem; right: 1rem; text-align: center;">
-              <img src="assets/user-badge.png" alt="Entered" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-green);">
-              <div style="font-weight: 600; color: var(--accent-green); margin-top: 0.5rem; font-size: 0.875rem;">${user.display_name}</div>
+            <div class="user-badge-container" style="position: absolute; top: 1rem; right: 1rem; text-align: center;">
+              <img src="assets/user-badge.png" alt="Entered" class="user-badge-img" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-green);">
+              <div class="user-badge-name" style="font-weight: 600; color: var(--accent-green); margin-top: 0.5rem; font-size: 0.875rem;">${user.display_name}</div>
             </div>
           ` : ''}
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; ${isEntered ? 'padding-right: 100px;' : ''}">

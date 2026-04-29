@@ -809,6 +809,23 @@ body {
   .form-input {
     font-size: 16px;
   }
+  
+  /* User badge on mobile - BIGGER */
+  .user-badge-container {
+    top: 0.5rem !important;
+    right: 0.5rem !important;
+  }
+  
+  .user-badge-img {
+    width: 100px !important;
+    height: 100px !important;
+    border-width: 4px !important;
+  }
+  
+  .user-badge-name {
+    font-size: 0.8rem !important;
+    margin-top: 0.25rem !important;
+  }
 }
 
 /* Utility Classes */
