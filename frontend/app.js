@@ -6,7 +6,7 @@ const API_BASE = '/api';
 
 // Supabase client configuration (public anon key - safe for frontend)
 const SUPABASE_URL = 'https://sdevgsxrmontdlysjwuq.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkZXZnc3hybW9udGRseXNqd3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4MjY0MDAsImV4cCI6MjA2MTQwMjQwMH0.example_anon_key';
+const SUPABASE_ANON_KEY = 'sb_publishable_qQ94OstBkCkrNrkZskU7MQ_QMkidT6A';
 
 // Initialize Supabase client
 let supabase = null;
