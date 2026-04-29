@@ -8,6 +8,12 @@ const API_BASE = '/api';
 const SUPABASE_URL = 'https://your-project.supabase.co'; // Will be replaced by Netlify env
 const SUPABASE_KEY = 'your-anon-key'; // Will be replaced by Netlify env
 
+// Initialize Supabase client
+let supabase = null;
+if (typeof createClient !== 'undefined') {
+  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
 // Auth state
 let currentUser = null;
 let authToken = localStorage.getItem('gbf_token') || null;
@@ -28,22 +34,20 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initApp() {
-  // Refresh token if exists
+  // Refresh token client-side using Supabase - no API endpoint needed
   const refreshToken = localStorage.getItem('gbf_refresh');
-  if (refreshToken) {
+  if (refreshToken && supabase) {
     try {
-      // Call refresh endpoint
-      const response = await fetch(`${API_BASE}/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken })
+      const { data, error } = await supabase.auth.refreshSession({ 
+        refresh_token: refreshToken 
       });
-      
-      if (response.ok) {
-        const data = await response.json();
+      if (data?.session) {
         localStorage.setItem('gbf_token', data.session.access_token);
         localStorage.setItem('gbf_refresh', data.session.refresh_token);
         authToken = data.session.access_token;
+        console.log('Token refreshed successfully');
+      } else {
+        console.log('Refresh failed, user needs to log in again');
       }
     } catch (error) {
       console.error('Token refresh failed:', error);
