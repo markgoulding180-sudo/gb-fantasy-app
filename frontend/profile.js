@@ -31,17 +31,8 @@ async function loadProfile() {
       const data = await response.json();
       const userEntry = data.leaderboard?.find(e => e.user.id === user.id);
       
-      if (userEntry) {
-        document.getElementById('stat-points').textContent = userEntry.total_points || 0;
-        document.getElementById('stat-rank').textContent = '#' + (userEntry.rank || '--');
-        document.getElementById('stat-correct').textContent = userEntry.correct_scores || 0;
-        
-        // Calculate accuracy
-        const accuracy = userEntry.total_predictions > 0 
-          ? Math.round((userEntry.correct_results / userEntry.total_predictions) * 100)
-          : 0;
-        document.getElementById('stat-accuracy').textContent = accuracy + '%';
-      }
+      // Tournament stats will be loaded by loadActiveTournament
+      // Global stats removed - not relevant for tournament mode
     }
     
   } catch (error) {
@@ -74,8 +65,9 @@ async function loadActiveTournament() {
       return;
     }
     
-    // Fetch leaderboard to get user's rank
+    // Fetch leaderboard to get user's rank and stats
     let userRank = null;
+    let userPoints = 0;
     try {
       const lbResponse = await fetch(`/api/tournaments?leaderboard=true&tournament_id=${tournament.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -85,7 +77,12 @@ async function loadActiveTournament() {
         const userEntry = lbData.leaderboard?.find(e => e.user_id === JSON.parse(localStorage.getItem('gbf_user')).id);
         if (userEntry) {
           userRank = userEntry.rank;
+          userPoints = userEntry.entry_points || 0;
         }
+        
+        // Update tournament stats
+        document.getElementById('stat-tournament-points').textContent = userPoints;
+        document.getElementById('stat-tournament-rank').textContent = userRank ? '#' + userRank : '--';
       }
     } catch (e) {
       console.error('Error fetching leaderboard:', e);
@@ -216,6 +213,9 @@ async function loadUserPredictions() {
     if (!response.ok) throw new Error('Failed to load predictions');
     
     const data = await response.json();
+    
+    // Update predictions count stat
+    document.getElementById('stat-predictions').textContent = data.predictions?.length || 0;
     
     if (!data.predictions || data.predictions.length === 0) {
       container.innerHTML = `
