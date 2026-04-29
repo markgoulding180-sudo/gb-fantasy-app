@@ -81,10 +81,13 @@ async function launchTournament() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
+      const tournamentName = document.getElementById('tournament-name-input')?.value || `GW${currentGameweek} Tournament`;
+      const entryFee = parseInt(document.getElementById('tournament-fee-input')?.value) || 20;
+      
       body: JSON.stringify({
         action: 'create',
-        name: `GW${currentGameweek} Tournament - £20 Entry`,
-        entry_fee: 20,
+        name: tournamentName,
+        entry_fee: entryFee,
         prize_pool: 0,
         gameweek: currentGameweek,
         max_entries: 100,
