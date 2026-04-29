@@ -28,6 +28,28 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initApp() {
+  // Refresh token if exists
+  const refreshToken = localStorage.getItem('gbf_refresh');
+  if (refreshToken) {
+    try {
+      // Call refresh endpoint
+      const response = await fetch(`${API_BASE}/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('gbf_token', data.session.access_token);
+        localStorage.setItem('gbf_refresh', data.session.refresh_token);
+        authToken = data.session.access_token;
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+    }
+  }
+  
   // Check for existing session
   if (authToken) {
     await validateSession();

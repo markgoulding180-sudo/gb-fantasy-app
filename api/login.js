@@ -13,6 +13,35 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
+  // Handle token refresh
+  if (req.method === 'POST' && req.body.refresh_token) {
+    try {
+      const supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_KEY
+      );
+      
+      const { data, error } = await supabase.auth.refreshSession({
+        refresh_token: req.body.refresh_token
+      });
+      
+      if (error || !data.session) {
+        return res.status(401).json({ error: 'Invalid refresh token' });
+      }
+      
+      return res.status(200).json({
+        session: {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at
+        }
+      });
+      
+    } catch (error) {
+      return res.status(500).json({ error: 'Refresh failed', details: error.message });
+    }
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
