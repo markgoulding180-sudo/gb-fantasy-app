@@ -108,6 +108,7 @@ module.exports = async (req, res) => {
             name,
             entry_fee: entry_fee || 0,
             prize_pool: prize_pool || 0,
+            top_prize: prize_pool || 0,
             gameweek,
             max_entries: max_entries || 100,
             current_entries: 0,
