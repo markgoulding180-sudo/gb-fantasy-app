@@ -14,14 +14,15 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  // Use SUPABASE_SECRET for POST to bypass RLS
-  const supabaseKey = req.method === 'POST' 
-    ? process.env.SUPABASE_SECRET 
-    : process.env.SUPABASE_KEY;
-  
+  // Create clients - admin client for auth verification, regular for data
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    supabaseKey
+    process.env.SUPABASE_KEY
+  );
+  
+  const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SECRET
   );
 
   // GET - List tournaments
@@ -93,17 +94,12 @@ module.exports = async (req, res) => {
       }
 
       const token = authHeader.replace('Bearer ', '');
-      console.log('Token received:', token.substring(0, 20) + '...');
       
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      // Use admin client to verify JWT
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
-      if (authError) {
-        console.error('Auth error:', authError);
-        return res.status(401).json({ error: 'Invalid or expired token', details: authError.message });
-      }
-      
-      if (!user) {
-        return res.status(401).json({ error: 'User not found' });
+      if (authError || !user) {
+        return res.status(401).json({ error: 'Invalid or expired token' });
       }
 
       const { action, tournament_id, name, entry_fee, prize_pool, gameweek, max_entries, closes_at } = req.body;

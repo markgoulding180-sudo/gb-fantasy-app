@@ -44,15 +44,19 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
-  // Use SUPABASE_SECRET for POST to bypass RLS
-  const supabaseKey = req.method === 'POST' 
-    ? process.env.SUPABASE_SECRET 
-    : process.env.SUPABASE_KEY;
-  
+  // Create clients - admin for auth verification and POST operations
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    supabaseKey
+    process.env.SUPABASE_KEY
   );
+  
+  const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SECRET
+  );
+  
+  // Use admin client for POST operations
+  const dbClient = req.method === 'POST' ? supabaseAdmin : supabase;
 
   // GET - Fetch fixtures for a gameweek
   if (req.method === 'GET') {
@@ -79,7 +83,7 @@ module.exports = async (req, res) => {
       if (authHeader) {
         const token = authHeader.replace('Bearer ', '');
         try {
-          const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+          const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
           
           if (userError) {
             console.error('Auth error getting user:', userError);
@@ -130,7 +134,7 @@ module.exports = async (req, res) => {
       // Verify the JWT token and get user
       let user;
       try {
-        const { data: userData, error: userError } = await supabase.auth.getUser(token);
+        const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
         
         if (userError) {
           console.error('Auth error - getUser failed:', userError);
