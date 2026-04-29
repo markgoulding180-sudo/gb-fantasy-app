@@ -230,6 +230,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       
       alert('Predictions saved successfully!');
       
+      // Redirect to profile page
+      window.location.href = '/profile.html';
+      
     } catch (error) {
       console.error('Error submitting predictions:', error);
       alert('Error submitting predictions: ' + error.message);

@@ -193,21 +193,32 @@ async function loadUserPredictions() {
       return;
     }
     
-    // Show predictions summary
-    const total = data.predictions.length;
-    const submitted = data.predictions.filter(p => p.predicted_result).length;
-    
-    container.innerHTML = `
-      <div style="text-align: center; padding: 1rem;">
-        <p style="font-size: 1.25rem;">
-          <i class="fas fa-check-circle text-green"></i>
-          ${submitted} of ${total} predictions submitted
-        </p>
-        <a href="predictions.html" class="btn btn-primary btn-sm" style="margin-top: 1rem;">
-          <i class="fas fa-edit"></i> ${submitted < total ? 'Complete Predictions' : 'View/Edit'}
+    // Show submitted predictions list
+    let predictionsHTML = '<div style="max-height: 300px; overflow-y: auto;">';
+    data.predictions.forEach((pred, index) => {
+      const match = data.matches.find(m => m.id === pred.match_id);
+      if (match) {
+        predictionsHTML += `
+          <div style="padding: 0.75rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600;">${match.home_team} vs ${match.away_team}</div>
+              <div class="text-muted" style="font-size: 0.875rem;">Result: ${pred.predicted_result} | Score: ${pred.home_score}-${pred.away_score}</div>
+            </div>
+            <i class="fas fa-check-circle text-green"></i>
+          </div>
+        `;
+      }
+    });
+    predictionsHTML += '</div>';
+    predictionsHTML += `
+      <div style="text-align: center; margin-top: 1rem;">
+        <a href="predictions.html" class="btn btn-primary btn-sm">
+          <i class="fas fa-edit"></i> Edit Predictions
         </a>
       </div>
     `;
+    
+    container.innerHTML = predictionsHTML;
     
   } catch (error) {
     console.error('Error loading predictions:', error);
