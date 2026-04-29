@@ -74,8 +74,24 @@ async function loadActiveTournament() {
       return;
     }
     
-    // Check if user is already entered (by checking if current_entries > 0 for this test)
-    // In production, you'd query tournament_entries to check specific user
+    // Fetch leaderboard to get user's rank
+    let userRank = null;
+    try {
+      const lbResponse = await fetch(`/api/tournaments?leaderboard=true&tournament_id=${tournament.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (lbResponse.ok) {
+        const lbData = await lbResponse.json();
+        const userEntry = lbData.leaderboard?.find(e => e.user_id === JSON.parse(localStorage.getItem('gbf_user')).id);
+        if (userEntry) {
+          userRank = userEntry.rank;
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching leaderboard:', e);
+    }
+    
+    // Check if user is already entered
     const isEntered = tournament.current_entries > 0;
     
     if (isEntered) {
@@ -86,6 +102,7 @@ async function loadActiveTournament() {
           </h4>
           <p style="font-size: 1.25rem; font-weight: 600;">${tournament.name}</p>
           <p class="text-muted">Entry Fee: £${tournament.entry_fee}</p>
+          ${userRank ? `<p style="font-size: 1.5rem; font-weight: 700; color: var(--accent-amber);">Rank #${userRank}</p>` : ''}
           <div style="margin-top: 1rem;">
             <a href="predictions.html" class="btn btn-primary">
               <i class="fas fa-futbol"></i> Edit Predictions

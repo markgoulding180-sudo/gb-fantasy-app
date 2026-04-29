@@ -31,6 +31,32 @@ module.exports = async (req, res) => {
       const params = new URLSearchParams(req.query);
       const status = params.get('status'); // live, upcoming, closed, finished
       const gameweek = params.get('gameweek');
+      const tournamentId = params.get('tournament_id');
+      const leaderboard = params.get('leaderboard'); // if set, return leaderboard
+      
+      // Return leaderboard for specific tournament
+      if (leaderboard && tournamentId) {
+        const { data: entries, error: entriesError } = await supabaseAdmin
+          .from('tournament_entries')
+          .select('*, users:user_id(username, display_name)')
+          .eq('tournament_id', tournamentId)
+          .order('entry_points', { ascending: false });
+        
+        if (entriesError) {
+          return res.status(500).json({ error: 'Failed to fetch leaderboard', details: entriesError.message });
+        }
+        
+        // Add rank to each entry
+        const rankedEntries = (entries || []).map((entry, index) => ({
+          ...entry,
+          rank: index + 1
+        }));
+        
+        return res.status(200).json({
+          tournament_id: tournamentId,
+          leaderboard: rankedEntries
+        });
+      }
 
       let query = supabase
         .from('tournaments')
