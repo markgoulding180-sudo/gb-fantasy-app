@@ -229,7 +229,7 @@ module.exports = async (req, res) => {
           } else {
             // Create a placeholder match
             console.log(`Creating placeholder match for temp ID:`, matchId);
-            const { data: newMatch, error: createError } = await supabase
+            const { data: newMatch, error: createError } = await supabaseAdmin
               .from('matches')
               .insert({
                 gameweek: parseInt(gameweek),
@@ -265,8 +265,8 @@ module.exports = async (req, res) => {
 
       console.log('Inserting predictions:', predictionsToInsert);
 
-      // Upsert predictions (insert or update if exists)
-      const { data, error } = await supabase
+      // Upsert predictions (insert or update if exists) - use admin client for RLS
+      const { data, error } = await supabaseAdmin
         .from('predictions')
         .upsert(predictionsToInsert, {
           onConflict: 'user_id,match_id',
