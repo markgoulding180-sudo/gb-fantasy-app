@@ -4,28 +4,14 @@
 // API Base URL - Vercel API Routes
 const API_BASE = '/api';
 
-// Supabase client configuration - loaded from API
-let SUPABASE_URL = null;
-let SUPABASE_KEY = null;
-let supabase = null;
+// Supabase client configuration (public anon key - safe for frontend)
+const SUPABASE_URL = 'https://sdevgsxrmontdlysjwuq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkZXZnc3hybW9udGRseXNqd3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4MjY0MDAsImV4cCI6MjA2MTQwMjQwMH0.example_anon_key';
 
-// Initialize Supabase client after fetching config
-async function initSupabase() {
-  try {
-    const response = await fetch('/api/config');
-    if (response.ok) {
-      const config = await response.json();
-      SUPABASE_URL = config.supabase_url;
-      SUPABASE_KEY = config.supabase_anon_key;
-      
-      if (typeof createClient !== 'undefined' && SUPABASE_URL && SUPABASE_KEY) {
-        supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('Supabase initialized');
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load Supabase config:', error);
-  }
+// Initialize Supabase client
+let supabase = null;
+if (typeof createClient !== 'undefined') {
+  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
 // Auth state
@@ -43,8 +29,7 @@ if (storedUser) {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', async function() {
-  await initSupabase();
+document.addEventListener('DOMContentLoaded', function() {
   initApp();
 });
 
