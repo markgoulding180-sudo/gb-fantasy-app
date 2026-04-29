@@ -4,14 +4,28 @@
 // API Base URL - Vercel API Routes
 const API_BASE = '/api';
 
-// Supabase client configuration (anon key for frontend)
-const SUPABASE_URL = 'https://your-project.supabase.co'; // Will be replaced by Netlify env
-const SUPABASE_KEY = 'your-anon-key'; // Will be replaced by Netlify env
-
-// Initialize Supabase client
+// Supabase client configuration - loaded from API
+let SUPABASE_URL = null;
+let SUPABASE_KEY = null;
 let supabase = null;
-if (typeof createClient !== 'undefined') {
-  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Initialize Supabase client after fetching config
+async function initSupabase() {
+  try {
+    const response = await fetch('/api/config');
+    if (response.ok) {
+      const config = await response.json();
+      SUPABASE_URL = config.supabase_url;
+      SUPABASE_KEY = config.supabase_anon_key;
+      
+      if (typeof createClient !== 'undefined' && SUPABASE_URL && SUPABASE_KEY) {
+        supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log('Supabase initialized');
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load Supabase config:', error);
+  }
 }
 
 // Auth state
@@ -29,7 +43,8 @@ if (storedUser) {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+  await initSupabase();
   initApp();
 });
 
