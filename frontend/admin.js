@@ -68,7 +68,7 @@ async function launchTournament() {
     
     // Step 2: Create tournament
     log('Creating tournament...');
-    const tournamentResponse = await fetch('/api/admin/create-tournament', {
+    const tournamentResponse = await fetch('/api/create-tournament', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
