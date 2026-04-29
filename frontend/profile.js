@@ -74,21 +74,41 @@ async function loadActiveTournament() {
       return;
     }
     
-    // Always show enter button for now (simplified)
-    container.innerHTML = `
-      <div style="text-align: center; padding: 1rem;">
-        <h4 style="margin-bottom: 0.5rem;">${tournament.name}</h4>
-        <p style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green);">
-          £${tournament.entry_fee} Entry
-        </p>
-        <p class="text-muted">4 Week Tournament</p>
-        <div style="margin-top: 1rem;">
-          <button class="btn btn-green btn-lg" onclick="enterTournament('${tournament.id}')">
-            <i class="fas fa-ticket-alt"></i> Enter Now - £${tournament.entry_fee}
-          </button>
+    // Check if user is already entered (by checking if current_entries > 0 for this test)
+    // In production, you'd query tournament_entries to check specific user
+    const isEntered = tournament.current_entries > 0;
+    
+    if (isEntered) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 1rem;">
+          <h4 style="margin-bottom: 0.5rem; color: var(--accent-green);">
+            <i class="fas fa-check-circle"></i> Entered
+          </h4>
+          <p style="font-size: 1.25rem; font-weight: 600;">${tournament.name}</p>
+          <p class="text-muted">Entry Fee: £${tournament.entry_fee}</p>
+          <div style="margin-top: 1rem;">
+            <a href="predictions.html" class="btn btn-primary">
+              <i class="fas fa-futbol"></i> Edit Predictions
+            </a>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 1rem;">
+          <h4 style="margin-bottom: 0.5rem;">${tournament.name}</h4>
+          <p style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green);">
+            £${tournament.entry_fee} Entry
+          </p>
+          <p class="text-muted">4 Week Tournament</p>
+          <div style="margin-top: 1rem;">
+            <button class="btn btn-green btn-lg" onclick="enterTournament('${tournament.id}')">
+              <i class="fas fa-ticket-alt"></i> Enter Now - £${tournament.entry_fee}
+            </button>
+          </div>
+        </div>
+      `;
+    }
     
   } catch (error) {
     console.error('Error loading tournament:', error);
