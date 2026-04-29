@@ -120,7 +120,12 @@ module.exports = async (req, res) => {
 
         if (error) {
           console.error('Create tournament error:', error);
-          return res.status(500).json({ error: 'Failed to create tournament', details: error.message });
+          return res.status(500).json({ 
+            error: 'Failed to create tournament', 
+            details: error.message,
+            code: error.code,
+            hint: error.hint
+          });
         }
 
         return res.status(201).json({

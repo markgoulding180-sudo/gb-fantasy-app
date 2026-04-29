@@ -86,7 +86,9 @@ async function launchTournament() {
     });
     
     if (!tournamentResponse.ok) {
-      throw new Error('Failed to create tournament');
+      const errorData = await tournamentResponse.json();
+      log(`Tournament error: ${JSON.stringify(errorData)}`, 'error');
+      throw new Error(errorData.details || errorData.error || 'Failed to create tournament');
     }
     
     const tournamentData = await tournamentResponse.json();
