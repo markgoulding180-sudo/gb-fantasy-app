@@ -93,10 +93,17 @@ module.exports = async (req, res) => {
       }
 
       const token = authHeader.replace('Bearer ', '');
+      console.log('Token received:', token.substring(0, 20) + '...');
+      
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-      if (authError || !user) {
-        return res.status(401).json({ error: 'Invalid or expired token' });
+      if (authError) {
+        console.error('Auth error:', authError);
+        return res.status(401).json({ error: 'Invalid or expired token', details: authError.message });
+      }
+      
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
       }
 
       const { action, tournament_id, name, entry_fee, prize_pool, gameweek, max_entries, closes_at } = req.body;
