@@ -153,76 +153,56 @@ module.exports = async (req, res) => {
       }
 
       // JOIN tournament (user action)
-      console.log('Join tournament - tournament_id:', tournament_id);
-      console.log('Join tournament - user.id:', user.id);
+      if (action === 'join') {
+        try {
+          console.log('Join action - tournament_id:', tournament_id, 'user_id:', user.id);
+          
+          if (!tournament_id) {
+            return res.status(400).json({ error: 'tournament_id is required' });
+          }
+
+          // Check if tournament exists and is open
+          const { data: tournament, error: tournamentError } = await supabase
+            .from('tournaments')
+            .select('*')
+            .eq('id', tournament_id)
+            .single();
+
+          if (tournamentError || !tournament) {
+            return res.status(404).json({ error: 'Tournament not found' });
+          }
+
+          if (tournament.status !== 'live') {
+            return res.status(400).json({ error: 'Tournament is not open for entries' });
+          }
+
+          // Create entry
+          const { data: entry, error: entryError } = await supabase
+            .from('tournament_entries')
+            .insert({
+              tournament_id: tournament_id,
+              user_id: user.id,
+              entry_points: 0,
+              entered_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          console.log('Insert result:', entry, 'Error:', entryError);
+
+          if (entryError) {
+            return res.status(400).json({ error: entryError.message });
+          }
+          
+          return res.status(200).json({ success: true, entry });
+          
+        } catch (err) {
+          console.error('Join handler crash:', err.message);
+          return res.status(500).json({ error: err.message });
+        }
+      }
       
-      if (!tournament_id) {
-        return res.status(400).json({ error: 'tournament_id is required' });
-      }
-
-      // Check if tournament exists and is open
-      const { data: tournament, error: tournamentError } = await supabase
-        .from('tournaments')
-        .select('*')
-        .eq('id', tournament_id)
-        .single();
-
-      if (tournamentError || !tournament) {
-        return res.status(404).json({ error: 'Tournament not found' });
-      }
-
-      if (tournament.status !== 'live') {
-        return res.status(400).json({ error: 'Tournament is not open for entries' });
-      }
-
-      if (tournament.max_entries && tournament.current_entries >= tournament.max_entries) {
-        return res.status(400).json({ error: 'Tournament is full' });
-      }
-
-      // Check if user already entered
-      const { data: existingEntry } = await supabase
-        .from('tournament_entries')
-        .select('id')
-        .eq('tournament_id', tournament_id)
-        .eq('user_id', user.id)
-        .single();
-
-      if (existingEntry) {
-        return res.status(409).json({ error: 'You have already entered this tournament' });
-      }
-
-      // Create entry
-      console.log('Creating entry with:', { tournament_id, user_id: user.id });
-      
-      const { data: entry, error: entryError } = await supabase
-        .from('tournament_entries')
-        .insert({
-          tournament_id,
-          user_id: user.id,
-          entry_points: 0
-        })
-        .select()
-        .single();
-
-      if (entryError) {
-        console.error('Entry creation error:', entryError);
-        return res.status(500).json({ 
-          error: 'Failed to enter tournament', 
-          details: entryError.message,
-          code: entryError.code
-        });
-      }
-
-      // Update tournament entry count
-      await supabase
-        .from('tournaments')
-        .update({ current_entries: tournament.current_entries + 1 })
-        .eq('id', tournament_id);
-
-      return res.status(201).json({
-        message: 'Successfully entered tournament',
-        entry
-      });
+      return res.status(400).json({ error: 'Invalid action' });
 
     } catch (error) {
       console.error('Tournaments POST error:', error);
