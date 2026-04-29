@@ -7,6 +7,8 @@ async function loadTournaments() {
   const container = document.getElementById('tournaments-list');
   if (!container) return;
   
+  const token = localStorage.getItem('gbf_token');
+  
   try {
     const response = await fetch('/api/tournaments?status=live');
     const data = await response.json();
@@ -18,6 +20,9 @@ async function loadTournaments() {
     
     // Show only the first (main) tournament
     const tournament = data.tournaments[0];
+    
+    // Check if user is entered (simplified - just show count for now)
+    const isEntered = tournament.current_entries > 0; // Simplified check
     
     container.innerHTML = `
       <div class="tournament-card live" style="padding: 2rem; border: 2px solid var(--accent-green);">
@@ -41,9 +46,10 @@ async function loadTournaments() {
           </div>
         </div>
         <div style="margin-top: 1.5rem;">
-          <a href="profile.html" class="btn btn-green btn-lg">
-            <i class="fas fa-ticket-alt"></i> Enter Tournament
-          </a>
+          ${tournament.current_entries > 0 
+            ? `<div style="color: var(--accent-green); font-weight: 600;"><i class="fas fa-check-circle"></i> ${tournament.current_entries} player${tournament.current_entries !== 1 ? 's' : ''} entered</div>`
+            : `<a href="profile.html" class="btn btn-green btn-lg"><i class="fas fa-ticket-alt"></i> Enter Tournament</a>`
+          }
         </div>
       </div>
     `;
