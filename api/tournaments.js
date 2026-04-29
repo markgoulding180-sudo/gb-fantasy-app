@@ -194,6 +194,12 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: entryError.message });
           }
           
+          // Update tournament entry count
+          await supabaseAdmin
+            .from('tournaments')
+            .update({ current_entries: tournament.current_entries + 1 })
+            .eq('id', tournament_id);
+          
           return res.status(200).json({ success: true, entry });
           
         } catch (err) {
