@@ -58,7 +58,7 @@ async function loadTournaments() {
           <div style="margin-top: 1rem;">
             ${isEntered 
               ? `<div style="color: var(--accent-green); font-weight: 600;"><i class="fas fa-check-circle"></i> Entered</div>`
-              : `<a href="profile.html" class="btn btn-green"><i class="fas fa-ticket-alt"></i> Enter Tournament</a>`
+              : `<button class="btn btn-green" onclick="enterTournamentFromList('${tournament.id}')"><i class="fas fa-ticket-alt"></i> Enter Tournament</button>`
             }
           </div>
         </div>
@@ -70,5 +70,38 @@ async function loadTournaments() {
   } catch (error) {
     console.error('Error loading tournaments:', error);
     container.innerHTML = '<p class="text-muted">Error loading tournaments. Please refresh.</p>';
+  }
+}
+
+async function enterTournamentFromList(tournamentId) {
+  const token = localStorage.getItem('gbf_token');
+  
+  if (!confirm('Enter this tournament?\n\nYou will use your existing GW35 predictions.')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/tournaments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ 
+        action: 'join',
+        tournament_id: tournamentId 
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to enter tournament');
+    }
+    
+    alert('Successfully entered tournament!');
+    window.location.reload();
+    
+  } catch (error) {
+    alert('Error: ' + error.message);
   }
 }

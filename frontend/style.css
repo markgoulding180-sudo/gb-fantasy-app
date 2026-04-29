@@ -810,21 +810,19 @@ body {
     font-size: 16px;
   }
   
-  /* User badge on mobile - BIGGER */
+  /* User badge on mobile */
   .user-badge-container {
     top: 0.5rem !important;
     right: 0.5rem !important;
   }
   
   .user-badge-img {
-    width: 100px !important;
-    height: 100px !important;
-    border-width: 4px !important;
+    width: 60px !important;
+    height: 60px !important;
   }
   
   .user-badge-name {
-    font-size: 0.8rem !important;
-    margin-top: 0.25rem !important;
+    font-size: 0.7rem !important;
   }
 }
 
