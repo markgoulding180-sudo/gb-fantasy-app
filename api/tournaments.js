@@ -176,8 +176,8 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'Tournament is not open for entries' });
           }
 
-          // Create entry
-          const { data: entry, error: entryError } = await supabase
+          // Create entry (use admin client to bypass RLS)
+          const { data: entry, error: entryError } = await supabaseAdmin
             .from('tournament_entries')
             .insert({
               tournament_id: tournament_id,
