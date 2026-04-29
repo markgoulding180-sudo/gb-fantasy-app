@@ -80,7 +80,9 @@ async function loadActiveTournament() {
           userPoints = userEntry.entry_points || 0;
         }
         
-        // Update tournament stats
+        // Update tournament header and stats
+        document.getElementById('tournament-name').textContent = tournament.name;
+        document.getElementById('tournament-status').innerHTML = `<span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.875rem;">${tournament.status.toUpperCase()}</span>`;
         document.getElementById('stat-tournament-points').textContent = userPoints;
         document.getElementById('stat-tournament-rank').textContent = userRank ? '#' + userRank : '--';
       }
