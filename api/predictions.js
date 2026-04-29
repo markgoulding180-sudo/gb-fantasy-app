@@ -82,27 +82,43 @@ module.exports = async (req, res) => {
 
       if (authHeader) {
         const token = authHeader.replace('Bearer ', '');
+        console.log('Predictions GET - Token received:', token.substring(0, 30) + '...');
+        
         try {
           const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
           
           if (userError) {
-            console.error('Auth error getting user:', userError);
-          } else if (user) {
-            const { data: predictions, error: predError } = await supabaseAdmin
-              .from('predictions')
-              .select('*')
-              .eq('user_id', user.id)
-              .eq('gameweek', gameweek);
-            
-            if (predError) {
-              console.error('Database error fetching predictions:', predError);
-            } else {
-              userPredictions = predictions || [];
-            }
+            console.error('Predictions GET - Auth error:', userError);
+            return res.status(401).json({ error: 'Invalid token', details: userError.message });
           }
+          
+          if (!user) {
+            console.error('Predictions GET - User not found');
+            return res.status(401).json({ error: 'User not found' });
+          }
+          
+          console.log('Predictions GET - User authenticated:', user.id);
+          
+          const { data: predictions, error: predError } = await supabaseAdmin
+            .from('predictions')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('gameweek', gameweek);
+          
+          if (predError) {
+            console.error('Predictions GET - Database error:', predError);
+            return res.status(500).json({ error: 'Failed to fetch predictions', details: predError.message });
+          }
+          
+          console.log('Predictions GET - Found', predictions?.length || 0, 'predictions');
+          userPredictions = predictions || [];
+          
         } catch (authErr) {
-          console.error('Exception getting user from token:', authErr);
+          console.error('Predictions GET - Exception:', authErr);
+          return res.status(500).json({ error: 'Auth failed', details: authErr.message });
         }
+      } else {
+        console.log('Predictions GET - No auth header');
       }
 
       return res.status(200).json({
