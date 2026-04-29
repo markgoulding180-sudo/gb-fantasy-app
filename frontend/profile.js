@@ -113,11 +113,20 @@ async function loadActiveTournament() {
 async function enterTournament(tournamentId) {
   const token = localStorage.getItem('gbf_token');
   
+  console.log('Token from localStorage:', token ? token.substring(0, 20) + '...' : 'NULL');
+  
+  if (!token) {
+    alert('Not logged in. Please log in again.');
+    window.location.href = '/login.html';
+    return;
+  }
+  
   if (!confirm('Enter this tournament for £20?\n\nPayment processing will be added soon.')) {
     return;
   }
   
   try {
+    console.log('Sending request with token...');
     const response = await fetch('/api/tournaments', {
       method: 'POST',
       headers: {
