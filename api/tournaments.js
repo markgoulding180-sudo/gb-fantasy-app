@@ -94,13 +94,23 @@ module.exports = async (req, res) => {
       }
 
       const token = authHeader.replace('Bearer ', '');
+      console.log('Tournaments API - Token received:', token.substring(0, 30) + '...');
+      console.log('Tournaments API - SUPABASE_URL:', process.env.SUPABASE_URL);
       
       // Use admin client to verify JWT
       const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
-      if (authError || !user) {
-        return res.status(401).json({ error: 'Invalid or expired token' });
+      if (authError) {
+        console.error('Tournaments API - Auth error:', authError);
+        return res.status(401).json({ error: 'Invalid or expired token', details: authError.message });
       }
+      
+      if (!user) {
+        console.error('Tournaments API - User not found');
+        return res.status(401).json({ error: 'User not found' });
+      }
+      
+      console.log('Tournaments API - User authenticated:', user.id);
 
       const { action, tournament_id, name, entry_fee, prize_pool, gameweek, max_entries, closes_at } = req.body;
 
