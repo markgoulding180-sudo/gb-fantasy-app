@@ -88,7 +88,7 @@ module.exports = async (req, res) => {
           if (userError) {
             console.error('Auth error getting user:', userError);
           } else if (user) {
-            const { data: predictions, error: predError } = await supabase
+            const { data: predictions, error: predError } = await supabaseAdmin
               .from('predictions')
               .select('*')
               .eq('user_id', user.id)
