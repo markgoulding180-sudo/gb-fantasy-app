@@ -55,12 +55,16 @@ async function launchTournament() {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
+    log(`Sync response status: ${syncResponse.status}`);
+    
     if (!syncResponse.ok) {
-      throw new Error('Failed to sync fixtures');
+      const errorText = await syncResponse.text();
+      log(`Sync error: ${errorText}`, 'error');
+      throw new Error('Failed to sync fixtures: ' + syncResponse.status);
     }
     
     const syncData = await syncResponse.json();
-    log(`Synced ${syncData.matches?.length || 0} matches`);
+    log(`Synced ${syncData.matches?.length || 0} matches`, 'success');
     
     // Step 2: Create tournament
     log('Creating tournament...');
@@ -106,6 +110,7 @@ async function launchTournament() {
     refreshStatus();
     
   } catch (error) {
+    console.error('Launch tournament error:', error);
     log(`Error: ${error.message}`, 'error');
     alert('Failed to launch tournament: ' + error.message);
   }
