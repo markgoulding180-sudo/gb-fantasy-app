@@ -242,7 +242,7 @@ async function initPredictionsPage() {
   await loadGameweekInfo();
   
   // Load fixtures for selected gameweek
-  await loadFixtures(gameweekSelect ? gameweekSelect.value : '34');
+  await loadFixtures(gameweekSelect ? gameweekSelect.value : '35');
 
   // Gameweek selector change handler
   if (gameweekSelect) {
