@@ -75,15 +75,15 @@ async function launchTournament() {
     
     // Step 2: Create tournament
     log('Creating tournament...');
+    const tournamentName = document.getElementById('tournament-name-input')?.value || `GW${currentGameweek} Tournament`;
+    const entryFee = parseInt(document.getElementById('tournament-fee-input')?.value) || 20;
+    
     const tournamentResponse = await fetch('/api/tournaments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      const tournamentName = document.getElementById('tournament-name-input')?.value || `GW${currentGameweek} Tournament`;
-      const entryFee = parseInt(document.getElementById('tournament-fee-input')?.value) || 20;
-      
       body: JSON.stringify({
         action: 'create',
         name: tournamentName,
