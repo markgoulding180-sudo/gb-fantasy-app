@@ -68,13 +68,14 @@ async function launchTournament() {
     
     // Step 2: Create tournament
     log('Creating tournament...');
-    const tournamentResponse = await fetch('/api/create-tournament', {
+    const tournamentResponse = await fetch('/api/tournaments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
+        action: 'create',
         name: `GW Tournament - £20 Entry`,
         entry_fee: 20,
         prize_pool: 0,

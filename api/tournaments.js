@@ -79,7 +79,7 @@ module.exports = async (req, res) => {
     }
   }
 
-  // POST - Join a tournament
+  // POST - Create or Join a tournament
   if (req.method === 'POST') {
     try {
       const authHeader = req.headers.authorization;
@@ -94,8 +94,41 @@ module.exports = async (req, res) => {
         return res.status(401).json({ error: 'Invalid or expired token' });
       }
 
-      const { tournament_id } = req.body;
+      const { action, tournament_id, name, entry_fee, prize_pool, gameweek, max_entries, closes_at } = req.body;
 
+      // CREATE tournament (admin action)
+      if (action === 'create') {
+        if (!name || !gameweek) {
+          return res.status(400).json({ error: 'name and gameweek are required' });
+        }
+
+        const { data, error } = await supabase
+          .from('tournaments')
+          .insert({
+            name,
+            entry_fee: entry_fee || 0,
+            prize_pool: prize_pool || 0,
+            gameweek,
+            max_entries: max_entries || 100,
+            current_entries: 0,
+            status: 'live',
+            closes_at: closes_at || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Create tournament error:', error);
+          return res.status(500).json({ error: 'Failed to create tournament', details: error.message });
+        }
+
+        return res.status(201).json({
+          message: 'Tournament created successfully',
+          tournament: data
+        });
+      }
+
+      // JOIN tournament (user action)
       if (!tournament_id) {
         return res.status(400).json({ error: 'tournament_id is required' });
       }
