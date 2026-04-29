@@ -118,18 +118,28 @@ async function enterTournament(tournamentId) {
   }
   
   try {
-    const response = await fetch(`/api/tournaments/${tournamentId}/enter`, {
+    const response = await fetch('/api/tournaments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ entry_fee: 20 })
+      body: JSON.stringify({ 
+        action: 'join',
+        tournament_id: tournamentId 
+      })
     });
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to enter tournament');
+      const text = await response.text();
+      let errorMsg = 'Failed to enter tournament';
+      try {
+        const errorData = JSON.parse(text);
+        errorMsg = errorData.error || errorMsg;
+      } catch (e) {
+        errorMsg = text || errorMsg;
+      }
+      throw new Error(errorMsg);
     }
     
     alert('Successfully entered tournament!');
