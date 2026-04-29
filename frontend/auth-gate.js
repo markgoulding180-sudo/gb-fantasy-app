@@ -65,3 +65,16 @@ function updateNavbarForAuth() {
     console.error('Error updating navbar:', e);
   }
 }
+
+// Initialize mobile menu
+document.addEventListener('DOMContentLoaded', function() {
+  const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+  const navLinks = document.querySelector('.nav-links');
+  
+  if (mobileMenuBtn && navLinks) {
+    mobileMenuBtn.addEventListener('click', function() {
+      navLinks.classList.toggle('active');
+      navLinks.style.display = navLinks.classList.contains('active') ? 'flex' : 'none';
+    });
+  }
+});
