@@ -4,18 +4,26 @@ document.addEventListener('DOMContentLoaded', async function() {
   const fixtureList = document.querySelector('.fixture-list');
   const predictionsForm = document.getElementById('predictions-form');
   
-  // Default to gameweek 34
-  let currentGameweek = 34;
+  // Default to next gameweek for predictions
+  let currentGameweek = 35;
   
-  // Check for URL parameter
+  // Fetch current gameweek info
+  try {
+    const gwResponse = await fetch('/api/current-gameweek');
+    const gwData = await gwResponse.json();
+    currentGameweek = gwData.next_gameweek || gwData.current_gameweek || 35;
+  } catch (e) {
+    console.error('Failed to fetch gameweek:', e);
+  }
+  
+  // Check for URL parameter override
   const urlParams = new URLSearchParams(window.location.search);
   const urlGameweek = urlParams.get('gameweek');
   if (urlGameweek) {
     currentGameweek = parseInt(urlGameweek);
-    gameweekSelect.value = currentGameweek;
-  } else {
-    gameweekSelect.value = 34;
   }
+  
+  gameweekSelect.value = currentGameweek;
   
   // Load initial fixtures
   await loadFixtures(currentGameweek);
