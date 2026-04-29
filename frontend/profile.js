@@ -262,7 +262,7 @@ async function loadUserPredictions() {
     container.innerHTML = `
       <div class="empty-state">
         <i class="fas fa-exclamation-circle"></i>
-        <p>Error loading predictions</p>
+        <p>Error loading predictions: ${error.message}</p>
       </div>
     `;
   }
