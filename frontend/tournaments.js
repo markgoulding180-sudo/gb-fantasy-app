@@ -29,18 +29,18 @@ async function loadTournaments() {
       const isEntered = tournament.current_entries > 0 && user.display_name;
       
       tournamentsHTML += `
-        <div class="tournament-card live" style="padding: 2rem; border: 2px solid var(--accent-green); margin-bottom: 1rem;">
+        <div class="tournament-card live" style="padding: 2rem; border: 2px solid var(--accent-green); margin-bottom: 1rem; position: relative;">
           ${isEntered ? `
-            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; background: rgba(34, 197, 94, 0.1); padding: 0.75rem; border-radius: 0.5rem;">
-              <span style="font-weight: 600; color: var(--accent-green);">${user.display_name}</span>
-              <img src="assets/user-badge.png" alt="Entered" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+            <div style="position: absolute; top: 1rem; right: 1rem; text-align: center;">
+              <img src="assets/user-badge.png" alt="Entered" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-green);">
+              <div style="font-weight: 600; color: var(--accent-green); margin-top: 0.5rem; font-size: 0.875rem;">${user.display_name}</div>
             </div>
           ` : ''}
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; ${isEntered ? 'padding-right: 100px;' : ''}">
             <span class="tournament-status live">Live</span>
             <span class="text-muted"><i class="far fa-clock"></i> ${tournament.time_remaining || 'Open'}</span>
           </div>
-          <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">${tournament.name}</h2>
+          <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; ${isEntered ? 'padding-right: 100px;' : ''}">${tournament.name}</h2>
           <div style="display: flex; gap: 2rem; margin-top: 1rem;">
             <div>
               <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-green);">£${tournament.prize_pool || 0}</div>
