@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - GB Fantasy</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .profile-header {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: white;
+    }
+    .profile-info h1 {
+      margin-bottom: 0.5rem;
+    }
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .profile-stat {
+      text-align: center;
+      padding: 1rem;
+      background: var(--bg-hover);
+      border-radius: 0.5rem;
+    }
+    .profile-stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+    .profile-stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+    .dashboard-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+    .dashboard-card h3 {
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .prediction-history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: var(--bg-hover);
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .prediction-history-match {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .prediction-history-teams {
+      font-weight: 600;
+    }
+    .prediction-history-result {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .prediction-history-points {
+      text-align: right;
+    }
+    .points-positive {
+      color: var(--accent-green);
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+    .points-zero {
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+    }
+    .tournament-entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: var(--bg-hover);
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+      border-left: 3px solid var(--accent-amber);
+    }
+    .tournament-entry.live {
+      border-left-color: var(--accent-green);
+    }
+    .tournament-entry.finished {
+      border-left-color: var(--text-secondary);
+    }
+    .current-prediction {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: var(--bg-hover);
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .current-prediction-teams {
+      font-weight: 600;
+    }
+    .current-prediction-guess {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+    .rank-1 { background: var(--accent-amber); color: #000; }
+    .rank-2 { background: #94a3b8; color: #000; }
+    .rank-3 { background: #b45309; color: #fff; }
+    .rank-other { background: var(--bg-hover); color: var(--text-secondary); }
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+    }
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    .performance-chart {
+      height: 200px;
+      background: var(--bg-hover);
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      padding: 1rem;
+      gap: 0.5rem;
+    }
+    .chart-bar {
+      flex: 1;
+      background: var(--accent-green);
+      border-radius: 0.25rem 0.25rem 0 0;
+      min-height: 20px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .chart-bar:hover {
+      background: var(--accent-blue);
+    }
+    .chart-bar-label {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .chart-bar-value {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    @media (max-width: 768px) {
+      .profile-header {
+        flex-direction: column;
+        text-align: center;
+      }
+      .profile-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="logo">
+        <i class="fas fa-trophy"></i>
+        GB Fantasy
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="predictions.html"><i class="fas fa-futbol"></i> Predictions</a></li>
+        <li><a href="table.html"><i class="fas fa-table"></i> PL Table</a></li>
+        <li><a href="injuries.html"><i class="fas fa-medkit"></i> Injuries</a></li>
+        <li><a href="leaderboard.html"><i class="fas fa-chart-line"></i> Leaderboard</a></li>
+        <li><a href="tournaments.html"><i class="fas fa-trophy"></i> Tournaments</a></li>
+        <li><a href="profile.html" class="active"><i class="fas fa-user"></i> Profile</a></li>
+        <li><a href="admin.html"><i class="fas fa-cog"></i> Admin</a></li>
+      </ul>
+      <button class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="profile-avatar" id="profile-avatar">--</div>
+      <div class="profile-info">
+        <h1 id="profile-name">Loading...</h1>
+        <p class="text-muted" id="profile-username">@username</p>
+        <p style="margin-top: 0.5rem;"><i class="fas fa-calendar"></i> Member since <span id="join-date">--</span></p>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="profile-stats mb-3">
+      <div class="profile-stat">
+        <div class="profile-stat-value" id="stat-points">--</div>
+        <div class="profile-stat-label">Total Points</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-value" id="stat-rank">--</div>
+        <div class="profile-stat-label">Global Rank</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-value" id="stat-correct">--</div>
+        <div class="profile-stat-label">Correct Scores</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-value" id="stat-accuracy">--%</div>
+        <div class="profile-stat-label">Accuracy</div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Left Column -->
+      <div>
+        <!-- This Week's Predictions -->
+        <div class="dashboard-card mb-3">
+          <h3><i class="fas fa-futbol text-green"></i> This Week's Predictions</h3>
+          <div id="current-predictions">
+            <div class="empty-state">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>Loading predictions...</p>
+            </div>
+          </div>
+          <div style="margin-top: 1rem; text-align: center;">
+            <a href="predictions.html" class="btn btn-primary btn-sm">
+              <i class="fas fa-edit"></i> Edit Predictions
+            </a>
+          </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="dashboard-card mb-3">
+          <h3><i class="fas fa-chart-line text-blue"></i> Performance History</h3>
+          <div id="performance-chart" class="performance-chart">
+            <div class="empty-state" style="width: 100%;">
+              <i class="fas fa-chart-bar"></i>
+              <p>No data yet</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prediction History -->
+        <div class="dashboard-card">
+          <h3><i class="fas fa-history text-amber"></i> Prediction History</h3>
+          <div id="prediction-history">
+            <div class="empty-state">
+              <i class="fas fa-futbol"></i>
+              <p>No predictions yet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div>
+        <!-- My Tournaments -->
+        <div class="dashboard-card mb-3">
+          <h3><i class="fas fa-trophy text-amber"></i> My Tournaments</h3>
+          <div id="my-tournaments">
+            <div class="empty-state">
+              <i class="fas fa-trophy"></i>
+              <p>No tournament entries yet</p>
+            </div>
+          </div>
+          <div style="margin-top: 1rem; text-align: center;">
+            <a href="tournaments.html" class="btn btn-amber btn-sm">
+              <i class="fas fa-plus"></i> Enter Tournament
+            </a>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="dashboard-card mb-3">
+          <h3><i class="fas fa-bolt text-green"></i> Recent Activity</h3>
+          <div id="recent-activity">
+            <div class="empty-state" style="padding: 1rem;">
+              <p class="text-muted">No recent activity</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="dashboard-card">
+          <h3><i class="fas fa-medal text-amber"></i> Achievements</h3>
+          <div id="achievements">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <span class="tournament-status" style="background: rgba(34, 197, 94, 0.2); color: var(--accent-green);">
+                <i class="fas fa-check"></i> First Prediction
+              </span>
+              <span class="tournament-status" style="background: rgba(245, 158, 11, 0.2); color: var(--accent-amber);">
+                <i class="fas fa-star"></i> Top 10 Finish
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2026 GB Fantasy. Your Profile.</p>
+    </div>
+  </footer>
+
+  <script src="profile.js"></script>
+</body>
+</html>

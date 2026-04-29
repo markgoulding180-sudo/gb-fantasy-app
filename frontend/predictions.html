@@ -7,6 +7,23 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .team-shirt {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+    .team-logo {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .team-shirt {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  </style>
 </head>
 <body>
   <!-- Navigation -->
@@ -19,9 +36,14 @@
       <ul class="nav-links">
         <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
         <li><a href="predictions.html" class="active"><i class="fas fa-futbol"></i> Predictions</a></li>
+        <li><a href="table.html"><i class="fas fa-table"></i> PL Table</a></li>
+        <li><a href="injuries.html"><i class="fas fa-medkit"></i> Injuries</a></li>
         <li><a href="leaderboard.html"><i class="fas fa-chart-line"></i> Leaderboard</a></li>
         <li><a href="tournaments.html"><i class="fas fa-trophy"></i> Tournaments</a></li>
         <li><a href="register.html"><i class="fas fa-user-plus"></i> Register</a></li>
+        <li><a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+        <li><a href="admin.html"><i class="fas fa-cog"></i> Admin</a></li>
       </ul>
       <button class="mobile-menu-btn">
         <i class="fas fa-bars"></i>
@@ -67,11 +89,11 @@
           <div class="fixture-teams">
             <div class="team home">
               <div class="team-name">Arsenal</div>
-              <div class="team-logo">ARS</div>
+              <img src="shirts/arsenal.webp" alt="Arsenal" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">BHA</div>
+              <img src="shirts/brighton.webp" alt="Brighton" class="team-shirt">
               <div class="team-name">Brighton</div>
             </div>
           </div>
@@ -109,11 +131,11 @@
           <div class="fixture-teams">
             <div class="team home">
               <div class="team-name">Aston Villa</div>
-              <div class="team-logo">AVL</div>
+              <img src="shirts/aston villa.webp" alt="Aston Villa" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">NEW</div>
+              <img src="shirts/new castle.webp" alt="Newcastle" class="team-shirt">
               <div class="team-name">Newcastle</div>
             </div>
           </div>
@@ -151,11 +173,11 @@
           <div class="fixture-teams">
             <div class="team home">
               <div class="team-name">Bournemouth</div>
-              <div class="team-logo">BOU</div>
+              <img src="shirts/bournmouth.webp" alt="Bournemouth" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">MUN</div>
+              <img src="shirts/man u.webp" alt="Man United" class="team-shirt">
               <div class="team-name">Man United</div>
             </div>
           </div>
@@ -188,16 +210,16 @@
         <div class="fixture">
           <div class="fixture-header">
             <span><i class="far fa-clock"></i> Sat 26 Apr, 15:00</span>
-            <span class="text-muted">Portman Road</span>
+            <span class="text-muted">Elland Road</span>
           </div>
           <div class="fixture-teams">
             <div class="team home">
-              <div class="team-name">Ipswich</div>
-              <div class="team-logo">IPS</div>
+              <div class="team-name">Leeds</div>
+              <img src="shirts/leeds.webp" alt="Leeds" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">EVE</div>
+              <img src="shirts/everton.webp" alt="Everton" class="team-shirt">
               <div class="team-name">Everton</div>
             </div>
           </div>
@@ -230,16 +252,16 @@
         <div class="fixture">
           <div class="fixture-header">
             <span><i class="far fa-clock"></i> Sat 26 Apr, 15:00</span>
-            <span class="text-muted">King Power Stadium</span>
+            <span class="text-muted">Stadium of Light</span>
           </div>
           <div class="fixture-teams">
             <div class="team home">
-              <div class="team-name">Leicester</div>
-              <div class="team-logo">LEI</div>
+              <div class="team-name">Sunderland</div>
+              <img src="shirts/sunderland.webp" alt="Sunderland" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">LIV</div>
+              <img src="shirts/liverpool.webp" alt="Liverpool" class="team-shirt">
               <div class="team-name">Liverpool</div>
             </div>
           </div>
@@ -277,11 +299,11 @@
           <div class="fixture-teams">
             <div class="team home">
               <div class="team-name">Newcastle</div>
-              <div class="team-logo">NEW</div>
+              <img src="shirts/new castle.webp" alt="Newcastle" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">BRE</div>
+              <img src="shirts/brentford.webp" alt="Brentford" class="team-shirt">
               <div class="team-name">Brentford</div>
             </div>
           </div>
@@ -319,11 +341,11 @@
           <div class="fixture-teams">
             <div class="team home">
               <div class="team-name">Chelsea</div>
-              <div class="team-logo">CHE</div>
+              <img src="shirts/chelsea.webp" alt="Chelsea" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">WHU</div>
+              <img src="shirts/west ham.webp" alt="West Ham" class="team-shirt">
               <div class="team-name">West Ham</div>
             </div>
           </div>
@@ -361,12 +383,12 @@
           <div class="fixture-teams">
             <div class="team home">
               <div class="team-name">Everton</div>
-              <div class="team-logo">EVE</div>
+              <img src="shirts/everton.webp" alt="Everton" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">IPS</div>
-              <div class="team-name">Ipswich</div>
+              <img src="shirts/fullham.webp" alt="Fulham" class="team-shirt">
+              <div class="team-name">Fulham</div>
             </div>
           </div>
           <div class="prediction-form">
@@ -403,11 +425,11 @@
           <div class="fixture-teams">
             <div class="team home">
               <div class="team-name">Man City</div>
-              <div class="team-logo">MCI</div>
+              <img src="shirts/man city.webp" alt="Man City" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">TOT</div>
+              <img src="shirts/spurs.webp" alt="Tottenham" class="team-shirt">
               <div class="team-name">Tottenham</div>
             </div>
           </div>
@@ -445,11 +467,11 @@
           <div class="fixture-teams">
             <div class="team home">
               <div class="team-name">Wolves</div>
-              <div class="team-logo">WOL</div>
+              <img src="shirts/wovles temp.webp" alt="Wolves" class="team-shirt">
             </div>
             <span class="vs">VS</span>
             <div class="team away">
-              <div class="team-logo">CRY</div>
+              <img src="shirts/crystal.webp" alt="Crystal Palace" class="team-shirt">
               <div class="team-name">Crystal Palace</div>
             </div>
           </div>
