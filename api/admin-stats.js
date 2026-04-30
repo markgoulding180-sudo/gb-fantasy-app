@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
   try {
     const supabase = createClient(
       process.env.SUPABASE_URL,
-      process.env.SUPABASE_KEY
+      process.env.SUPABASE_SECRET
     );
 
     // GET requests - handle different actions
