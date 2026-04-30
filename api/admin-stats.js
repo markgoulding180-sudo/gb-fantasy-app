@@ -148,18 +148,28 @@ module.exports = async (req, res) => {
               })
               .eq('id', userId);
 
-            // Update tournament_entries for this gameweek
+            // Update tournament_entries - need to get gameweek for each tournament
             const { data: entries } = await supabase
               .from('tournament_entries')
               .select('id, tournament_id, entry_points')
               .eq('user_id', userId);
 
             for (const entry of entries || []) {
-              // Get all predictions for this user in tournaments they're entered in
+              // Get the tournament's gameweek
+              const { data: tournament } = await supabase
+                .from('tournaments')
+                .select('gameweek')
+                .eq('id', entry.tournament_id)
+                .single();
+
+              const tournamentGameweek = tournament?.gameweek;
+
+              // Get predictions for this user in this tournament's gameweek only
               const { data: tournamentPreds } = await supabase
                 .from('predictions')
                 .select('points_earned')
-                .eq('user_id', userId);
+                .eq('user_id', userId)
+                .eq('gameweek', tournamentGameweek);
 
               const entryTotal = (tournamentPreds || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
 
