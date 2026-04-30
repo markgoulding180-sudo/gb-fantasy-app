@@ -132,12 +132,13 @@ module.exports = async (req, res) => {
           for (const userId of userIds) {
             const { data: userPreds } = await supabase
               .from('predictions')
-              .select('points_earned')
+              .select('points_earned, gameweek')
               .eq('user_id', userId);
 
             const totalPoints = (userPreds || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
             const correctScores = (userPreds || []).filter(p => p.points_earned === 20).length;
 
+            // Update users table
             await supabase
               .from('users')
               .update({
@@ -146,6 +147,30 @@ module.exports = async (req, res) => {
                 updated_at: new Date().toISOString()
               })
               .eq('id', userId);
+
+            // Update tournament_entries for this gameweek
+            const { data: entries } = await supabase
+              .from('tournament_entries')
+              .select('id, tournament_id, entry_points')
+              .eq('user_id', userId);
+
+            for (const entry of entries || []) {
+              // Get all predictions for this user in tournaments they're entered in
+              const { data: tournamentPreds } = await supabase
+                .from('predictions')
+                .select('points_earned')
+                .eq('user_id', userId);
+
+              const entryTotal = (tournamentPreds || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
+
+              await supabase
+                .from('tournament_entries')
+                .update({
+                  entry_points: entryTotal,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', entry.id);
+            }
 
             usersUpdated++;
           }
