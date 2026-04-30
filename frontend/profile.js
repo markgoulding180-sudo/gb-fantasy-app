@@ -93,22 +93,38 @@ async function loadStats() {
       }
     }
     
-    // Calculate accuracy (predictions with points / total predictions)
-    const predictionsResponse = await fetch(`${API_BASE}/predictions?gameweek=all`, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
-    });
+    // Calculate accuracy (predictions with points / total finished predictions)
+    let totalPredictions = 0;
+    let correctPredictions = 0;
     
-    if (predictionsResponse.ok) {
-      const predData = await predictionsResponse.json();
-      const allPredictions = predData.predictions || [];
-      const scoredPredictions = allPredictions.filter(p => p.points_earned > 0);
+    for (let gw = 1; gw <= 38; gw++) {
+      const predResponse = await fetch(`${API_BASE}/predictions?gameweek=${gw}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
       
-      const accuracy = allPredictions.length > 0 
-        ? Math.round((scoredPredictions.length / allPredictions.length) * 100)
-        : 0;
-      
-      document.getElementById('stat-accuracy').textContent = accuracy + '%';
+      if (predResponse.ok) {
+        const predData = await predResponse.json();
+        const predictions = predData.predictions || [];
+        const matches = predData.matches || [];
+        
+        predictions.forEach(pred => {
+          const match = matches.find(m => m.id === pred.match_id);
+          // Only count if match is finished (has a result)
+          if (match && match.status === 'finished') {
+            totalPredictions++;
+            if (pred.points_earned > 0) {
+              correctPredictions++;
+            }
+          }
+        });
+      }
     }
+    
+    const accuracy = totalPredictions > 0 
+      ? Math.round((correctPredictions / totalPredictions) * 100)
+      : 0;
+    
+    document.getElementById('stat-accuracy').textContent = accuracy + '%';
     
   } catch (error) {
     console.error('Stats error:', error);
@@ -153,15 +169,26 @@ async function loadCurrentPredictions() {
       const resultText = pred.predicted_result === 'H' ? 'Home Win' : 
                         pred.predicted_result === 'A' ? 'Away Win' : 'Draw';
       
+      // Check if match is finished
+      const isFinished = match.status === 'finished';
+      const actualResult = match.result === 'H' ? 'Home Win' : 
+                          match.result === 'A' ? 'Away Win' : 
+                          match.result === 'D' ? 'Draw' : null;
+      
       return `
         <div class="current-prediction">
           <div>
             <div class="current-prediction-teams">${match.home_team || 'TBD'} vs ${match.away_team || 'TBD'}</div>
-            <div class="current-prediction-guess">${resultText} • ${pred.home_score}-${pred.away_score}</div>
+            <div class="current-prediction-guess">
+              Your prediction: ${resultText} ${pred.home_score}-${pred.away_score}
+              ${isFinished ? `<br><span style="color: var(--text-secondary);">Result: ${actualResult} ${match.home_score}-${match.away_score} (FT)</span>` : ''}
+            </div>
           </div>
           <div style="text-align: right;">
-            ${pred.points_earned > 0 
-              ? `<span class="points-positive">+${pred.points_earned}</span>`
+            ${isFinished 
+              ? (pred.points_earned > 0 
+                ? `<span class="points-positive">+${pred.points_earned} pts</span>`
+                : `<span style="color: var(--text-secondary);">0 pts</span>`)
               : '<span class="text-muted">Pending</span>'
             }
           </div>
