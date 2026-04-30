@@ -213,3 +213,111 @@ function log(message, type = 'info') {
 function clearLog() {
   document.getElementById('log-output').innerHTML = '<div class="log-entry">Log cleared.</div>';
 }
+
+// Manual Score Entry Functions
+async function loadMatchesForScoreEntry() {
+  const gwSelect = document.getElementById('manual-score-gw');
+  const matchSelect = document.getElementById('manual-score-match');
+  const gameweek = gwSelect.value;
+  
+  if (!gameweek) {
+    matchSelect.innerHTML = '<option value="">Select gameweek first...</option>';
+    return;
+  }
+  
+  matchSelect.innerHTML = '<option value="">Loading matches...</option>';
+  
+  try {
+    const token = localStorage.getItem('gbf_token');
+    const response = await fetch(`/api/admin-stats?action=matches&gameweek=${gameweek}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load matches');
+    
+    const data = await response.json();
+    const matches = data.matches || [];
+    
+    if (matches.length === 0) {
+      matchSelect.innerHTML = '<option value="">No matches found for this GW</option>';
+      return;
+    }
+    
+    matchSelect.innerHTML = matches.map(m => {
+      const statusIcon = m.status === 'finished' ? '✓' : m.status === 'live' ? '●' : '○';
+      const score = m.home_score !== null ? ` (${m.home_score}-${m.away_score})` : '';
+      return `<option value="${m.id}" data-home="${m.home_team}" data-away="${m.away_team}">${statusIcon} ${m.home_team} vs ${m.away_team}${score}</option>`;
+    }).join('');
+    
+    log(`Loaded ${matches.length} matches for GW ${gameweek}`);
+    
+  } catch (error) {
+    matchSelect.innerHTML = '<option value="">Error loading matches</option>';
+    log(`Error loading matches: ${error.message}`, 'error');
+  }
+}
+
+async function submitManualScore() {
+  const matchSelect = document.getElementById('manual-score-match');
+  const homeScore = document.getElementById('manual-score-home').value;
+  const awayScore = document.getElementById('manual-score-away').value;
+  const status = document.getElementById('manual-score-status').value;
+  const resultDiv = document.getElementById('manual-score-result');
+  
+  const matchId = matchSelect.value;
+  
+  if (!matchId) {
+    resultDiv.innerHTML = '<span class="text-red">Please select a match</span>';
+    return;
+  }
+  
+  const selectedOption = matchSelect.options[matchSelect.selectedIndex];
+  const homeTeam = selectedOption.dataset.home;
+  const awayTeam = selectedOption.dataset.away;
+  
+  // Calculate result
+  const result = parseInt(homeScore) > parseInt(awayScore) ? 'H' :
+                 parseInt(awayScore) > parseInt(homeScore) ? 'A' : 'D';
+  
+  resultDiv.innerHTML = '<span class="text-amber">Saving...</span>';
+  
+  try {
+    const token = localStorage.getItem('gbf_token');
+    
+    log(`Setting score: ${homeTeam} ${homeScore}-${awayScore} ${awayTeam} (${status})`);
+    
+    // Call admin-stats API with set-score action
+    const response = await fetch('/api/admin-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        action: 'set-score',
+        match_id: matchId,
+        home_score: parseInt(homeScore),
+        away_score: parseInt(awayScore),
+        result: result,
+        status: status
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to save score');
+    }
+    
+    const data = await response.json();
+    
+    resultDiv.innerHTML = `<span class="text-green">✅ Score saved! ${data.predictions_updated || 0} predictions updated, ${data.users_updated || 0} users updated</span>`;
+    log(`Score saved successfully. ${data.predictions_updated} predictions scored.`, 'success');
+    
+    // Refresh the match list to show updated score
+    loadMatchesForScoreEntry();
+    
+  } catch (error) {
+    resultDiv.innerHTML = `<span class="text-red">❌ Error: ${error.message}</span>`;
+    log(`Score save error: ${error.message}`, 'error');
+  }
+}

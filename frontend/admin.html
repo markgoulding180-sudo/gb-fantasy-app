@@ -314,6 +314,54 @@
       </div>
     </div>
 
+    <!-- Manual Score Entry -->
+    <div class="admin-card" style="border: 2px solid var(--accent-blue);">
+      <h3><i class="fas fa-edit text-blue"></i> Manual Score Entry</h3>
+      <p class="text-muted mb-2">Manually set match results for testing or corrections</p>
+      
+      <div class="grid grid-4 mb-2">
+        <div>
+          <label class="form-label">Gameweek</label>
+          <select id="manual-score-gw" class="form-input" onchange="loadMatchesForScoreEntry()">
+            <option value="">Select GW</option>
+            ${Array.from({length: 38}, (_, i) => `<option value="${i+1}">GW ${i+1}</option>`).join('')}
+          </select>
+        </div>
+        <div style="grid-column: span 3;">
+          <label class="form-label">Match</label>
+          <select id="manual-score-match" class="form-input">
+            <option value="">Select gameweek first...</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="grid grid-4 mb-2">
+        <div>
+          <label class="form-label">Home Score</label>
+          <input type="number" id="manual-score-home" class="form-input" min="0" max="20" value="0">
+        </div>
+        <div>
+          <label class="form-label">Away Score</label>
+          <input type="number" id="manual-score-away" class="form-input" min="0" max="20" value="0">
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="manual-score-status" class="form-input">
+            <option value="finished">Finished</option>
+            <option value="live">Live</option>
+            <option value="upcoming">Upcoming</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+          <button class="btn btn-blue" onclick="submitManualScore()" style="width: 100%;">
+            <i class="fas fa-save"></i> Save Score & Calculate Points
+          </button>
+        </div>
+      </div>
+      
+      <div id="manual-score-result" class="text-muted mt-2"></div>
+    </div>
+
     <!-- Live Matches -->
     <div class="admin-card">
       <h3><i class="fas fa-futbol"></i> Live Match Status</h3>
