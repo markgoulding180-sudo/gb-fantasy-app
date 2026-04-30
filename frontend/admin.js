@@ -321,3 +321,38 @@ async function submitManualScore() {
     log(`Score save error: ${error.message}`, 'error');
   }
 }
+
+async function recalculateTournamentPoints() {
+  const resultDiv = document.getElementById('recalc-result');
+  resultDiv.innerHTML = '<span class="text-amber"><i class="fas fa-spinner fa-spin"></i> Recalculating tournament points... This may take a moment.</span>';
+  log('Starting tournament points recalculation...', 'info');
+  
+  try {
+    const token = localStorage.getItem('gbf_token');
+    
+    const response = await fetch('/api/admin-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        action: 'recalculate-tournament-points'
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to recalculate');
+    }
+    
+    const data = await response.json();
+    
+    resultDiv.innerHTML = `<span class="text-green">✅ Recalculation complete! ${data.results.tournaments_processed} tournaments processed, ${data.results.entries_updated} entries updated</span>`;
+    log(`Tournament points recalculated. ${data.results.entries_updated} entries updated.`, 'success');
+    
+  } catch (error) {
+    resultDiv.innerHTML = `<span class="text-red">❌ Error: ${error.message}</span>`;
+    log(`Recalculation error: ${error.message}`, 'error');
+  }
+}
