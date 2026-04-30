@@ -360,30 +360,71 @@ body {
 .fixture-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .fixture {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  padding: 1rem;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
 }
 
 .fixture-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
   font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.fixture-header .match-status {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+.fixture-header .points-display {
+  font-weight: 700;
+  font-size: 1rem;
+  min-width: 50px;
+  text-align: right;
+}
+
+.fixture-header .points-display.points-20 {
+  color: var(--accent-green);
+}
+
+.fixture-header .points-display.points-10 {
+  color: var(--accent-amber);
+}
+
+.fixture-header .points-display.points-0 {
   color: var(--text-muted);
 }
 
 .fixture-teams {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+.final-score {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 1rem 0;
+  color: var(--text-primary);
+  letter-spacing: 3px;
 }
 
 .team {
@@ -429,6 +470,12 @@ body {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
+}
+
+.prediction-form .prediction-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .prediction-row {
