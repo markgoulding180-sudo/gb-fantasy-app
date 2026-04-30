@@ -85,24 +85,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const isFinished = match.status === 'finished';
         const disabled = isFinished ? 'disabled' : '';
         const finishedClass = isFinished ? 'fixture-finished' : '';
-        const resultDisplay = isFinished ? 
-          `<span class="final-score">${match.home_score} - ${match.away_score}</span>` : '';
-        
-        // Determine winner for finished matches
-        let homeWinnerClass = '';
-        let awayWinnerClass = '';
-        let resultIndicator = '';
-        if (isFinished) {
-          if (match.result === 'H') {
-            homeWinnerClass = 'team-winner';
-            resultIndicator = '<span class="result-indicator">1</span>';
-          } else if (match.result === 'A') {
-            awayWinnerClass = 'team-winner';
-            resultIndicator = '<span class="result-indicator">2</span>';
-          } else if (match.result === 'D') {
-            resultIndicator = '<span class="result-indicator">X</span>';
-          }
-        }
         
         // Find existing prediction if any
         const existingPred = data.predictions?.find(p => p.match_id === match.id);
@@ -112,48 +94,115 @@ document.addEventListener('DOMContentLoaded', async function() {
         const resultD = existingPred && existingPred.predicted_result === 'D' ? 'checked' : '';
         const resultA = existingPred && existingPred.predicted_result === 'A' ? 'checked' : '';
         
-        fixturesHTML += `
-          <div class="fixture ${finishedClass}" data-match-id="${match.id}">
-            <div class="fixture-header">
-              <span><i class="far fa-clock"></i> ${dateStr}, ${timeStr}</span>
-              ${isFinished ? '<span class="badge badge-success">FINISHED</span>' + resultIndicator : '<span class="text-muted">' + (match.venue || 'TBC') + '</span>'}
-            </div>
-            <div class="fixture-teams">
-              <div class="team home">
-                <div class="team-name ${homeWinnerClass}">${match.home_team}</div>
-                <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.style.display='none'">
+        // Calculate points for finished matches
+        let pointsEarned = 0;
+        let pointsClass = 'points-0';
+        if (isFinished && existingPred) {
+          if (existingPred.predicted_result === match.result) {
+            pointsEarned += 10;
+            if (existingPred.home_score === match.home_score && existingPred.away_score === match.away_score) {
+              pointsEarned += 10;
+            }
+          }
+          pointsClass = pointsEarned === 20 ? 'points-20' : pointsEarned === 10 ? 'points-10' : 'points-0';
+        }
+        
+        // Determine winner for finished matches
+        let homeWinnerClass = '';
+        let awayWinnerClass = '';
+        if (isFinished) {
+          if (match.result === 'H') homeWinnerClass = 'team-winner';
+          else if (match.result === 'A') awayWinnerClass = 'team-winner';
+        }
+        
+        // Build fixture HTML based on match status
+        if (isFinished) {
+          // Finished match layout
+          fixturesHTML += `
+            <div class="fixture ${finishedClass}" data-match-id="${match.id}">
+              <div class="fixture-header">
+                <span><i class="far fa-clock"></i> ${dateStr}</span>
+                <span>Full Time</span>
+                ${existingPred ? `<span class="points-display ${pointsClass}">${pointsEarned}pts</span>` : '<span class="points-display points-0">-</span>'}
               </div>
-              <span class="vs">VS ${resultDisplay}</span>
-              <div class="team away">
-                <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.style.display='none'">
-                <div class="team-name ${awayWinnerClass}">${match.away_team}</div>
+              <div class="fixture-teams">
+                <div class="team home">
+                  <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.style.display='none'">
+                  <div class="team-name ${homeWinnerClass}">${match.home_team}</div>
+                </div>
+                <span class="vs">VS</span>
+                <div class="team away">
+                  <div class="team-name ${awayWinnerClass}">${match.away_team}</div>
+                  <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.style.display='none'">
+                </div>
               </div>
-            </div>
-            <div class="prediction-form">
-              <div class="prediction-row">
-                <div class="prediction-1x2">
-                  <div class="prediction-option">
-                    <input type="radio" name="match${matchNum}_result" id="match${matchNum}_h" value="H" ${resultH} ${disabled}>
-                    <label for="match${matchNum}_h">1</label>
-                  </div>
-                  <div class="prediction-option">
-                    <input type="radio" name="match${matchNum}_result" id="match${matchNum}_d" value="D" ${resultD} ${disabled}>
-                    <label for="match${matchNum}_d">X</label>
-                  </div>
-                  <div class="prediction-option">
-                    <input type="radio" name="match${matchNum}_result" id="match${matchNum}_a" value="A" ${resultA} ${disabled}>
-                    <label for="match${matchNum}_a">2</label>
+              <div class="final-score">${match.home_score} - ${match.away_score}</div>
+              <div class="prediction-form">
+                <div class="prediction-row">
+                  <div class="prediction-1x2">
+                    <div class="prediction-option">
+                      <input type="radio" name="match${matchNum}_result" id="match${matchNum}_h" value="H" ${resultH} disabled>
+                      <label for="match${matchNum}_h">1</label>
+                    </div>
+                    <div class="prediction-option">
+                      <input type="radio" name="match${matchNum}_result" id="match${matchNum}_d" value="D" ${resultD} disabled>
+                      <label for="match${matchNum}_d">X</label>
+                    </div>
+                    <div class="prediction-option">
+                      <input type="radio" name="match${matchNum}_result" id="match${matchNum}_a" value="A" ${resultA} disabled>
+                      <label for="match${matchNum}_a">2</label>
+                    </div>
                   </div>
                 </div>
-                <div class="score-inputs">
-                  <input type="number" class="score-input" name="match${matchNum}_home_score" min="0" max="20" placeholder="0" value="${homeScore}" ${disabled}>
-                  <span class="score-separator">-</span>
-                  <input type="number" class="score-input" name="match${matchNum}_away_score" min="0" max="20" placeholder="0" value="${awayScore}" ${disabled}>
+              </div>
+              ${existingPred ? `<div class="predicted-score-display">Your prediction: <strong>${existingPred.home_score} - ${existingPred.away_score}</strong></div>` : '<div class="predicted-score-display">No prediction</div>'}
+            </div>
+          `;
+        } else {
+          // Upcoming match layout (original)
+          fixturesHTML += `
+            <div class="fixture ${finishedClass}" data-match-id="${match.id}">
+              <div class="fixture-header">
+                <span><i class="far fa-clock"></i> ${dateStr}, ${timeStr}</span>
+                <span class="text-muted">${match.venue || 'TBC'}</span>
+              </div>
+              <div class="fixture-teams">
+                <div class="team home">
+                  <div class="team-name">${match.home_team}</div>
+                  <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.style.display='none'">
+                </div>
+                <span class="vs">VS</span>
+                <div class="team away">
+                  <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.style.display='none'">
+                  <div class="team-name">${match.away_team}</div>
+                </div>
+              </div>
+              <div class="prediction-form">
+                <div class="prediction-row">
+                  <div class="prediction-1x2">
+                    <div class="prediction-option">
+                      <input type="radio" name="match${matchNum}_result" id="match${matchNum}_h" value="H" ${resultH}>
+                      <label for="match${matchNum}_h">1</label>
+                    </div>
+                    <div class="prediction-option">
+                      <input type="radio" name="match${matchNum}_result" id="match${matchNum}_d" value="D" ${resultD}>
+                      <label for="match${matchNum}_d">X</label>
+                    </div>
+                    <div class="prediction-option">
+                      <input type="radio" name="match${matchNum}_result" id="match${matchNum}_a" value="A" ${resultA}>
+                      <label for="match${matchNum}_a">2</label>
+                    </div>
+                  </div>
+                  <div class="score-inputs">
+                    <input type="number" class="score-input" name="match${matchNum}_home_score" min="0" max="20" placeholder="0" value="${homeScore}">
+                    <span class="score-separator">-</span>
+                    <input type="number" class="score-input" name="match${matchNum}_away_score" min="0" max="20" placeholder="0" value="${awayScore}">
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        `;
+          `;
+        }
       });
       
       fixtureList.innerHTML = fixturesHTML;
