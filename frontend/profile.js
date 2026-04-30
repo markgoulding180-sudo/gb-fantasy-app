@@ -263,6 +263,8 @@ async function loadMyTournaments() {
     if (!response.ok) throw new Error('Failed to load tournaments');
     
     const data = await response.json();
+    console.log('Tournament entries API response:', data); // DEBUG
+    
     const container = document.getElementById('my-tournaments');
     
     const entries = data.entries || [];
@@ -282,6 +284,8 @@ async function loadMyTournaments() {
       const statusClass = t.status === 'live' ? 'live' : t.status === 'finished' ? 'finished' : '';
       const rankDisplay = e.rank ? `#${e.rank}` : 'Not ranked';
       const pointsDisplay = e.entry_points || 0;
+      
+      console.log(`Tournament ${t.name}: entry_points=${e.entry_points}, rank=${e.rank}`); // DEBUG
       
       return `
         <div class="tournament-entry ${statusClass}">
