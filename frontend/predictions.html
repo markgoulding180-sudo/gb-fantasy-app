@@ -127,12 +127,13 @@
         margin-bottom: 0.25rem !important;
       }
       
-      /* Fixture cards - redesigned for mobile */
+      /* Fixture cards - standardised layout */
       .fixture {
         padding: 0.75rem !important;
         margin-bottom: 0.75rem !important;
       }
       
+      /* Top row: Date | Status | Points */
       .fixture-header {
         display: flex !important;
         justify-content: space-between !important;
@@ -141,37 +142,75 @@
         margin-bottom: 0.5rem !important;
       }
       
-      /* Match title centered */
-      .fixture-teams {
-        display: block !important;
-        text-align: center !important;
-        margin-bottom: 0.75rem !important;
-      }
-      
-      .fixture-teams .team {
-        display: inline !important;
-      }
-      
-      .fixture-teams .team-shirt,
-      .fixture-teams .team-logo {
-        display: none !important;
-      }
-      
-      .fixture-teams .team-name {
-        font-size: 1rem !important;
+      .fixture-header .match-status {
         font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
       }
       
-      .fixture-teams .vs {
-        margin: 0 0.5rem !important;
+      .fixture-header .points-display {
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+      }
+      
+      .fixture-header .points-display.points-20 {
+        color: var(--accent-green) !important;
+      }
+      
+      .fixture-header .points-display.points-10 {
+        color: var(--accent-amber) !important;
+      }
+      
+      .fixture-header .points-display.points-0 {
         color: var(--text-muted) !important;
       }
       
-      /* Prediction form - compact layout */
-      .prediction-form {
+      /* Middle row: [Shirt] Home VS Away [Shirt] */
+      .fixture-teams {
         display: flex !important;
-        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
         gap: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+        flex-wrap: nowrap !important;
+      }
+      
+      .fixture-teams .team-shirt {
+        width: 40px !important;
+        height: 40px !important;
+        flex-shrink: 0 !important;
+      }
+      
+      .fixture-teams .team {
+        flex: 1 !important;
+        text-align: center !important;
+      }
+      
+      .fixture-teams .team-name {
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+      }
+      
+      .fixture-teams .vs {
+        font-size: 0.75rem !important;
+        color: var(--text-muted) !important;
+        flex-shrink: 0 !important;
+        padding: 0 0.25rem !important;
+      }
+      
+      /* Final score for finished matches */
+      .final-score {
+        text-align: center !important;
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        margin: 0.5rem 0 !important;
+        color: var(--text-primary) !important;
+      }
+      
+      /* Bottom row: 1/X/2 buttons and score inputs */
+      .prediction-form {
+        margin-top: 0.5rem !important;
       }
       
       .prediction-row {
@@ -197,7 +236,7 @@
       }
       
       .prediction-option label {
-        display: block !important;
+        display: flex !important;
         width: 100% !important;
         padding: 0.75rem 0.5rem !important;
         text-align: center !important;
@@ -207,7 +246,6 @@
         font-weight: 600 !important;
         cursor: pointer !important;
         min-height: 44px !important;
-        display: flex !important;
         align-items: center !important;
         justify-content: center !important;
       }
@@ -239,124 +277,6 @@
         font-size: 1.25rem !important;
         font-weight: 600 !important;
         color: var(--text-muted) !important;
-      }
-      
-      /* Mobile team shirts - show at 40px */
-      .team-shirt {
-        display: inline-block !important;
-        width: 40px !important;
-        height: 40px !important;
-        vertical-align: middle !important;
-      }
-      
-      /* Finished match cards - mobile layout */
-      .fixture-finished {
-        padding: 0.75rem !important;
-      }
-      
-      .fixture-finished .fixture-header {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        margin-bottom: 0.5rem !important;
-        font-size: 0.75rem !important;
-      }
-      
-      .fixture-finished .fixture-header .badge-success {
-        display: none !important;
-      }
-      
-      .fixture-finished .fixture-header .points-display {
-        font-weight: 700 !important;
-        font-size: 0.9rem !important;
-      }
-      
-      .fixture-finished .fixture-header .points-display.points-20 {
-        color: var(--accent-green) !important;
-      }
-      
-      .fixture-finished .fixture-header .points-display.points-10 {
-        color: var(--accent-amber) !important;
-      }
-      
-      .fixture-finished .fixture-header .points-display.points-0 {
-        color: var(--text-muted) !important;
-      }
-      
-      /* Line 2: Teams with shirts on one line */
-      .fixture-finished .fixture-teams {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
-        flex-wrap: nowrap !important;
-      }
-      
-      .fixture-finished .fixture-teams .team {
-        display: flex !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
-        flex: 1 !important;
-        justify-content: flex-end !important;
-      }
-      
-      .fixture-finished .fixture-teams .team.away {
-        justify-content: flex-start !important;
-      }
-      
-      .fixture-finished .fixture-teams .team-name {
-        font-size: 0.85rem !important;
-        font-weight: 600 !important;
-        white-space: nowrap !important;
-      }
-      
-      .fixture-finished .fixture-teams .vs {
-        font-size: 0.75rem !important;
-        color: var(--text-muted) !important;
-        flex-shrink: 0 !important;
-      }
-      
-      /* Line 3: Final score large and centered */
-      .fixture-finished .final-score {
-        display: block !important;
-        text-align: center !important;
-        font-size: 1.75rem !important;
-        font-weight: 700 !important;
-        margin: 0.5rem 0 !important;
-        background: none !important;
-        color: var(--text-primary) !important;
-        padding: 0 !important;
-      }
-      
-      /* Line 4: 1X2 buttons */
-      .fixture-finished .prediction-1x2 {
-        display: flex !important;
-        gap: 0.5rem !important;
-        margin: 0.5rem 0 !important;
-      }
-      
-      .fixture-finished .prediction-option label {
-        background: var(--bg-hover) !important;
-        border-color: var(--border-color) !important;
-      }
-      
-      .fixture-finished .prediction-option input:checked + label {
-        background: var(--accent-green) !important;
-        border-color: var(--accent-green) !important;
-        color: white !important;
-      }
-      
-      /* Line 5: User's predicted score */
-      .fixture-finished .predicted-score-display {
-        text-align: center !important;
-        font-size: 1rem !important;
-        color: var(--text-muted) !important;
-        margin-top: 0.5rem !important;
-      }
-      
-      .fixture-finished .predicted-score-display strong {
-        color: var(--text-primary) !important;
       }
     }
   </style>
