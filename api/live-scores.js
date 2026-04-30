@@ -127,6 +127,9 @@ async function calculatePointsForGameweek(supabase, gameweek) {
 
   if (!matches || matches.length === 0) return;
 
+  // Track which users need their tournament entries updated
+  const usersToUpdate = new Set();
+
   for (const match of matches) {
     // Get predictions for this match that haven't been scored
     const { data: predictions } = await supabase
@@ -155,6 +158,9 @@ async function calculatePointsForGameweek(supabase, gameweek) {
         .from('predictions')
         .update({ points_earned: points })
         .eq('id', pred.id);
+      
+      // Track user for tournament entry update
+      usersToUpdate.add(pred.user_id);
     }
   }
 
@@ -180,5 +186,61 @@ async function calculatePointsForGameweek(supabase, gameweek) {
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
+  }
+  
+  // Update tournament entries for affected users
+  // Get all tournaments for this gameweek
+  const { data: tournaments } = await supabase
+    .from('tournaments')
+    .select('id')
+    .eq('gameweek', gameweek);
+  
+  if (tournaments && tournaments.length > 0) {
+    for (const userId of usersToUpdate) {
+      for (const tournament of tournaments) {
+        // Calculate points for this user in this tournament
+        const { data: entries } = await supabase
+          .from('tournament_entries')
+          .select('id')
+          .eq('tournament_id', tournament.id)
+          .eq('user_id', userId);
+        
+        if (!entries || entries.length === 0) continue;
+        
+        // Get all predictions for matches in this gameweek for this user
+        const { data: userGameweekPreds } = await supabase
+          .from('predictions')
+          .select('points_earned')
+          .eq('user_id', userId)
+          .eq('gameweek', gameweek);
+        
+        const gameweekPoints = userGameweekPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+        
+        // Update the tournament entry with new points
+        await supabase
+          .from('tournament_entries')
+          .update({ entry_points: gameweekPoints })
+          .eq('tournament_id', tournament.id)
+          .eq('user_id', userId);
+      }
+    }
+    
+    // Recalculate ranks for all tournaments
+    for (const tournament of tournaments) {
+      const { data: entries } = await supabase
+        .from('tournament_entries')
+        .select('id, entry_points')
+        .eq('tournament_id', tournament.id)
+        .order('entry_points', { ascending: false });
+      
+      if (entries) {
+        for (let i = 0; i < entries.length; i++) {
+          await supabase
+            .from('tournament_entries')
+            .update({ rank: i + 1 })
+            .eq('id', entries[i].id);
+        }
+      }
+    }
   }
 }

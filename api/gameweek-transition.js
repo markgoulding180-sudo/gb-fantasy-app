@@ -189,6 +189,30 @@ async function finaliseGameweek(supabase, gameweek) {
       }, {
         onConflict: 'user_id,gameweek'
       });
+    
+    // Update tournament entries for this user
+    const { data: userTournaments } = await supabase
+      .from('tournament_entries')
+      .select('tournament_id, entry_points')
+      .eq('user_id', userId);
+    
+    for (const entry of userTournaments || []) {
+      // Check if this tournament is for the current gameweek
+      const { data: tournament } = await supabase
+        .from('tournaments')
+        .select('gameweek')
+        .eq('id', entry.tournament_id)
+        .single();
+      
+      if (tournament && tournament.gameweek === gameweek) {
+        // Update entry_points with this gameweek's points
+        await supabase
+          .from('tournament_entries')
+          .update({ entry_points: gwTotalPoints })
+          .eq('tournament_id', entry.tournament_id)
+          .eq('user_id', userId);
+      }
+    }
   }
 
   // Update all user totals (cumulative) from all finished gameweeks
