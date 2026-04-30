@@ -45,12 +45,14 @@ exports.handler = async (event, context) => {
       const params = new URLSearchParams(event.queryStringParameters);
       const gameweek = params.get('gameweek') || '34';
 
-      // Get matches for the gameweek
-      const { data: matches, error: matchesError } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('gameweek', gameweek)
-        .order('kickoff_time', { ascending: true });
+      // Get matches - either for specific gameweek or all gameweeks
+      let matchesQuery = supabase.from('matches').select('*');
+      
+      if (gameweek !== 'all') {
+        matchesQuery = matchesQuery.eq('gameweek', gameweek);
+      }
+      
+      const { data: matches, error: matchesError } = await matchesQuery.order('kickoff_time', { ascending: true });
 
       if (matchesError) {
         return {
@@ -69,12 +71,16 @@ exports.handler = async (event, context) => {
         const { data: { user } } = await supabase.auth.getUser(token);
 
         if (user) {
-          const { data: predictions } = await supabase
+          let predictionsQuery = supabase
             .from('predictions')
             .select('*')
-            .eq('user_id', user.id)
-            .eq('gameweek', gameweek);
-
+            .eq('user_id', user.id);
+          
+          if (gameweek !== 'all') {
+            predictionsQuery = predictionsQuery.eq('gameweek', gameweek);
+          }
+          
+          const { data: predictions } = await predictionsQuery;
           userPredictions = predictions || [];
         }
       }

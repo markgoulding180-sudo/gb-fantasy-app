@@ -93,41 +93,35 @@ async function loadStats() {
       }
     }
     
-    // Calculate accuracy (predictions with points / total finished predictions)
-    let totalPredictions = 0;
-    let correctPredictions = 0;
+    // Calculate accuracy from prediction history (finished matches only)
+    const historyResponse = await fetch(`${API_BASE}/predictions?gameweek=all`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
     
-    for (let gw = 1; gw <= 38; gw++) {
-      const predResponse = await fetch(`${API_BASE}/predictions?gameweek=${gw}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+    if (historyResponse.ok) {
+      const historyData = await historyResponse.json();
+      const predictions = historyData.predictions || [];
+      const matches = historyData.matches || [];
+      
+      let totalFinished = 0;
+      let correctPredictions = 0;
+      
+      predictions.forEach(pred => {
+        const match = matches.find(m => m.id === pred.match_id);
+        if (match && match.status === 'finished') {
+          totalFinished++;
+          if (pred.points_earned > 0) {
+            correctPredictions++;
+          }
+        }
       });
       
-      if (predResponse.ok) {
-        const predData = await predResponse.json();
-        console.log(`GW${gw} predictions:`, predData); // DEBUG
-        const predictions = predData.predictions || [];
-        const matches = predData.matches || [];
-        
-        predictions.forEach(pred => {
-          const match = matches.find(m => m.id === pred.match_id);
-          // Only count if match is finished (has a result)
-          if (match && match.status === 'finished') {
-            totalPredictions++;
-            if (pred.points_earned > 0) {
-              correctPredictions++;
-            }
-          }
-        });
-      }
+      const accuracy = totalFinished > 0 
+        ? Math.round((correctPredictions / totalFinished) * 100)
+        : 0;
+      
+      document.getElementById('stat-accuracy').textContent = accuracy + '%';
     }
-    
-    console.log(`Accuracy calc: ${correctPredictions}/${totalPredictions}`); // DEBUG
-    
-    const accuracy = totalPredictions > 0 
-      ? Math.round((correctPredictions / totalPredictions) * 100)
-      : 0;
-    
-    document.getElementById('stat-accuracy').textContent = accuracy + '%';
     
   } catch (error) {
     console.error('Stats error:', error);
