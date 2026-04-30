@@ -857,7 +857,9 @@ body {
   main.container,
   .container {
     margin-left: 52px;
-    max-width: calc(1200px - 52px);
+    width: calc(100% - 52px);
+    max-width: none;
+    padding: 1rem;
   }
 }
 
@@ -1045,6 +1047,8 @@ body {
   main.container,
   .container {
     margin-left: 0;
+    width: 100%;
     max-width: 1200px;
+    padding: 1rem;
   }
 }
