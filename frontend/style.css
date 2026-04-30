@@ -548,6 +548,12 @@ body {
   font-weight: 600;
 }
 
+.score-input.predicted-score {
+  background-color: var(--accent-green);
+  border-color: var(--accent-green);
+  color: white;
+}
+
 .score-input:focus {
   outline: none;
   border-color: var(--accent-green);

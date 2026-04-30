@@ -162,9 +162,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                   </div>
                 </div>
                 <div class="score-inputs">
-                  <input type="number" class="score-input" name="match${matchNum}_home_score" min="0" max="20" placeholder="0" value="${homeScore}" ${disabled}>
+                  <input type="number" class="score-input ${isFinished && existingPred ? 'predicted-score' : ''}" name="match${matchNum}_home_score" min="0" max="20" placeholder="0" value="${homeScore}" ${disabled}>
                   <span class="score-separator">-</span>
-                  <input type="number" class="score-input" name="match${matchNum}_away_score" min="0" max="20" placeholder="0" value="${awayScore}" ${disabled}>
+                  <input type="number" class="score-input ${isFinished && existingPred ? 'predicted-score' : ''}" name="match${matchNum}_away_score" min="0" max="20" placeholder="0" value="${awayScore}" ${disabled}>
                 </div>
               </div>
             </div>
