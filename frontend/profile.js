@@ -104,6 +104,7 @@ async function loadStats() {
       
       if (predResponse.ok) {
         const predData = await predResponse.json();
+        console.log(`GW${gw} predictions:`, predData); // DEBUG
         const predictions = predData.predictions || [];
         const matches = predData.matches || [];
         
@@ -119,6 +120,8 @@ async function loadStats() {
         });
       }
     }
+    
+    console.log(`Accuracy calc: ${correctPredictions}/${totalPredictions}`); // DEBUG
     
     const accuracy = totalPredictions > 0 
       ? Math.round((correctPredictions / totalPredictions) * 100)
@@ -146,6 +149,7 @@ async function loadCurrentPredictions() {
     if (!response.ok) throw new Error('Failed to load predictions');
     
     const data = await response.json();
+    console.log('Predictions API response:', data); // DEBUG
     const container = document.getElementById('current-predictions');
     
     if (!data.predictions || data.predictions.length === 0) {
