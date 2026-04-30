@@ -194,6 +194,89 @@ module.exports = async (req, res) => {
         });
       }
 
+      // Recalculate tournament points
+      if (action === 'recalculate-tournament-points') {
+        const results = {
+          tournaments_processed: 0,
+          entries_updated: 0,
+          errors: []
+        };
+        
+        // Get all tournaments
+        const { data: tournaments, error: tournamentError } = await supabase
+          .from('tournaments')
+          .select('id, gameweek');
+        
+        if (tournamentError) {
+          return res.status(500).json({ error: 'Failed to fetch tournaments', details: tournamentError.message });
+        }
+        
+        for (const tournament of tournaments || []) {
+          // Get all entries for this tournament
+          const { data: entries, error: entryError } = await supabase
+            .from('tournament_entries')
+            .select('id, user_id, entry_points')
+            .eq('tournament_id', tournament.id);
+          
+          if (entryError) {
+            results.errors.push({ tournament: tournament.id, error: entryError.message });
+            continue;
+          }
+          
+          for (const entry of entries || []) {
+            // Get all predictions for this user in this gameweek
+            const { data: predictions, error: predError } = await supabase
+              .from('predictions')
+              .select('points_earned')
+              .eq('user_id', entry.user_id)
+              .eq('gameweek', tournament.gameweek);
+            
+            if (predError) {
+              results.errors.push({ user: entry.user_id, error: predError.message });
+              continue;
+            }
+            
+            const totalPoints = predictions.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+            
+            if (totalPoints !== entry.entry_points) {
+              const { error: updateError } = await supabase
+                .from('tournament_entries')
+                .update({ entry_points: totalPoints })
+                .eq('id', entry.id);
+              
+              if (updateError) {
+                results.errors.push({ entry: entry.id, error: updateError.message });
+              } else {
+                results.entries_updated++;
+              }
+            }
+          }
+          
+          // Recalculate ranks
+          const { data: rankedEntries, error: rankError } = await supabase
+            .from('tournament_entries')
+            .select('id, entry_points')
+            .eq('tournament_id', tournament.id)
+            .order('entry_points', { ascending: false });
+          
+          if (!rankError && rankedEntries) {
+            for (let i = 0; i < rankedEntries.length; i++) {
+              await supabase
+                .from('tournament_entries')
+                .update({ rank: i + 1 })
+                .eq('id', rankedEntries[i].id);
+            }
+          }
+          
+          results.tournaments_processed++;
+        }
+        
+        return res.status(200).json({
+          message: 'Tournament points recalculated',
+          results
+        });
+      }
+
       return res.status(400).json({ error: 'Unknown action' });
     }
 
