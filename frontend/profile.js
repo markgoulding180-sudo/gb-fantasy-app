@@ -255,7 +255,8 @@ async function loadPredictionHistory() {
 
 async function loadMyTournaments() {
   try {
-    const response = await fetch(`${API_BASE}/tournaments`, {
+    // Fetch user's actual tournament entries with points
+    const response = await fetch(`${API_BASE}/tournaments?my_entries=true`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
@@ -264,39 +265,50 @@ async function loadMyTournaments() {
     const data = await response.json();
     const container = document.getElementById('my-tournaments');
     
-    // Get user's tournament entries (we need to add an endpoint for this)
-    // For now, show active tournaments
-    const activeTournaments = data.tournaments?.filter(t => t.status === 'live') || [];
+    const entries = data.entries || [];
     
-    if (activeTournaments.length === 0) {
+    if (entries.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-trophy"></i>
-          <p>No active tournament entries</p>
+          <p>No tournament entries yet</p>
         </div>
       `;
       return;
     }
     
-    container.innerHTML = activeTournaments.map(t => `
-      <div class="tournament-entry ${t.status}">
-        <div>
-          <div style="font-weight: 600;">${t.name}</div>
-          <div style="font-size: 0.875rem; color: var(--text-secondary);">
-            GW${t.gameweek} • £${t.entry_fee} entry
+    container.innerHTML = entries.map(e => {
+      const t = e.tournament;
+      const statusClass = t.status === 'live' ? 'live' : t.status === 'finished' ? 'finished' : '';
+      const rankDisplay = e.rank ? `#${e.rank}` : 'Not ranked';
+      const pointsDisplay = e.entry_points || 0;
+      
+      return `
+        <div class="tournament-entry ${statusClass}">
+          <div>
+            <div style="font-weight: 600;">${t.name}</div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+              GW${t.gameweek} • ${rankDisplay}
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-green);">
+              ${pointsDisplay} pts
+            </div>
+            <span class="tournament-status ${t.status}">${t.status}</span>
           </div>
         </div>
-        <div style="text-align: right;">
-          <span class="tournament-status ${t.status}">${t.status}</span>
-          <div style="font-size: 0.875rem; margin-top: 0.25rem;">
-            ${t.current_entries} entries
-          </div>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
     
   } catch (error) {
     console.error('Tournaments error:', error);
+    document.getElementById('my-tournaments').innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-exclamation-circle"></i>
+        <p>Error loading tournaments</p>
+      </div>
+    `;
   }
 }
 
