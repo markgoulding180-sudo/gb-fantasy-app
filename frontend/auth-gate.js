@@ -72,7 +72,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const navLinks = document.querySelector('.nav-links');
   
   if (mobileMenuBtn && navLinks) {
-    mobileMenuBtn.addEventListener('click', function() {
+    mobileMenuBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
       navLinks.classList.toggle('active');
       navLinks.style.display = navLinks.classList.contains('active') ? 'flex' : 'none';
     });

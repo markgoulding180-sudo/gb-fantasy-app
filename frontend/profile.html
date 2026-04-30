@@ -365,27 +365,16 @@
   <script src="auth-gate.js"></script>
   <script src="profile.js"></script>
   <script>
+    // Sidebar user info only - mobile menu handled by auth-gate.js
     document.addEventListener('DOMContentLoaded', function() {
-      // Mobile menu toggle
-      const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-      const navLinks = document.querySelector('.nav-links');
-      
-      if (mobileMenuBtn && navLinks) {
-        mobileMenuBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          navLinks.classList.toggle('active');
-          navLinks.style.display = navLinks.classList.contains('active') ? 'flex' : 'none';
-        });
-      }
-      
-      // Sidebar user info
       const userJson = localStorage.getItem('gbf_user');
       if (userJson) {
         try {
           const user = JSON.parse(userJson);
-          document.getElementById('sidebar-username').textContent = user.display_name || user.username;
-          document.getElementById('sidebar-avatar').textContent = (user.display_name || user.username).substring(0, 2).toUpperCase();
+          const usernameEl = document.getElementById('sidebar-username');
+          const avatarEl = document.getElementById('sidebar-avatar');
+          if (usernameEl) usernameEl.textContent = user.display_name || user.username;
+          if (avatarEl) avatarEl.textContent = (user.display_name || user.username).substring(0, 2).toUpperCase();
         } catch (e) {}
       }
     });
