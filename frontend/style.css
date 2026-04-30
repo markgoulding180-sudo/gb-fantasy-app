@@ -414,17 +414,22 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 1rem;
   margin: 1rem 0;
 }
 
-.final-score {
-  text-align: center;
-  font-size: 1.75rem;
+.fixture-teams .team-shirt {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.fixture-teams .inline-score {
+  font-size: 1.5rem;
   font-weight: 700;
-  margin: 1rem 0;
-  color: var(--text-primary);
-  letter-spacing: 3px;
+  color: var(--accent-green);
+  padding: 0 0.75rem;
 }
 
 .team {

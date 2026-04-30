@@ -174,30 +174,31 @@
         color: var(--text-muted) !important;
       }
       
-      /* Middle row: [Shirt] Home VS Away [Shirt] */
+      /* Middle row: [Shirt] Home — Score — Away [Shirt] */
       .fixture-teams {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        gap: 0.75rem !important;
+        gap: 0.5rem !important;
         margin: 0.75rem 0 !important;
         flex-wrap: nowrap !important;
       }
       
       .fixture-teams .team-shirt {
-        width: 48px !important;
-        height: 48px !important;
+        width: 44px !important;
+        height: 44px !important;
         flex-shrink: 0 !important;
+        object-fit: contain !important;
       }
       
       .fixture-teams .team {
-        flex: 1 !important;
+        flex: 0 1 auto !important;
         text-align: center !important;
         min-width: 0 !important;
       }
       
       .fixture-teams .team-name {
-        font-size: 1rem !important;
+        font-size: 0.9rem !important;
         font-weight: 600 !important;
         white-space: nowrap !important;
         overflow: hidden !important;
@@ -205,21 +206,20 @@
       }
       
       .fixture-teams .vs {
-        font-size: 0.8rem !important;
+        font-size: 0.75rem !important;
         color: var(--text-muted) !important;
         flex-shrink: 0 !important;
-        padding: 0 0.5rem !important;
+        padding: 0 0.25rem !important;
         font-weight: 500 !important;
       }
       
-      /* Final score for finished matches */
-      .final-score {
-        text-align: center !important;
-        font-size: 1.5rem !important;
+      /* Inline score for finished matches */
+      .fixture-teams .inline-score {
+        font-size: 1.1rem !important;
         font-weight: 700 !important;
-        margin: 0.75rem 0 !important;
-        color: var(--text-primary) !important;
-        letter-spacing: 2px !important;
+        color: var(--accent-green) !important;
+        padding: 0 0.5rem !important;
+        flex-shrink: 0 !important;
       }
       
       /* Bottom row: 1/X/2 buttons and score inputs */

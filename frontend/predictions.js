@@ -111,14 +111,14 @@ document.addEventListener('DOMContentLoaded', async function() {
           pointsDisplay = '<span class="points-display" style="visibility: hidden;">-</span>';
         }
         
-        // Determine winner styling for finished matches
+        // Determine winner styling and inline score for finished matches
         let homeWinnerClass = '';
         let awayWinnerClass = '';
-        let finalScoreHTML = '';
+        let inlineScoreHTML = '';
         if (isFinished) {
           if (match.result === 'H') homeWinnerClass = 'team-winner';
           else if (match.result === 'A') awayWinnerClass = 'team-winner';
-          finalScoreHTML = `<div class="final-score">Finished ${match.home_score} - ${match.away_score}</div>`;
+          inlineScoreHTML = `<span class="inline-score">${match.home_score}-${match.away_score}</span>`;
         }
         
         // STANDARDISED MATCH CARD LAYOUT - Same structure for all matches
@@ -131,21 +131,18 @@ document.addEventListener('DOMContentLoaded', async function() {
               ${pointsDisplay}
             </div>
             
-            <!-- Middle row: [Shirt] Home VS Away [Shirt] -->
+            <!-- Middle row: [Shirt] Home — Score — Away [Shirt] -->
             <div class="fixture-teams">
-              <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.style.display='none'">
+              <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
               <div class="team home">
                 <div class="team-name ${homeWinnerClass}">${match.home_team}</div>
               </div>
-              <span class="vs">VS</span>
+              ${isFinished ? inlineScoreHTML : '<span class="vs">VS</span>'}
               <div class="team away">
                 <div class="team-name ${awayWinnerClass}">${match.away_team}</div>
               </div>
-              <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.style.display='none'">
+              <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
             </div>
-            
-            <!-- Final score for finished matches -->
-            ${finalScoreHTML}
             
             <!-- Bottom row: 1/X/2 buttons and score inputs -->
             <div class="prediction-form">
@@ -259,7 +256,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   
   function getTeamShirtName(teamName) {
-    // Map team names to shirt file names
+    // Map team names to actual shirt file names (with spaces as they appear in filesystem)
     const shirtMap = {
       'Arsenal': 'arsenal',
       'Aston Villa': 'aston villa',
@@ -275,14 +272,20 @@ document.addEventListener('DOMContentLoaded', async function() {
       'Liverpool': 'liverpool',
       'Man City': 'man city',
       'Man United': 'man u',
+      'Manchester United': 'man u',
       'Newcastle': 'new castle',
-      'Nott\'m Forest': 'nottingham',
+      'Newcastle United': 'new castle',
+      'Nott\'m Forest': 'nots forest',
+      'Nottingham Forest': 'nots forest',
       'Spurs': 'spurs',
       'Tottenham': 'spurs',
+      'Tottenham Hotspur': 'spurs',
       'West Ham': 'west ham',
+      'West Ham United': 'west ham',
       'Wolves': 'wovles temp',
+      'Wolverhampton': 'wovles temp',
       'Sunderland': 'sunderland'
     };
-    return shirtMap[teamName] || teamName.toLowerCase().replace(/\s+/g, '-');
+    return shirtMap[teamName] || teamName.toLowerCase();
   }
 });
