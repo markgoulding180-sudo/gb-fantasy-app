@@ -237,15 +237,37 @@ async function updateTournamentRankings(supabase, gameweek) {
     .eq('gameweek', gameweek);
 
   for (const tournament of tournaments || []) {
-    // Get all entries sorted by points
+    // Get all entries for this tournament
     const { data: entries } = await supabase
       .from('tournament_entries')
       .select('*, users:user_id(*)')
-      .eq('tournament_id', tournament.id)
-      .order('entry_points', { ascending: false });
+      .eq('tournament_id', tournament.id);
+
+    // Calculate entry_points for each user from gameweek_summary
+    for (const entry of entries || []) {
+      const { data: summary } = await supabase
+        .from('gameweek_summary')
+        .select('total_points')
+        .eq('user_id', entry.user_id)
+        .eq('gameweek', gameweek)
+        .single();
+
+      const entryPoints = summary?.total_points || 0;
+
+      await supabase
+        .from('tournament_entries')
+        .update({ entry_points: entryPoints })
+        .eq('id', entry.id);
+
+      // Update the entry object for ranking
+      entry.entry_points = entryPoints;
+    }
+
+    // Sort entries by points (highest first) for ranking
+    entries.sort((a, b) => b.entry_points - a.entry_points);
 
     // Update rankings
-    for (let i = 0; i < (entries || []).length; i++) {
+    for (let i = 0; i < entries.length; i++) {
       const rank = i + 1;
       let prize = 0;
 

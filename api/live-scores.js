@@ -198,4 +198,38 @@ async function calculatePointsForGameweek(supabase, gameweek) {
       })
       .eq('id', user.id);
   }
+
+  // Update tournament entries for this gameweek
+  await updateTournamentEntries(supabase, gameweek);
 }
+
+async function updateTournamentEntries(supabase, gameweek) {
+  // Get all tournaments for this gameweek
+  const { data: tournaments } = await supabase
+    .from('tournaments')
+    .select('*')
+    .eq('gameweek', gameweek);
+
+  for (const tournament of tournaments || []) {
+    // Get all entries for this tournament
+    const { data: entries } = await supabase
+      .from('tournament_entries')
+      .select('*')
+      .eq('tournament_id', tournament.id);
+
+    for (const entry of entries || []) {
+      // Calculate total points for this user in this gameweek
+      const { data: userPreds } = await supabase
+        .from('predictions')
+        .select('points_earned')
+        .eq('user_id', entry.user_id)
+        .eq('gameweek', gameweek);
+
+      const entryPoints = userPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+
+      await supabase
+        .from('tournament_entries')
+        .update({ entry_points: entryPoints })
+        .eq('id', entry.id);
+    }
+  }
