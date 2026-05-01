@@ -285,3 +285,476 @@ async function loadUserPredictions() {
     container.innerHTML = `<div class="empty-state"><p>Error: ${error.message}</p></div>`;
   }
 }
+
+// Global variables for chart and data
+let performanceChart = null;
+let currentChartMode = 'points';
+
+// SECTION 1: Performance Graph
+async function loadPerformanceGraph() {
+  const token = localStorage.getItem('gbf_token');
+  const container = document.getElementById('performance-chart-container');
+  const emptyState = document.getElementById('performance-empty');
+  
+  if (!container) return;
+  
+  try {
+    // Get user's tournaments
+    const response = await fetch('/api/tournaments?status=live', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load tournaments');
+    
+    const data = await response.json();
+    const tournaments = data.tournaments || [];
+    
+    if (tournaments.length === 0) {
+      container.style.display = 'none';
+      emptyState.style.display = 'block';
+      return;
+    }
+    
+    // Collect gameweek data for each tournament
+    const tournamentData = [];
+    const colors = ['#3b82f6', '#f59e0b', '#22c55e', '#ef4444', '#8b5cf6'];
+    
+    for (let i = 0; i < tournaments.length; i++) {
+      const tournament = tournaments[i];
+      const gwData = await fetchGameweekData(tournament.gameweek, token);
+      
+      if (gwData && gwData.predictions) {
+        tournamentData.push({
+          name: tournament.name,
+          gameweek: tournament.gameweek,
+          points: gwData.totalPoints || 0,
+          color: colors[i % colors.length]
+        });
+      }
+    }
+    
+    // Need at least 2 gameweeks for a meaningful graph
+    const uniqueGWs = [...new Set(tournamentData.map(t => t.gameweek))];
+    if (uniqueGWs.length < 2 && tournamentData.length < 2) {
+      container.style.display = 'none';
+      emptyState.style.display = 'block';
+      emptyState.innerHTML = `
+        <i class="fas fa-chart-bar"></i>
+        <p>More data coming as gameweeks complete</p>
+      `;
+      return;
+    }
+    
+    container.style.display = 'block';
+    emptyState.style.display = 'none';
+    
+    renderPerformanceChart(tournamentData);
+    
+  } catch (error) {
+    console.error('Error loading performance graph:', error);
+    container.style.display = 'none';
+    emptyState.style.display = 'block';
+  }
+}
+
+async function fetchGameweekData(gameweek, token) {
+  try {
+    const response = await fetch(`/api/predictions?gameweek=${gameweek}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    const predictions = data.predictions || [];
+    const totalPoints = predictions.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+    
+    return { ...data, totalPoints };
+  } catch (e) {
+    return null;
+  }
+}
+
+function renderPerformanceChart(tournamentData) {
+  const ctx = document.getElementById('performanceChart');
+  if (!ctx) return;
+  
+  // Group by gameweek
+  const gameweeks = [...new Set(tournamentData.map(t => t.gameweek))].sort();
+  
+  const datasets = tournamentData.map((t, index) => ({
+    label: t.name,
+    data: gameweeks.map(gw => t.gameweek === gw ? t.points : null),
+    borderColor: t.color,
+    backgroundColor: t.color + '20',
+    tension: 0.4,
+    fill: false
+  }));
+  
+  if (performanceChart) {
+    performanceChart.destroy();
+  }
+  
+  performanceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: gameweeks.map(gw => `GW${gw}`),
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 200,
+          grid: { color: 'rgba(255,255,255,0.1)' },
+          ticks: { color: '#94a3b8' }
+        },
+        x: {
+          grid: { color: 'rgba(255,255,255,0.1)' },
+          ticks: { color: '#94a3b8' }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: { color: '#94a3b8' }
+        }
+      }
+    }
+  });
+}
+
+function switchChart(mode) {
+  currentChartMode = mode;
+  document.getElementById('toggle-points').classList.toggle('active', mode === 'points');
+  document.getElementById('toggle-rank').classList.toggle('active', mode === 'rank');
+  // Re-render with new mode (rank mode would need leaderboard data)
+  loadPerformanceGraph();
+}
+
+// SECTION 2: Prediction History Table
+async function loadPredictionHistory() {
+  const token = localStorage.getItem('gbf_token');
+  const container = document.getElementById('prediction-history-container');
+  
+  if (!container) return;
+  
+  try {
+    const gwResponse = await fetch('/api/current-gameweek');
+    const gwData = await gwResponse.json();
+    const currentGW = gwData.current_gameweek || 35;
+    
+    // Fetch predictions for current gameweek
+    const response = await fetch(`/api/predictions?gameweek=${currentGW}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load predictions');
+    
+    const data = await response.json();
+    const predictions = data.predictions || [];
+    const matches = data.matches || [];
+    
+    if (predictions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-futbol"></i>
+          <p>No predictions yet</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Build table
+    let tableHTML = `
+      <div style="overflow-x: auto;">
+        <table class="prediction-table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <th style="text-align: left; padding: 0.75rem;">Match</th>
+              <th style="text-align: center; padding: 0.75rem;">Your Pick</th>
+              <th style="text-align: center; padding: 0.75rem;">Result</th>
+              <th style="text-align: center; padding: 0.75rem;">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    let totalPoints = 0;
+    let correctResults = 0;
+    let correctScores = 0;
+    
+    predictions.forEach(pred => {
+      const match = matches.find(m => m.id === pred.match_id);
+      if (!match) return;
+      
+      const points = pred.points_earned || 0;
+      totalPoints += points;
+      if (points >= 10) correctResults++;
+      if (points === 20) correctScores++;
+      
+      const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : '#64748b';
+      const isFinished = match.status === 'finished';
+      const actualResult = isFinished ? `${match.home_score}-${match.away_score}` : '-';
+      
+      tableHTML += `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <td style="padding: 0.75rem;">${match.home_team} vs ${match.away_team}</td>
+          <td style="text-align: center; padding: 0.75rem;">${pred.predicted_result} (${pred.home_score}-${pred.away_score})</td>
+          <td style="text-align: center; padding: 0.75rem;">${actualResult}</td>
+          <td style="text-align: center; padding: 0.75rem; color: ${pointsColor}; font-weight: 600;">${points}pts</td>
+        </tr>
+      `;
+    });
+    
+    tableHTML += `
+          </tbody>
+          <tfoot>
+            <tr style="background: var(--bg-hover); font-weight: 600;">
+              <td style="padding: 0.75rem;" colspan="2">Total: ${predictions.length} predictions</td>
+              <td style="text-align: center; padding: 0.75rem;">${correctResults} correct</td>
+              <td style="text-align: center; padding: 0.75rem; color: var(--accent-green);">${totalPoints}pts</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
+    
+    container.innerHTML = tableHTML;
+    
+  } catch (error) {
+    console.error('Error loading prediction history:', error);
+    container.innerHTML = `<div class="empty-state"><p>Error loading history</p></div>`;
+  }
+}
+
+// SECTION 3: Achievements
+async function loadAchievements() {
+  const token = localStorage.getItem('gbf_token');
+  const container = document.getElementById('achievements');
+  
+  if (!container) return;
+  
+  try {
+    const gwResponse = await fetch('/api/current-gameweek');
+    const gwData = await gwResponse.json();
+    const currentGW = gwData.current_gameweek || 35;
+    
+    // Fetch all predictions for current gameweek
+    const response = await fetch(`/api/predictions?gameweek=${currentGW}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load predictions');
+    
+    const data = await response.json();
+    const predictions = data.predictions || [];
+    const matches = data.matches || [];
+    
+    // Calculate achievements
+    const achievements = [
+      {
+        id: 'first-prediction',
+        icon: '🎯',
+        name: 'First Prediction',
+        earned: predictions.length > 0
+      },
+      {
+        id: 'perfect-score',
+        icon: '💯',
+        name: 'Perfect Score',
+        earned: predictions.some(p => p.points_earned === 20)
+      },
+      {
+        id: 'hat-trick',
+        icon: '🎩',
+        name: 'Hat-trick',
+        earned: checkConsecutiveCorrect(predictions, matches, 3)
+      },
+      {
+        id: 'on-fire',
+        icon: '🔥',
+        name: 'On Fire',
+        earned: checkConsecutiveCorrect(predictions, matches, 5)
+      },
+      {
+        id: 'sharp-shooter',
+        icon: '🔫',
+        name: 'Sharp Shooter',
+        earned: predictions.filter(p => p.points_earned === 20).length >= 5
+      },
+      {
+        id: 'top-10',
+        icon: '⭐',
+        name: 'Top 10 Finish',
+        earned: false // Would need tournament history
+      },
+      {
+        id: 'top-of-week',
+        icon: '👑',
+        name: 'Top of the Week',
+        earned: false // Would need to compare with all users
+      }
+    ];
+    
+    let html = '';
+    achievements.forEach(ach => {
+      const earnedClass = ach.earned ? 'earned' : '';
+      const opacity = ach.earned ? '1' : '0.4';
+      html += `
+        <div class="achievement-badge ${earnedClass}" style="opacity: ${opacity};">
+          <div class="achievement-icon">${ach.icon}</div>
+          <div class="achievement-name">${ach.name}</div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+    
+  } catch (error) {
+    console.error('Error loading achievements:', error);
+    container.innerHTML = '<p class="text-muted">Could not load achievements</p>';
+  }
+}
+
+function checkConsecutiveCorrect(predictions, matches, count) {
+  // Sort predictions by match kickoff time
+  const sortedPreds = predictions
+    .filter(p => (p.points_earned || 0) >= 10)
+    .map(p => {
+      const match = matches.find(m => m.id === p.match_id);
+      return { ...p, kickoff: match?.kickoff_time || '9999' };
+    })
+    .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  
+  if (sortedPreds.length < count) return false;
+  
+  // Check for consecutive correct predictions
+  let consecutive = 1;
+  for (let i = 1; i < sortedPreds.length; i++) {
+    if ((sortedPreds[i].points_earned || 0) >= 10) {
+      consecutive++;
+      if (consecutive >= count) return true;
+    } else {
+      consecutive = 0;
+    }
+  }
+  
+  return false;
+}
+
+// SECTION 4: Detailed Insights
+async function loadInsights() {
+  const token = localStorage.getItem('gbf_token');
+  const container = document.getElementById('insights');
+  
+  if (!container) return;
+  
+  try {
+    const gwResponse = await fetch('/api/current-gameweek');
+    const gwData = await gwResponse.json();
+    const currentGW = gwData.current_gameweek || 35;
+    
+    const response = await fetch(`/api/predictions?gameweek=${currentGW}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load predictions');
+    
+    const data = await response.json();
+    const predictions = data.predictions || [];
+    const matches = data.matches || [];
+    
+    if (predictions.length === 0) {
+      container.innerHTML = '<p class="text-muted">Make predictions to see insights</p>';
+      return;
+    }
+    
+    // Calculate insights
+    const finishedPreds = predictions.filter(p => {
+      const match = matches.find(m => m.id === p.match_id);
+      return match && match.status === 'finished';
+    });
+    
+    const pointsArray = finishedPreds.map(p => p.points_earned || 0);
+    const bestGW = pointsArray.length > 0 ? Math.max(...pointsArray) : 0;
+    const worstGW = pointsArray.length > 0 ? Math.min(...pointsArray) : 0;
+    const avgPoints = pointsArray.length > 0 
+      ? Math.round(pointsArray.reduce((a, b) => a + b, 0) / pointsArray.length) 
+      : 0;
+    
+    // Favourite result distribution
+    const resultCounts = { H: 0, X: 0, A: 0 };
+    predictions.forEach(p => {
+      if (resultCounts[p.predicted_result] !== undefined) {
+        resultCounts[p.predicted_result]++;
+      }
+    });
+    const total = predictions.length;
+    const favResult = Object.entries(resultCounts)
+      .sort((a, b) => b[1] - a[1])[0][0];
+    
+    // Accuracy by result type
+    const accuracyByResult = {};
+    ['H', 'X', 'A'].forEach(result => {
+      const resultPreds = finishedPreds.filter(p => p.predicted_result === result);
+      const correct = resultPreds.filter(p => (p.points_earned || 0) >= 10).length;
+      accuracyByResult[result] = resultPreds.length > 0 
+        ? Math.round((correct / resultPreds.length) * 100) 
+        : 0;
+    });
+    
+    container.innerHTML = `
+      <div class="insight-card best">
+        <div class="insight-label">Best Prediction</div>
+        <div class="insight-value">${bestGW}pts</div>
+      </div>
+      <div class="insight-card worst">
+        <div class="insight-label">Worst Prediction</div>
+        <div class="insight-value">${worstGW}pts</div>
+      </div>
+      <div class="insight-card neutral">
+        <div class="insight-label">Average Points</div>
+        <div class="insight-value">${avgPoints}pts</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-label">Favourite Pick</div>
+        <div class="insight-value">${favResult}</div>
+        <div class="insight-detail">${Math.round((resultCounts[favResult] / total) * 100)}% of picks</div>
+      </div>
+      <div class="insight-card" style="grid-column: span 2;">
+        <div class="insight-label">Accuracy by Prediction Type</div>
+        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+          <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(59, 130, 246, 0.2); border-radius: 0.5rem;">
+            <div style="font-size: 1.25rem; font-weight: 700; color: #3b82f6;">${accuracyByResult.H}%</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Home Wins</div>
+          </div>
+          <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(245, 158, 11, 0.2); border-radius: 0.5rem;">
+            <div style="font-size: 1.25rem; font-weight: 700; color: #f59e0b;">${accuracyByResult.X}%</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Draws</div>
+          </div>
+          <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(239, 68, 68, 0.2); border-radius: 0.5rem;">
+            <div style="font-size: 1.25rem; font-weight: 700; color: #ef4444;">${accuracyByResult.A}%</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Away Wins</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+  } catch (error) {
+    console.error('Error loading insights:', error);
+    container.innerHTML = '<p class="text-muted">Could not load insights</p>';
+  }
+}
+
+// Initialize all sections on page load
+document.addEventListener('DOMContentLoaded', async function() {
+  await loadProfile();
+  await loadUserTournaments();
+  await loadUserPredictions();
+  await loadPerformanceGraph();
+  await loadPredictionHistory();
+  await loadAchievements();
+  await loadInsights();
+});
