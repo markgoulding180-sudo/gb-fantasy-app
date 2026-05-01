@@ -8,7 +8,7 @@ const FPL_FIXTURES_URL = 'https://fantasy.premierleague.com/api/fixtures/';
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -131,12 +131,11 @@ async function calculatePointsForGameweek(supabase, gameweek) {
   const usersToUpdate = new Set();
 
   for (const match of matches) {
-    // Get predictions for this match that haven't been scored
+    // Get ALL predictions for this match (rescoring ensures correctness if results change)
     const { data: predictions } = await supabase
       .from('predictions')
       .select('*')
-      .eq('match_id', match.id)
-      .eq('points_earned', 0);
+      .eq('match_id', match.id);
 
     if (!predictions || predictions.length === 0) continue;
 
