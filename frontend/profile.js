@@ -100,7 +100,7 @@ async function loadUserTournaments() {
               <div class="profile-stat-label">Predictions Made</div>
             </div>
             <div class="profile-stat">
-              <div class="profile-stat-value">--%</div>
+              <div class="profile-stat-value" id="stat-accuracy-${tournament.id}">--%</div>
               <div class="profile-stat-label">Accuracy</div>
             </div>
           </div>
@@ -171,9 +171,23 @@ async function loadUserPredictions() {
     
     const data = await response.json();
     
-    // Update predictions count for all tournaments
+    // Calculate accuracy
+    const finishedMatches = data.matches.filter(m => m.status === 'finished');
+    const finishedPreds = data.predictions.filter(p => 
+      finishedMatches.some(m => m.id === p.match_id)
+    );
+    const correctPreds = finishedPreds.filter(p => (p.points_earned || 0) > 0);
+    const accuracy = finishedPreds.length > 0 
+      ? Math.round((correctPreds.length / finishedPreds.length) * 100) 
+      : null;
+    const accuracyDisplay = accuracy !== null ? accuracy + '%' : '--%';
+    
+    // Update predictions count and accuracy for all tournaments
     document.querySelectorAll('[id^="stat-predictions-"]').forEach(el => {
       el.textContent = data.predictions?.length || 0;
+    });
+    document.querySelectorAll('[id^="stat-accuracy-"]').forEach(el => {
+      el.textContent = accuracyDisplay;
     });
     
     if (!data.predictions || data.predictions.length === 0) {
@@ -194,13 +208,24 @@ async function loadUserPredictions() {
     data.predictions.forEach((pred) => {
       const match = data.matches.find(m => m.id === pred.match_id);
       if (match) {
+        const isFinished = match.status === 'finished';
+        const points = pred.points_earned || 0;
+        const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : 'rgba(255,255,255,0.4)';
+        
+        let resultLine = '';
+        if (isFinished) {
+          const actualResult = match.home_score + '-' + match.away_score;
+          const checkmark = points > 0 ? '✓' : '✗';
+          resultLine = `<div style="font-size: 0.875rem; color: ${pointsColor};">Result: ${actualResult} ${checkmark} ${points}pts</div>`;
+        } else {
+          resultLine = `<div style="font-size: 0.875rem; color: rgba(255,255,255,0.4);">Not played yet</div>`;
+        }
+        
         predictionsHTML += `
-          <div style="padding: 0.75rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-weight: 600;">${match.home_team} vs ${match.away_team}</div>
-              <div class="text-muted" style="font-size: 0.875rem;">Result: ${pred.predicted_result} | Score: ${pred.home_score}-${pred.away_score}</div>
-            </div>
-            <i class="fas fa-check-circle text-green"></i>
+          <div style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
+            <div style="font-weight: 600;">${match.home_team} vs ${match.away_team}</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Your prediction: ${pred.predicted_result} | ${pred.home_score}-${pred.away_score}</div>
+            ${resultLine}
           </div>
         `;
       }
