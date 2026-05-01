@@ -207,19 +207,38 @@ async function calculatePointsForGameweek(supabase, gameweek) {
         
         if (!entries || entries.length === 0) continue;
         
-        // Get all predictions for matches in this gameweek for this user
-        const { data: userGameweekPreds } = await supabase
+        // Get ALL predictions for this user in this tournament's gameweek
+        // Must join through matches to get the gameweek
+        const { data: tournamentData } = await supabase
+          .from('tournaments')
+          .select('gameweek')
+          .eq('id', tournament.id)
+          .single();
+        
+        const tournamentGameweek = tournamentData?.gameweek || gameweek;
+        
+        // Get predictions for matches in this tournament's gameweek
+        const { data: predPoints } = await supabase
           .from('predictions')
-          .select('points_earned')
-          .eq('user_id', userId)
-          .eq('gameweek', gameweek);
+          .select('points_earned, match_id')
+          .eq('user_id', userId);
         
-        const gameweekPoints = userGameweekPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+        // Filter to only include predictions for matches in this tournament's gameweek
+        const { data: gameweekMatches } = await supabase
+          .from('matches')
+          .select('id')
+          .eq('gameweek', tournamentGameweek);
         
-        // Update the tournament entry with new points
+        const gameweekMatchIds = new Set((gameweekMatches || []).map(m => m.id));
+        
+        const totalPoints = (predPoints || [])
+          .filter(p => gameweekMatchIds.has(p.match_id))
+          .reduce((sum, p) => sum + (p.points_earned || 0), 0);
+        
+        // Update the tournament entry with the FULL recalculated total
         await supabase
           .from('tournament_entries')
-          .update({ entry_points: gameweekPoints })
+          .update({ entry_points: totalPoints })
           .eq('tournament_id', tournament.id)
           .eq('user_id', userId);
       }
