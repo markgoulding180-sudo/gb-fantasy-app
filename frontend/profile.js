@@ -22,6 +22,29 @@ async function loadProfile() {
     document.getElementById('profile-username').textContent = '@' + user.username;
     document.getElementById('profile-avatar').textContent = (user.display_name || user.username).substring(0, 2).toUpperCase();
     
+    // Handle join date - check localStorage first, then fetch from Supabase
+    let joinDate = user.created_at;
+    if (!joinDate && typeof supabase !== 'undefined') {
+      // Fetch from Supabase if not in localStorage
+      try {
+        const { data: { user: freshUser } } = await supabase.auth.getUser();
+        if (freshUser?.created_at) {
+          joinDate = freshUser.created_at;
+          // Update localStorage with the created_at
+          user.created_at = joinDate;
+          localStorage.setItem('gbf_user', JSON.stringify(user));
+        }
+      } catch (e) {
+        console.log('Could not fetch user data from Supabase');
+      }
+    }
+    
+    if (joinDate) {
+      const date = new Date(joinDate);
+      const formatted = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+      document.getElementById('join-date').textContent = formatted;
+    }
+    
   } catch (error) {
     console.error('Error loading profile:', error);
   }
@@ -66,6 +89,44 @@ async function loadUserTournaments() {
       
       const isEntered = !!userEntry;
       
+      // Calculate stats for entered tournaments
+      let predictionsCount = '--';
+      let resultPct = '--%';
+      let scorePct = '--%';
+      
+      if (isEntered) {
+        try {
+          const predResponse = await fetch(`/api/predictions?gameweek=${tournament.gameweek}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (predResponse.ok) {
+            const predData = await predResponse.json();
+            // Count predictions for matches in this tournament's gameweek
+            const gameweekMatchIds = new Set((predData.matches || []).map(m => m.id));
+            const tournamentPreds = (predData.predictions || []).filter(p => 
+              gameweekMatchIds.has(p.match_id)
+            );
+            predictionsCount = tournamentPreds.length;
+            
+            // Calculate Result % and Score %
+            const finishedMatches = (predData.matches || []).filter(m => m.status === 'finished');
+            const finishedPreds = tournamentPreds.filter(p => 
+              finishedMatches.some(m => m.id === p.match_id)
+            );
+            const correctResults = finishedPreds.filter(p => (p.points_earned || 0) >= 10).length;
+            const correctScores = finishedPreds.filter(p => (p.points_earned || 0) === 20).length;
+            resultPct = finishedPreds.length > 0 
+              ? Math.round((correctResults / finishedPreds.length) * 100) + '%' 
+              : '--%';
+            scorePct = finishedPreds.length > 0 
+              ? Math.round((correctScores / finishedPreds.length) * 100) + '%' 
+              : '--%';
+          }
+        } catch (e) {
+          console.log('Could not fetch predictions for tournament', tournament.id);
+        }
+      }
+      
       tournamentsHTML += `
         <div class="tournament-section mb-3">
           <!-- Tournament Header -->
@@ -96,15 +157,15 @@ async function loadUserTournaments() {
               <div class="profile-stat-label">Tournament Rank</div>
             </div>
             <div class="profile-stat">
-              <div class="profile-stat-value" id="stat-predictions-${tournament.id}">--</div>
+              <div class="profile-stat-value">${predictionsCount}</div>
               <div class="profile-stat-label">Predictions Made</div>
             </div>
             <div class="profile-stat">
-              <div class="profile-stat-value" id="stat-result-${tournament.id}">--%</div>
+              <div class="profile-stat-value">${resultPct}</div>
               <div class="profile-stat-label">Result %</div>
             </div>
             <div class="profile-stat">
-              <div class="profile-stat-value" id="stat-score-${tournament.id}">--%</div>
+              <div class="profile-stat-value">${scorePct}</div>
               <div class="profile-stat-label">Score %</div>
             </div>
           </div>
@@ -175,31 +236,6 @@ async function loadUserPredictions() {
     
     const data = await response.json();
     
-    // Calculate Result % and Score %
-    const finishedMatches = data.matches.filter(m => m.status === 'finished');
-    const finishedPreds = data.predictions.filter(p => 
-      finishedMatches.some(m => m.id === p.match_id)
-    );
-    const correctResults = finishedPreds.filter(p => (p.points_earned || 0) >= 10).length;
-    const correctScores = finishedPreds.filter(p => (p.points_earned || 0) === 20).length;
-    const resultPct = finishedPreds.length > 0 
-      ? Math.round((correctResults / finishedPreds.length) * 100) + '%' 
-      : '--%';
-    const scorePct = finishedPreds.length > 0 
-      ? Math.round((correctScores / finishedPreds.length) * 100) + '%' 
-      : '--%';
-    
-    // Update predictions count, Result % and Score % for all tournaments
-    document.querySelectorAll('[id^="stat-predictions-"]').forEach(el => {
-      el.textContent = data.predictions?.length || 0;
-    });
-    document.querySelectorAll('[id^="stat-result-"]').forEach(el => {
-      el.textContent = resultPct;
-    });
-    document.querySelectorAll('[id^="stat-score-"]').forEach(el => {
-      el.textContent = scorePct;
-    });
-    
     if (!data.predictions || data.predictions.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
@@ -241,13 +277,6 @@ async function loadUserPredictions() {
       }
     });
     predictionsHTML += '</div>';
-    predictionsHTML += `
-      <div style="text-align: center; margin-top: 1rem;">
-        <a href="predictions.html" class="btn btn-primary btn-sm">
-          <i class="fas fa-edit"></i> Edit Predictions
-        </a>
-      </div>
-    `;
     
     container.innerHTML = predictionsHTML;
     
