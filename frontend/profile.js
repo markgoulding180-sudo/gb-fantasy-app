@@ -390,33 +390,15 @@ async function loadMyTournaments() {
       return;
     }
     
-    // Fetch fresh predictions data for each tournament gameweek to get real-time points
-    const gameweekPoints = {};
-    const tournamentGameweeks = [...new Set(entries.map(e => e.tournament.gameweek))];
-    
-    for (const gw of tournamentGameweeks) {
-      const predResponse = await fetch(`${API_BASE}/predictions?gameweek=${gw}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      
-      if (predResponse.ok) {
-        const predData = await predResponse.json();
-        gameweekPoints[gw] = predData.predictions?.reduce((sum, p) => sum + (p.points_earned || 0), 0) || 0;
-        console.log(`GW${gw} fresh points from API:`, gameweekPoints[gw]);
-      } else {
-        gameweekPoints[gw] = 0;
-      }
-    }
-    
     container.innerHTML = entries.map(e => {
       const t = e.tournament;
       const statusClass = t.status === 'live' ? 'live' : t.status === 'finished' ? 'finished' : '';
       const rankDisplay = e.rank ? `#${e.rank}` : 'Not ranked';
       
-      // Use fresh points calculated directly from API response (like the chart does)
-      const tournamentPoints = gameweekPoints[t.gameweek] || 0;
+      // Use entry_points from API - this is updated by admin when scores are entered
+      const tournamentPoints = e.entry_points || 0;
       
-      console.log(`Tournament ${t.name}: calculated_points=${tournamentPoints}, entry_points=${e.entry_points}, rank=${e.rank}`); // DEBUG
+      console.log(`Tournament ${t.name}: entry_points=${tournamentPoints}, rank=${e.rank}`); // DEBUG
       
       return `
         <div class="tournament-entry ${statusClass}">
