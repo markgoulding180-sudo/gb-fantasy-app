@@ -100,8 +100,12 @@ async function loadUserTournaments() {
               <div class="profile-stat-label">Predictions Made</div>
             </div>
             <div class="profile-stat">
-              <div class="profile-stat-value" id="stat-accuracy-${tournament.id}">--%</div>
-              <div class="profile-stat-label">Accuracy</div>
+              <div class="profile-stat-value" id="stat-result-${tournament.id}">--%</div>
+              <div class="profile-stat-label">Result %</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-value" id="stat-score-${tournament.id}">--%</div>
+              <div class="profile-stat-label">Score %</div>
             </div>
           </div>
           
@@ -171,23 +175,29 @@ async function loadUserPredictions() {
     
     const data = await response.json();
     
-    // Calculate accuracy
+    // Calculate Result % and Score %
     const finishedMatches = data.matches.filter(m => m.status === 'finished');
     const finishedPreds = data.predictions.filter(p => 
       finishedMatches.some(m => m.id === p.match_id)
     );
-    const correctPreds = finishedPreds.filter(p => (p.points_earned || 0) > 0);
-    const accuracy = finishedPreds.length > 0 
-      ? Math.round((correctPreds.length / finishedPreds.length) * 100) 
-      : null;
-    const accuracyDisplay = accuracy !== null ? accuracy + '%' : '--%';
+    const correctResults = finishedPreds.filter(p => (p.points_earned || 0) >= 10).length;
+    const correctScores = finishedPreds.filter(p => (p.points_earned || 0) === 20).length;
+    const resultPct = finishedPreds.length > 0 
+      ? Math.round((correctResults / finishedPreds.length) * 100) + '%' 
+      : '--%';
+    const scorePct = finishedPreds.length > 0 
+      ? Math.round((correctScores / finishedPreds.length) * 100) + '%' 
+      : '--%';
     
-    // Update predictions count and accuracy for all tournaments
+    // Update predictions count, Result % and Score % for all tournaments
     document.querySelectorAll('[id^="stat-predictions-"]').forEach(el => {
       el.textContent = data.predictions?.length || 0;
     });
-    document.querySelectorAll('[id^="stat-accuracy-"]').forEach(el => {
-      el.textContent = accuracyDisplay;
+    document.querySelectorAll('[id^="stat-result-"]').forEach(el => {
+      el.textContent = resultPct;
+    });
+    document.querySelectorAll('[id^="stat-score-"]').forEach(el => {
+      el.textContent = scorePct;
     });
     
     if (!data.predictions || data.predictions.length === 0) {
