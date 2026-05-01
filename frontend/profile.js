@@ -31,15 +31,17 @@ async function initProfile() {
   // Render profile header
   renderProfileHeader(userData);
   
-  // Load cached predictions data for all gameweeks (needed for real-time tournament points)
+  // Load cached predictions data FIRST (needed for real-time tournament points)
   await loadCachedPredictionsData();
   
-  // Load all profile data
+  // Load stats and other data that depends on cached predictions
+  await loadStats();
+  await loadMyTournaments(); // Uses cached data - must run after loadCachedPredictionsData
+  
+  // Load remaining data in parallel
   await Promise.all([
-    loadStats(),
     loadCurrentPredictions(),
     loadPredictionHistory(),
-    loadMyTournaments(),
     loadPerformanceChart()
   ]);
 }
