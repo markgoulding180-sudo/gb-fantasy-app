@@ -1,0 +1,20 @@
+name: Live Scores Update
+
+on:
+  schedule:
+    - cron: '*/5 19-22 * * 5'    # Friday 19:00-22:00 UTC
+    - cron: '*/5 11-22 * * 6'    # Saturday 11:00-22:00 UTC
+    - cron: '*/5 13-22 * * 0'    # Sunday 13:00-22:00 UTC
+    - cron: '*/5 19-22 * * 1'    # Monday 19:00-22:00 UTC
+    - cron: '*/5 19-22 * * 2'    # Tuesday 19:00-22:00 UTC
+    - cron: '*/5 19-22 * * 3'    # Wednesday 19:00-22:00 UTC
+
+jobs:
+  update-scores:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Live Scores API
+        run: |
+          curl -X POST https://gb-fantasy-app.vercel.app/api/live-scores \
+            -H 'Content-Type: application/json' \
+            --max-time 30
