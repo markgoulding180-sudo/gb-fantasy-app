@@ -622,6 +622,94 @@ function renderLeaderboard(leaderboard) {
   }).join('');
 }
 
+// Cached predictions data for insights calculations
+let cachedPredictionsData = null;
+
+// Load insights with proper cached data handling
+async function loadInsights() {
+  try {
+    // Ensure we have cached data
+    if (!cachedPredictionsData) {
+      await loadCachedPredictionsData();
+    }
+    
+    // Use cachedPredictionsData instead of undefined 'data' variable
+    const predictions = cachedPredictionsData?.predictions || [];
+    const matches = cachedPredictionsData?.matches || [];
+    
+    // Calculate insights
+    const insights = {
+      totalPredictions: predictions.length,
+      finishedMatches: 0,
+      correctResults: 0,
+      correctScores: 0,
+      totalPoints: 0
+    };
+    
+    const processedMatchIds = new Set();
+    
+    predictions.forEach(pred => {
+      const match = matches.find(m => m.id === pred.match_id);
+      if (match && match.status === 'finished' && !processedMatchIds.has(pred.match_id)) {
+        processedMatchIds.add(pred.match_id);
+        insights.finishedMatches++;
+        insights.totalPoints += pred.points_earned || 0;
+        
+        if (pred.points_earned > 0) {
+          insights.correctResults++;
+          if (pred.points_earned >= 20) {
+            insights.correctScores++;
+          }
+        }
+      }
+    });
+    
+    console.log('Insights loaded:', insights);
+    return insights;
+    
+  } catch (error) {
+    console.error('Error loading insights:', error);
+    return null;
+  }
+}
+
+// Load cached predictions data across all gameweeks
+async function loadCachedPredictionsData() {
+  try {
+    const allPredictions = [];
+    const allMatches = [];
+    
+    // Fetch predictions for all gameweeks (1-38)
+    for (let gw = 1; gw <= 38; gw++) {
+      const response = await fetch(`${API_BASE}/predictions?gameweek=${gw}`, {
+        headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.predictions) {
+          allPredictions.push(...data.predictions);
+        }
+        if (data.matches) {
+          // Add gameweek info to matches
+          const matchesWithGameweek = data.matches.map(m => ({ ...m, gameweek: gw }));
+          allMatches.push(...matchesWithGameweek);
+        }
+      }
+    }
+    
+    cachedPredictionsData = {
+      predictions: allPredictions,
+      matches: allMatches
+    };
+    
+    console.log('Cached predictions data loaded:', cachedPredictionsData);
+  } catch (error) {
+    console.error('Error loading cached predictions data:', error);
+    cachedPredictionsData = { predictions: [], matches: [] };
+  }
+}
+
 function renderTournaments(tournaments) {
   // This would dynamically render tournaments
   // For now, static HTML serves as fallback with enhanced interactivity

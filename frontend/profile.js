@@ -6,6 +6,9 @@ const API_BASE = '/api';
 let currentUser = null;
 let authToken = localStorage.getItem('gbf_token') || null;
 
+// Cached predictions data for real-time calculations
+let cachedPredictionsData = null;
+
 document.addEventListener('DOMContentLoaded', function() {
   initProfile();
 });
@@ -27,6 +30,9 @@ async function initProfile() {
   
   // Render profile header
   renderProfileHeader(userData);
+  
+  // Load cached predictions data for all gameweeks (needed for real-time tournament points)
+  await loadCachedPredictionsData();
   
   // Load all profile data
   await Promise.all([
@@ -62,6 +68,43 @@ async function loadUserData() {
   }
 }
 
+// Load all predictions data across all gameweeks for real-time calculations
+async function loadCachedPredictionsData() {
+  try {
+    const allPredictions = [];
+    const allMatches = [];
+    
+    // Fetch predictions for all gameweeks (1-38)
+    for (let gw = 1; gw <= 38; gw++) {
+      const response = await fetch(`${API_BASE}/predictions?gameweek=${gw}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.predictions) {
+          allPredictions.push(...data.predictions);
+        }
+        if (data.matches) {
+          // Add gameweek info to matches
+          const matchesWithGameweek = data.matches.map(m => ({ ...m, gameweek: gw }));
+          allMatches.push(...matchesWithGameweek);
+        }
+      }
+    }
+    
+    cachedPredictionsData = {
+      predictions: allPredictions,
+      matches: allMatches
+    };
+    
+    console.log('Cached predictions data loaded:', cachedPredictionsData);
+  } catch (error) {
+    console.error('Error loading cached predictions data:', error);
+    cachedPredictionsData = { predictions: [], matches: [] };
+  }
+}
+
 function renderProfileHeader(user) {
   const initials = user.display_name 
     ? user.display_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
@@ -93,22 +136,22 @@ async function loadStats() {
       }
     }
     
-    // Calculate accuracy from prediction history (finished matches only)
-    const historyResponse = await fetch(`${API_BASE}/predictions?gameweek=all`, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
-    });
-    
-    if (historyResponse.ok) {
-      const historyData = await historyResponse.json();
-      const predictions = historyData.predictions || [];
-      const matches = historyData.matches || [];
+    // Calculate accuracy from cached predictions data (finished matches only)
+    // Use cached data for consistency with other calculations
+    if (cachedPredictionsData) {
+      const predictions = cachedPredictionsData.predictions || [];
+      const matches = cachedPredictionsData.matches || [];
       
       let totalFinished = 0;
       let correctPredictions = 0;
       
+      // Use a Set to track unique match IDs to avoid duplicates
+      const processedMatchIds = new Set();
+      
       predictions.forEach(pred => {
         const match = matches.find(m => m.id === pred.match_id);
-        if (match && match.status === 'finished') {
+        if (match && match.status === 'finished' && !processedMatchIds.has(pred.match_id)) {
+          processedMatchIds.add(pred.match_id);
           totalFinished++;
           if (pred.points_earned > 0) {
             correctPredictions++;
@@ -120,6 +163,7 @@ async function loadStats() {
         ? Math.round((correctPredictions / totalFinished) * 100)
         : 0;
       
+      console.log(`Accuracy calculation: ${correctPredictions} correct / ${totalFinished} finished = ${accuracy}%`);
       document.getElementById('stat-accuracy').textContent = accuracy + '%';
     }
     
@@ -308,9 +352,21 @@ async function loadMyTournaments() {
       const t = e.tournament;
       const statusClass = t.status === 'live' ? 'live' : t.status === 'finished' ? 'finished' : '';
       const rankDisplay = e.rank ? `#${e.rank}` : 'Not ranked';
-      const pointsDisplay = e.entry_points || 0;
       
-      console.log(`Tournament ${t.name}: entry_points=${e.entry_points}, rank=${e.rank}`); // DEBUG
+      // Calculate tournament points from predictions directly (real-time)
+      // This is always up to date, rather than relying on tournament_entries.entry_points
+      // which only updates when live-scores runs
+      const tournamentPoints = (() => {
+        const preds = cachedPredictionsData?.predictions || [];
+        const matchIds = (cachedPredictionsData?.matches || [])
+          .filter(m => m.gameweek === t.gameweek)
+          .map(m => m.id);
+        return preds
+          .filter(p => matchIds.includes(p.match_id))
+          .reduce((sum, p) => sum + (p.points_earned || 0), 0);
+      })();
+      
+      console.log(`Tournament ${t.name}: calculated_points=${tournamentPoints}, entry_points=${e.entry_points}, rank=${e.rank}`); // DEBUG
       
       return `
         <div class="tournament-entry ${statusClass}">
@@ -322,7 +378,7 @@ async function loadMyTournaments() {
           </div>
           <div style="text-align: right;">
             <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-green);">
-              ${pointsDisplay} pts
+              ${tournamentPoints} pts
             </div>
             <span class="tournament-status ${t.status}">${t.status}</span>
           </div>
