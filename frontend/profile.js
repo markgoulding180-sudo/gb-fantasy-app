@@ -390,28 +390,31 @@ async function loadMyTournaments() {
       return;
     }
     
-    // Get unique gameweeks from tournaments to refresh cache
+    // Fetch fresh predictions data for each tournament gameweek to get real-time points
+    const gameweekPoints = {};
     const tournamentGameweeks = [...new Set(entries.map(e => e.tournament.gameweek))];
     
-    // Refresh cached predictions data for tournament gameweeks to get latest points
-    await refreshCachedPredictionsForGameweeks(tournamentGameweeks);
+    for (const gw of tournamentGameweeks) {
+      const predResponse = await fetch(`${API_BASE}/predictions?gameweek=${gw}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      
+      if (predResponse.ok) {
+        const predData = await predResponse.json();
+        gameweekPoints[gw] = predData.predictions?.reduce((sum, p) => sum + (p.points_earned || 0), 0) || 0;
+        console.log(`GW${gw} fresh points from API:`, gameweekPoints[gw]);
+      } else {
+        gameweekPoints[gw] = 0;
+      }
+    }
     
     container.innerHTML = entries.map(e => {
       const t = e.tournament;
       const statusClass = t.status === 'live' ? 'live' : t.status === 'finished' ? 'finished' : '';
       const rankDisplay = e.rank ? `#${e.rank}` : 'Not ranked';
       
-      // Calculate tournament points from predictions directly (real-time)
-      // Uses freshly refreshed cached data for accurate points after admin score updates
-      const tournamentPoints = (() => {
-        const preds = cachedPredictionsData?.predictions || [];
-        const matchIds = (cachedPredictionsData?.matches || [])
-          .filter(m => m.gameweek === t.gameweek)
-          .map(m => m.id);
-        return preds
-          .filter(p => matchIds.includes(p.match_id))
-          .reduce((sum, p) => sum + (p.points_earned || 0), 0);
-      })();
+      // Use fresh points calculated directly from API response (like the chart does)
+      const tournamentPoints = gameweekPoints[t.gameweek] || 0;
       
       console.log(`Tournament ${t.name}: calculated_points=${tournamentPoints}, entry_points=${e.entry_points}, rank=${e.rank}`); // DEBUG
       
