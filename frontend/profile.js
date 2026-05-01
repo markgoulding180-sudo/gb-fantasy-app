@@ -107,6 +107,46 @@ async function loadCachedPredictionsData() {
   }
 }
 
+// Refresh cached predictions for specific gameweeks (used when real-time updates are needed)
+async function refreshCachedPredictionsForGameweeks(gameweeks) {
+  try {
+    if (!cachedPredictionsData) {
+      await loadCachedPredictionsData();
+      return;
+    }
+    
+    // Refresh data for specified gameweeks
+    for (const gw of gameweeks) {
+      const response = await fetch(`${API_BASE}/predictions?gameweek=${gw}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Remove old data for this gameweek
+        cachedPredictionsData.predictions = cachedPredictionsData.predictions.filter(
+          p => !cachedPredictionsData.matches.find(m => m.id === p.match_id && m.gameweek === gw)
+        );
+        cachedPredictionsData.matches = cachedPredictionsData.matches.filter(m => m.gameweek !== gw);
+        
+        // Add fresh data
+        if (data.predictions) {
+          cachedPredictionsData.predictions.push(...data.predictions);
+        }
+        if (data.matches) {
+          const matchesWithGameweek = data.matches.map(m => ({ ...m, gameweek: gw }));
+          cachedPredictionsData.matches.push(...matchesWithGameweek);
+        }
+      }
+    }
+    
+    console.log('Cached predictions refreshed for gameweeks:', gameweeks);
+  } catch (error) {
+    console.error('Error refreshing cached predictions:', error);
+  }
+}
+
 function renderProfileHeader(user) {
   const initials = user.display_name 
     ? user.display_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
@@ -350,14 +390,19 @@ async function loadMyTournaments() {
       return;
     }
     
+    // Get unique gameweeks from tournaments to refresh cache
+    const tournamentGameweeks = [...new Set(entries.map(e => e.tournament.gameweek))];
+    
+    // Refresh cached predictions data for tournament gameweeks to get latest points
+    await refreshCachedPredictionsForGameweeks(tournamentGameweeks);
+    
     container.innerHTML = entries.map(e => {
       const t = e.tournament;
       const statusClass = t.status === 'live' ? 'live' : t.status === 'finished' ? 'finished' : '';
       const rankDisplay = e.rank ? `#${e.rank}` : 'Not ranked';
       
       // Calculate tournament points from predictions directly (real-time)
-      // This is always up to date, rather than relying on tournament_entries.entry_points
-      // which only updates when live-scores runs
+      // Uses freshly refreshed cached data for accurate points after admin score updates
       const tournamentPoints = (() => {
         const preds = cachedPredictionsData?.predictions || [];
         const matchIds = (cachedPredictionsData?.matches || [])
