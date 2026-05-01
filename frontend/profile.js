@@ -217,11 +217,14 @@ async function enterTournament(tournamentId) {
   }
 }
 
+// Global cache for predictions data
+let cachedPredictionsData = null;
+
 async function loadUserPredictions() {
   const token = localStorage.getItem('gbf_token');
   const container = document.getElementById('current-predictions');
   
-  if (!container) return;
+  if (!container) return null;
   
   try {
     const gwResponse = await fetch('/api/current-gameweek');
@@ -235,6 +238,7 @@ async function loadUserPredictions() {
     if (!response.ok) throw new Error('Failed to load predictions');
     
     const data = await response.json();
+    cachedPredictionsData = data; // Cache for other functions
     
     if (!data.predictions || data.predictions.length === 0) {
       container.innerHTML = `
@@ -246,7 +250,7 @@ async function loadUserPredictions() {
           </a>
         </div>
       `;
-      return;
+      return data;
     }
     
     // Show submitted predictions list
@@ -280,9 +284,12 @@ async function loadUserPredictions() {
     
     container.innerHTML = predictionsHTML;
     
+    return data;
+    
   } catch (error) {
     console.error('Error loading predictions:', error);
     container.innerHTML = `<div class="empty-state"><p>Error: ${error.message}</p></div>`;
+    return null;
   }
 }
 
@@ -435,24 +442,18 @@ function switchChart(mode) {
 
 // SECTION 2: Prediction History Table
 async function loadPredictionHistory() {
-  const token = localStorage.getItem('gbf_token');
   const container = document.getElementById('prediction-history-container');
   
   if (!container) return;
   
   try {
-    const gwResponse = await fetch('/api/current-gameweek');
-    const gwData = await gwResponse.json();
-    const currentGW = gwData.current_gameweek || 35;
+    // Use cached data from loadUserPredictions
+    const data = cachedPredictionsData;
+    if (!data) {
+      container.innerHTML = '<p class="text-muted">Loading...</p>';
+      return;
+    }
     
-    // Fetch predictions for current gameweek
-    const response = await fetch(`/api/predictions?gameweek=${currentGW}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (!response.ok) throw new Error('Failed to load predictions');
-    
-    const data = await response.json();
     const predictions = data.predictions || [];
     const matches = data.matches || [];
     
@@ -531,24 +532,18 @@ async function loadPredictionHistory() {
 
 // SECTION 3: Achievements
 async function loadAchievements() {
-  const token = localStorage.getItem('gbf_token');
   const container = document.getElementById('achievements');
   
   if (!container) return;
   
   try {
-    const gwResponse = await fetch('/api/current-gameweek');
-    const gwData = await gwResponse.json();
-    const currentGW = gwData.current_gameweek || 35;
+    // Use cached data from loadUserPredictions
+    const data = cachedPredictionsData;
+    if (!data) {
+      container.innerHTML = '<p class="text-muted">Loading...</p>';
+      return;
+    }
     
-    // Fetch all predictions for current gameweek
-    const response = await fetch(`/api/predictions?gameweek=${currentGW}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (!response.ok) throw new Error('Failed to load predictions');
-    
-    const data = await response.json();
     const predictions = data.predictions || [];
     const matches = data.matches || [];
     
@@ -646,23 +641,12 @@ function checkConsecutiveCorrect(predictions, matches, count) {
 
 // SECTION 4: Detailed Insights
 async function loadInsights() {
-  const token = localStorage.getItem('gbf_token');
   const container = document.getElementById('insights');
   
   if (!container) return;
   
   try {
-    const gwResponse = await fetch('/api/current-gameweek');
-    const gwData = await gwResponse.json();
-    const currentGW = gwData.current_gameweek || 35;
-    
-    const response = await fetch(`/api/predictions?gameweek=${currentGW}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (!response.ok) throw new Error('Failed to load predictions');
-    
-    const data = await response.json();
+    // Use cached data from loadUserPredictions
     const predictions = data.predictions || [];
     const matches = data.matches || [];
     
