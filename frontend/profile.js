@@ -229,7 +229,7 @@ async function loadUserPredictions() {
   try {
     const gwResponse = await fetch('/api/current-gameweek');
     const gwData = await gwResponse.json();
-    const gameweek = gwData.next_gameweek || gwData.current_gameweek || 35;
+    const gameweek = gwData.current_gameweek || 35;
     
     const response = await fetch(`/api/predictions?gameweek=${gameweek}`, {
       headers: { 'Authorization': `Bearer ${token}` }
