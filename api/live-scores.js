@@ -1,9 +1,11 @@
-// Vercel Function: Live scores update - call every 60 seconds during matches
-// GET /api/live-scores
+// Vercel Function: Live scores update
+// GET/POST /api/live-scores
 
 const { createClient } = require('@supabase/supabase-js');
 
 const FPL_FIXTURES_URL = 'https://fantasy.premierleague.com/api/fixtures/';
+const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
+const FPL_GW_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,92 +17,126 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Initialize Supabase
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SECRET
     );
 
-    // Get current gameweek
-    const { data: setting } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'current_gameweek')
-      .single();
-
-    const currentGW = setting ? JSON.parse(setting.value).current_gameweek : null;
+    // Get current gameweek from FPL API directly (no settings table needed)
+    const bootstrapResponse = await fetch(FPL_BOOTSTRAP_URL);
+    const bootstrapData = await bootstrapResponse.json();
+    
+    const currentGWObj = bootstrapData.events?.find(e => e.is_current);
+    const nextGWObj = bootstrapData.events?.find(e => e.is_next);
+    const currentGW = currentGWObj?.id || nextGWObj?.id;
 
     if (!currentGW) {
-      return res.status(200).json({ message: 'No current gameweek set' });
+      return res.status(200).json({ message: 'Could not determine current gameweek' });
     }
 
-    // Fetch live fixtures from FPL
-    const response = await fetch(FPL_FIXTURES_URL);
-    const fixtures = await response.json();
+    console.log('Live scores - current gameweek:', currentGW);
 
-    const liveFixtures = fixtures.filter(f => 
-      f.event === currentGW && 
-      (f.started || f.finished_provisional || f.finished)
+    // Build FPL numeric team ID -> team name mapping
+    const teams = bootstrapData.teams || [];
+    const fplCodeToName = {};
+    teams.forEach(t => {
+      fplCodeToName[t.id] = t.name; // e.g. 3 -> "Arsenal"
+    });
+
+    // Fetch all fixtures for current GW
+    const fixturesResponse = await fetch(`${FPL_FIXTURES_URL}?event=${currentGW}`);
+    const fixtures = await fixturesResponse.json();
+
+    const activeFixtures = fixtures.filter(f =>
+      f.started || f.finished_provisional || f.finished
     );
 
-    if (liveFixtures.length === 0) {
-      return res.status(200).json({ message: 'No live matches', gameweek: currentGW });
+    if (activeFixtures.length === 0) {
+      return res.status(200).json({ 
+        message: 'No active matches', 
+        gameweek: currentGW 
+      });
     }
 
-    const results = {
-      updated: 0,
-      finished: 0,
-      live: []
-    };
+    // Get all GW matches from our database
+    const { data: dbMatches } = await supabase
+      .from('matches')
+      .select('*')
+      .eq('gameweek', currentGW);
 
-    for (const fixture of liveFixtures) {
-      // Find match in database
-      const { data: match } = await supabase
-        .from('matches')
-        .select('id')
-        .eq('gameweek', currentGW)
-        .eq('home_team_code', fixture.team_h_code || '')
-        .eq('away_team_code', fixture.team_a_code || '')
-        .single();
+    if (!dbMatches || dbMatches.length === 0) {
+      return res.status(200).json({ 
+        message: 'No matches found in database for GW' + currentGW,
+        gameweek: currentGW
+      });
+    }
 
-      if (!match) continue;
+    const results = { updated: 0, finished: 0, live: [], errors: [] };
+
+    for (const fixture of activeFixtures) {
+      const fplHomeName = fplCodeToName[fixture.team_h];
+      const fplAwayName = fplCodeToName[fixture.team_a];
+
+      if (!fplHomeName || !fplAwayName) {
+        results.errors.push(`Could not find team names for fixture ${fixture.id}`);
+        continue;
+      }
+
+      // Match by team name (case-insensitive, partial match for names like "Nott'm Forest")
+      const dbMatch = dbMatches.find(m => {
+        const homeMatch = m.home_team.toLowerCase().includes(fplHomeName.toLowerCase().substring(0, 5)) ||
+                         fplHomeName.toLowerCase().includes(m.home_team.toLowerCase().substring(0, 5));
+        const awayMatch = m.away_team.toLowerCase().includes(fplAwayName.toLowerCase().substring(0, 5)) ||
+                         fplAwayName.toLowerCase().includes(m.away_team.toLowerCase().substring(0, 5));
+        return homeMatch && awayMatch;
+      });
+
+      if (!dbMatch) {
+        results.errors.push(`No DB match found for ${fplHomeName} vs ${fplAwayName}`);
+        continue;
+      }
 
       const updateData = {
         status: fixture.finished ? 'finished' : (fixture.started ? 'live' : 'upcoming')
       };
 
-      // Update scores if available
       if (fixture.team_h_score !== null && fixture.team_a_score !== null) {
         updateData.home_score = fixture.team_h_score;
         updateData.away_score = fixture.team_a_score;
       }
 
-      // Calculate result if finished
       if (fixture.finished) {
         updateData.result = fixture.team_h_score > fixture.team_a_score ? 'H' :
                            fixture.team_a_score > fixture.team_h_score ? 'A' : 'D';
         results.finished++;
+        console.log(`Match finished: ${fplHomeName} ${fixture.team_h_score}-${fixture.team_a_score} ${fplAwayName}`);
       } else if (fixture.started) {
         results.live.push({
-          match_id: match.id,
+          match_id: dbMatch.id,
+          home_team: fplHomeName,
+          away_team: fplAwayName,
           home: fixture.team_h_score || 0,
           away: fixture.team_a_score || 0,
           minute: fixture.minutes || 0
         });
+        console.log(`Match live: ${fplHomeName} ${fixture.team_h_score}-${fixture.team_a_score} ${fplAwayName} (${fixture.minutes}')`);
       }
 
       const { error } = await supabase
         .from('matches')
         .update(updateData)
-        .eq('id', match.id);
+        .eq('id', dbMatch.id);
 
       if (!error) {
         results.updated++;
+      } else {
+        results.errors.push(`DB update error for ${fplHomeName} vs ${fplAwayName}: ${error.message}`);
       }
     }
 
-    // Calculate points for any newly finished matches
+    // Calculate points for finished matches
     if (results.finished > 0) {
+      console.log(`Calculating points for ${results.finished} finished matches`);
       await calculatePointsForGameweek(supabase, currentGW);
     }
 
@@ -112,12 +148,14 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Live scores error:', error);
-    return res.status(500).json({ error: 'Failed to update live scores', details: error.message });
+    return res.status(500).json({ 
+      error: 'Failed to update live scores', 
+      details: error.message 
+    });
   }
 };
 
 async function calculatePointsForGameweek(supabase, gameweek) {
-  // Get all finished matches for this gameweek that haven't been scored yet
   const { data: matches } = await supabase
     .from('matches')
     .select('*')
@@ -127,11 +165,9 @@ async function calculatePointsForGameweek(supabase, gameweek) {
 
   if (!matches || matches.length === 0) return;
 
-  // Track which users need their tournament entries updated
   const usersToUpdate = new Set();
 
   for (const match of matches) {
-    // Get ALL predictions for this match (rescoring ensures correctness if results change)
     const { data: predictions } = await supabase
       .from('predictions')
       .select('*')
@@ -142,31 +178,24 @@ async function calculatePointsForGameweek(supabase, gameweek) {
     for (const pred of predictions) {
       let points = 0;
 
-      // 10 points for correct result
       if (pred.predicted_result === match.result) {
         points += 10;
-
-        // Additional 10 points for correct score
         if (pred.home_score === match.home_score && pred.away_score === match.away_score) {
           points += 10;
         }
       }
 
-      // Update prediction with points
       await supabase
         .from('predictions')
         .update({ points_earned: points })
         .eq('id', pred.id);
-      
-      // Track user for tournament entry update
+
       usersToUpdate.add(pred.user_id);
     }
   }
 
-  // Update user totals
-  const { data: users } = await supabase
-    .from('users')
-    .select('id');
+  // Update user total points
+  const { data: users } = await supabase.from('users').select('id');
 
   for (const user of users || []) {
     const { data: userPreds } = await supabase
@@ -174,67 +203,52 @@ async function calculatePointsForGameweek(supabase, gameweek) {
       .select('points_earned')
       .eq('user_id', user.id);
 
-    const totalPoints = userPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
-    const correctScores = userPreds.filter(p => p.points_earned === 20).length;
+    const totalPoints = (userPreds || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
+    const correctScores = (userPreds || []).filter(p => p.points_earned === 20).length;
 
     await supabase
       .from('users')
-      .update({ 
+      .update({
         total_points: totalPoints,
         correct_scores: correctScores,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
   }
-  
-  // Update tournament entries for affected users
-  // Get all tournaments for this gameweek
+
+  // Update tournament entry points
   const { data: tournaments } = await supabase
     .from('tournaments')
-    .select('id')
+    .select('id, gameweek')
     .eq('gameweek', gameweek);
-  
+
   if (tournaments && tournaments.length > 0) {
     for (const userId of usersToUpdate) {
       for (const tournament of tournaments) {
-        // Calculate points for this user in this tournament
         const { data: entries } = await supabase
           .from('tournament_entries')
           .select('id')
           .eq('tournament_id', tournament.id)
           .eq('user_id', userId);
-        
+
         if (!entries || entries.length === 0) continue;
-        
-        // Get ALL predictions for this user in this tournament's gameweek
-        // Must join through matches to get the gameweek
-        const { data: tournamentData } = await supabase
-          .from('tournaments')
-          .select('gameweek')
-          .eq('id', tournament.id)
-          .single();
-        
-        const tournamentGameweek = tournamentData?.gameweek || gameweek;
-        
-        // Get predictions for matches in this tournament's gameweek
+
+        const { data: gameweekMatches } = await supabase
+          .from('matches')
+          .select('id')
+          .eq('gameweek', tournament.gameweek);
+
+        const gameweekMatchIds = new Set((gameweekMatches || []).map(m => m.id));
+
         const { data: predPoints } = await supabase
           .from('predictions')
           .select('points_earned, match_id')
           .eq('user_id', userId);
-        
-        // Filter to only include predictions for matches in this tournament's gameweek
-        const { data: gameweekMatches } = await supabase
-          .from('matches')
-          .select('id')
-          .eq('gameweek', tournamentGameweek);
-        
-        const gameweekMatchIds = new Set((gameweekMatches || []).map(m => m.id));
-        
+
         const totalPoints = (predPoints || [])
           .filter(p => gameweekMatchIds.has(p.match_id))
           .reduce((sum, p) => sum + (p.points_earned || 0), 0);
-        
-        // Update the tournament entry with the FULL recalculated total
+
         await supabase
           .from('tournament_entries')
           .update({ entry_points: totalPoints })
@@ -242,15 +256,15 @@ async function calculatePointsForGameweek(supabase, gameweek) {
           .eq('user_id', userId);
       }
     }
-    
-    // Recalculate ranks for all tournaments
+
+    // Recalculate ranks
     for (const tournament of tournaments) {
       const { data: entries } = await supabase
         .from('tournament_entries')
         .select('id, entry_points')
         .eq('tournament_id', tournament.id)
         .order('entry_points', { ascending: false });
-      
+
       if (entries) {
         for (let i = 0; i < entries.length; i++) {
           await supabase
