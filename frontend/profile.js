@@ -2,6 +2,7 @@
 
 // Global cache for predictions data
 let cachedPredictionsData = null;
+let liveRefreshInterval = null;
 
 async function loadProfile() {
   const token = localStorage.getItem('gbf_token');
@@ -48,6 +49,7 @@ async function loadUserTournaments() {
   const token = localStorage.getItem('gbf_token');
   const user = JSON.parse(localStorage.getItem('gbf_user') || '{}');
   const container = document.getElementById('tournament-sections');
+  const bannerBar = document.getElementById('profile-tournament-bar');
   
   if (!container) return;
   
@@ -62,9 +64,13 @@ async function loadUserTournaments() {
     
     if (!data.tournaments || data.tournaments.length === 0) {
       container.innerHTML = '<p class="text-muted">No active tournaments. Join one below!</p>';
+      if (bannerBar) bannerBar.innerHTML = '<div class="t-left"><span style="color:rgba(255,255,255,0.5);font-size:0.85rem;">No active tournaments</span></div>';
       return;
     }
-    
+
+    // Update banner bar with first entered tournament
+    let bannerSet = false;
+
     let tournamentsHTML = '';
     
     for (const tournament of data.tournaments) {
@@ -79,6 +85,19 @@ async function loadUserTournaments() {
       }
       
       const isEntered = !!userEntry;
+
+      // Set banner bar to first entered tournament
+      if (isEntered && !bannerSet && bannerBar) {
+        bannerBar.innerHTML = `
+          <div class="t-left">
+            <span class="live-badge">LIVE</span>
+            <span class="entered-badge"><i class="fas fa-check-circle"></i> ENTERED</span>
+            <span class="t-name">${tournament.name}</span>
+          </div>
+          <div class="t-right">GW${tournament.gameweek}<br><span style="font-size:0.75rem;font-weight:400;color:rgba(255,255,255,0.6);">Gameweek</span></div>
+        `;
+        bannerSet = true;
+      }
       
       let predictionsCount = '--';
       let resultPct = '--%';
@@ -209,6 +228,8 @@ async function enterTournament(tournamentId) {
 async function loadUserPredictions() {
   const token = localStorage.getItem('gbf_token');
   const container = document.getElementById('current-predictions');
+  const liveBanner = document.getElementById('live-banner');
+  const liveBannerText = document.getElementById('live-banner-text');
   
   if (!container) return null;
   
@@ -225,6 +246,23 @@ async function loadUserPredictions() {
     
     const data = await response.json();
     cachedPredictionsData = data;
+
+    // Check for live matches
+    const liveMatches = (data.matches || []).filter(m => m.status === 'live');
+    const finishedCount = (data.matches || []).filter(m => m.status === 'finished').length;
+    const totalCount = (data.matches || []).length;
+
+    if (liveBanner && liveBannerText) {
+      if (liveMatches.length > 0) {
+        liveBanner.style.display = 'flex';
+        liveBannerText.textContent = `${liveMatches.length} match${liveMatches.length > 1 ? 'es' : ''} live right now — scores updating every 60s`;
+        // Start auto refresh
+        startLiveRefresh();
+      } else {
+        liveBanner.style.display = 'none';
+        stopLiveRefresh();
+      }
+    }
     
     if (!data.predictions || data.predictions.length === 0) {
       container.innerHTML = `
@@ -239,40 +277,41 @@ async function loadUserPredictions() {
       return data;
     }
     
-    let predictionsHTML = '<div style="max-height: 300px; overflow-y: auto;">';
+    let predictionsHTML = '<div style="max-height: 350px; overflow-y: auto;">';
     data.predictions.forEach((pred) => {
       const match = data.matches.find(m => m.id === pred.match_id);
       if (match) {
         const isFinished = match.status === 'finished';
+        const isLive = match.status === 'live';
         const points = pred.points_earned || 0;
         const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : 'rgba(255,255,255,0.4)';
         
-        let resultLine = '';
-        if (isFinished) {
+        let statusLine = '';
+        if (isLive) {
+          statusLine = `
+            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+              <span class="match-status-live">LIVE</span>
+              <span class="match-live-score">${match.home_score ?? 0} - ${match.away_score ?? 0}</span>
+            </div>
+          `;
+        } else if (isFinished) {
           const actualResult = match.home_score + '-' + match.away_score;
           const checkmark = points > 0 ? '✓' : '✗';
-          resultLine = `<div style="font-size: 0.875rem; color: ${pointsColor};">Result: ${actualResult} ${checkmark} ${points}pts</div>`;
+          statusLine = `<div style="font-size: 0.875rem; color: ${pointsColor}; margin-top:4px;">Result: ${actualResult} ${checkmark} ${points}pts</div>`;
         } else {
-          resultLine = `<div style="font-size: 0.875rem; color: rgba(255,255,255,0.4);">Not played yet</div>`;
+          statusLine = `<div style="font-size: 0.875rem; color: rgba(255,255,255,0.4); margin-top:4px;">Not played yet</div>`;
         }
         
         predictionsHTML += `
           <div style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
             <div style="font-weight: 600;">${match.home_team} vs ${match.away_team}</div>
             <div class="text-muted" style="font-size: 0.875rem;">Your prediction: ${pred.predicted_result} | ${pred.home_score}-${pred.away_score}</div>
-            ${resultLine}
+            ${statusLine}
           </div>
         `;
       }
     });
     predictionsHTML += '</div>';
-    predictionsHTML += `
-      <div style="text-align: center; margin-top: 1rem;">
-        <a href="predictions.html" class="btn btn-primary btn-sm">
-          <i class="fas fa-edit"></i> Edit Predictions
-        </a>
-      </div>
-    `;
     
     container.innerHTML = predictionsHTML;
     return data;
@@ -284,6 +323,34 @@ async function loadUserPredictions() {
   }
 }
 
+// Auto-refresh for live scores
+function startLiveRefresh() {
+  if (liveRefreshInterval) return; // already running
+  liveRefreshInterval = setInterval(async () => {
+    console.log('Auto-refreshing live scores...');
+    await loadUserPredictions();
+    await loadUserTournaments();
+    loadPredictionHistory();
+  }, 60000); // every 60 seconds
+}
+
+function stopLiveRefresh() {
+  if (liveRefreshInterval) {
+    clearInterval(liveRefreshInterval);
+    liveRefreshInterval = null;
+  }
+}
+
+async function refreshLiveScores() {
+  const btn = document.querySelector('.refresh-btn');
+  if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+  await loadUserPredictions();
+  await loadUserTournaments();
+  loadPredictionHistory();
+  if (btn) btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+}
+
+// Performance Graph
 let performanceChart = null;
 let currentChartMode = 'points';
 
@@ -332,10 +399,7 @@ async function loadPerformanceGraph() {
       container.style.display = 'none';
       if (emptyState) {
         emptyState.style.display = 'block';
-        emptyState.innerHTML = `
-          <i class="fas fa-chart-bar"></i>
-          <p>More data coming as gameweeks complete</p>
-        `;
+        emptyState.innerHTML = `<i class="fas fa-chart-bar"></i><p>More data coming as gameweeks complete</p>`;
       }
       return;
     }
@@ -418,6 +482,7 @@ function switchChart(mode) {
   loadPerformanceGraph();
 }
 
+// Prediction History Table
 async function loadPredictionHistory() {
   const container = document.getElementById('prediction-history-container');
   if (!container) return;
@@ -433,24 +498,19 @@ async function loadPredictionHistory() {
     const matches = data.matches || [];
     
     if (predictions.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <i class="fas fa-futbol"></i>
-          <p>No predictions yet</p>
-        </div>
-      `;
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-futbol"></i><p>No predictions yet</p></div>`;
       return;
     }
     
     let tableHTML = `
       <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width:100%; border-collapse:collapse;">
           <thead>
-            <tr style="border-bottom: 1px solid var(--border);">
-              <th style="text-align: left; padding: 0.75rem;">Match</th>
-              <th style="text-align: center; padding: 0.75rem;">Your Pick</th>
-              <th style="text-align: center; padding: 0.75rem;">Result</th>
-              <th style="text-align: center; padding: 0.75rem;">Points</th>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left; padding:0.75rem;">Match</th>
+              <th style="text-align:center; padding:0.75rem;">Your Pick</th>
+              <th style="text-align:center; padding:0.75rem;">Result</th>
+              <th style="text-align:center; padding:0.75rem;">Points</th>
             </tr>
           </thead>
           <tbody>
@@ -469,14 +529,18 @@ async function loadPredictionHistory() {
       
       const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : '#64748b';
       const isFinished = match.status === 'finished';
-      const actualResult = isFinished ? `${match.home_score}-${match.away_score}` : '-';
+      const isLive = match.status === 'live';
+      
+      let resultCell = '-';
+      if (isFinished) resultCell = `${match.home_score}-${match.away_score}`;
+      else if (isLive) resultCell = `<span style="color:#ef4444; font-weight:700;">⚽ ${match.home_score ?? 0}-${match.away_score ?? 0}</span>`;
       
       tableHTML += `
-        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-          <td style="padding: 0.75rem;">${match.home_team} vs ${match.away_team}</td>
-          <td style="text-align: center; padding: 0.75rem;">${pred.predicted_result} (${pred.home_score}-${pred.away_score})</td>
-          <td style="text-align: center; padding: 0.75rem;">${actualResult}</td>
-          <td style="text-align: center; padding: 0.75rem; color: ${pointsColor}; font-weight: 600;">${points}pts</td>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+          <td style="padding:0.75rem;">${match.home_team} vs ${match.away_team}</td>
+          <td style="text-align:center; padding:0.75rem;">${pred.predicted_result} (${pred.home_score}-${pred.away_score})</td>
+          <td style="text-align:center; padding:0.75rem;">${resultCell}</td>
+          <td style="text-align:center; padding:0.75rem; color:${pointsColor}; font-weight:600;">${points}pts</td>
         </tr>
       `;
     });
@@ -484,10 +548,10 @@ async function loadPredictionHistory() {
     tableHTML += `
           </tbody>
           <tfoot>
-            <tr style="font-weight: 600; border-top: 1px solid var(--border);">
-              <td style="padding: 0.75rem;" colspan="2">Total: ${predictions.length} predictions</td>
-              <td style="text-align: center; padding: 0.75rem;">${correctResults} correct</td>
-              <td style="text-align: center; padding: 0.75rem; color: var(--accent-green);">${totalPoints}pts</td>
+            <tr style="font-weight:600; border-top:1px solid var(--border);">
+              <td style="padding:0.75rem;" colspan="2">Total: ${predictions.length} predictions</td>
+              <td style="text-align:center; padding:0.75rem;">${correctResults} correct</td>
+              <td style="text-align:center; padding:0.75rem; color:var(--accent-green);">${totalPoints}pts</td>
             </tr>
           </tfoot>
         </table>
@@ -502,6 +566,7 @@ async function loadPredictionHistory() {
   }
 }
 
+// Achievements
 async function loadAchievements() {
   const container = document.getElementById('achievements');
   if (!container) return;
@@ -517,48 +582,21 @@ async function loadAchievements() {
     const matches = data.matches || [];
     
     const achievements = [
-      {
-        icon: '🎯',
-        name: 'First Prediction',
-        earned: predictions.length > 0
-      },
-      {
-        icon: '💯',
-        name: 'Perfect Score',
-        earned: predictions.some(p => p.points_earned === 20)
-      },
-      {
-        icon: '🎩',
-        name: 'Hat-trick',
-        earned: checkConsecutiveCorrect(predictions, matches, 3)
-      },
-      {
-        icon: '🔥',
-        name: 'On Fire',
-        earned: checkConsecutiveCorrect(predictions, matches, 5)
-      },
-      {
-        icon: '🔫',
-        name: 'Sharp Shooter',
-        earned: predictions.filter(p => p.points_earned === 20).length >= 5
-      },
-      {
-        icon: '⭐',
-        name: 'Top 10 Finish',
-        earned: false
-      },
-      {
-        icon: '👑',
-        name: 'Top of the Week',
-        earned: false
-      }
+      { icon: '🎯', name: 'First Prediction', earned: predictions.length > 0 },
+      { icon: '💯', name: 'Perfect Score', earned: predictions.some(p => p.points_earned === 20) },
+      { icon: '🎩', name: 'Hat-trick', earned: checkConsecutiveCorrect(predictions, matches, 3) },
+      { icon: '🔥', name: 'On Fire', earned: checkConsecutiveCorrect(predictions, matches, 5) },
+      { icon: '🔫', name: 'Sharp Shooter', earned: predictions.filter(p => p.points_earned === 20).length >= 5 },
+      { icon: '⭐', name: 'Top 10 Finish', earned: false },
+      { icon: '👑', name: 'Top of the Week', earned: false }
     ];
     
     let html = '';
     achievements.forEach(ach => {
       const opacity = ach.earned ? '1' : '0.4';
+      const border = ach.earned ? 'border:1px solid var(--accent-green);' : '';
       html += `
-        <div class="achievement-badge" style="opacity: ${opacity};">
+        <div class="achievement-badge" style="opacity:${opacity}; ${border}">
           <div class="achievement-icon">${ach.icon}</div>
           <div class="achievement-name">${ach.name}</div>
         </div>
@@ -593,6 +631,7 @@ function checkConsecutiveCorrect(predictions, matches, count) {
   return false;
 }
 
+// Detailed Insights
 async function loadInsights() {
   const container = document.getElementById('insights');
   if (!container) return;
@@ -645,15 +684,15 @@ async function loadInsights() {
     container.innerHTML = `
       <div class="insight-card">
         <div class="insight-label">Best Prediction</div>
-        <div class="insight-value">${bestMatch}pts</div>
+        <div class="insight-value" style="color:#22c55e;">${bestMatch}pts</div>
       </div>
       <div class="insight-card">
         <div class="insight-label">Worst Prediction</div>
-        <div class="insight-value">${worstMatch}pts</div>
+        <div class="insight-value" style="color:#ef4444;">${worstMatch}pts</div>
       </div>
       <div class="insight-card">
         <div class="insight-label">Average Points</div>
-        <div class="insight-value">${avgPoints}pts</div>
+        <div class="insight-value" style="color:#f59e0b;">${avgPoints}pts</div>
       </div>
       <div class="insight-card">
         <div class="insight-label">Favourite Pick</div>
@@ -662,18 +701,18 @@ async function loadInsights() {
       </div>
       <div class="insight-card" style="grid-column: span 2;">
         <div class="insight-label">Accuracy by Prediction Type</div>
-        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-          <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(59,130,246,0.2); border-radius: 0.5rem;">
-            <div style="font-size: 1.25rem; font-weight: 700; color: #3b82f6;">${accuracyByResult.H}%</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">Home Wins</div>
+        <div style="display:flex; gap:1rem; margin-top:0.5rem;">
+          <div style="flex:1; text-align:center; padding:0.5rem; background:rgba(59,130,246,0.2); border-radius:0.5rem;">
+            <div style="font-size:1.25rem; font-weight:700; color:#3b82f6;">${accuracyByResult.H}%</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary);">Home Wins</div>
           </div>
-          <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(245,158,11,0.2); border-radius: 0.5rem;">
-            <div style="font-size: 1.25rem; font-weight: 700; color: #f59e0b;">${accuracyByResult.X}%</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">Draws</div>
+          <div style="flex:1; text-align:center; padding:0.5rem; background:rgba(245,158,11,0.2); border-radius:0.5rem;">
+            <div style="font-size:1.25rem; font-weight:700; color:#f59e0b;">${accuracyByResult.X}%</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary);">Draws</div>
           </div>
-          <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(239,68,68,0.2); border-radius: 0.5rem;">
-            <div style="font-size: 1.25rem; font-weight: 700; color: #ef4444;">${accuracyByResult.A}%</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">Away Wins</div>
+          <div style="flex:1; text-align:center; padding:0.5rem; background:rgba(239,68,68,0.2); border-radius:0.5rem;">
+            <div style="font-size:1.25rem; font-weight:700; color:#ef4444;">${accuracyByResult.A}%</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary);">Away Wins</div>
           </div>
         </div>
       </div>
@@ -685,11 +724,11 @@ async function loadInsights() {
   }
 }
 
-// Single DOMContentLoaded - runs everything in correct order
+// Single DOMContentLoaded — correct order
 document.addEventListener('DOMContentLoaded', async function() {
   await loadProfile();
-  await loadUserPredictions();
-  await loadUserTournaments();
+  await loadUserPredictions();  // fetches and caches data first
+  await loadUserTournaments();  // uses cached data for points
   loadPredictionHistory();
   loadAchievements();
   loadInsights();
