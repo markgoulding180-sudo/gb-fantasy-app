@@ -88,15 +88,16 @@ async function loadUserTournaments() {
 
       // Set banner bar to first entered tournament
       if (isEntered && !bannerSet && bannerBar) {
+        bannerSet = true;
+        // LIVE badge only shown when matches are actually live - updated after predictions load
         bannerBar.innerHTML = `
           <div class="t-left">
-            <span class="live-badge">LIVE</span>
+            <span id="banner-live-badge" style="display:none;" class="live-badge">LIVE</span>
             <span class="entered-badge"><i class="fas fa-check-circle"></i> ENTERED</span>
             <span class="t-name">${tournament.name}</span>
           </div>
           <div class="t-right">GW${tournament.gameweek}<br><span style="font-size:0.75rem;font-weight:400;color:rgba(255,255,255,0.6);">Gameweek</span></div>
         `;
-        bannerSet = true;
       }
       
       let predictionsCount = '--';
@@ -252,11 +253,16 @@ async function loadUserPredictions() {
     const finishedCount = (data.matches || []).filter(m => m.status === 'finished').length;
     const totalCount = (data.matches || []).length;
 
+    // Update banner LIVE badge based on actual live matches
+    const bannerLiveBadge = document.getElementById('banner-live-badge');
+    if (bannerLiveBadge) {
+      bannerLiveBadge.style.display = liveMatches.length > 0 ? 'inline-block' : 'none';
+    }
+
     if (liveBanner && liveBannerText) {
       if (liveMatches.length > 0) {
         liveBanner.style.display = 'flex';
         liveBannerText.textContent = `${liveMatches.length} match${liveMatches.length > 1 ? 'es' : ''} live right now — scores updating every 60s`;
-        // Start auto refresh
         startLiveRefresh();
       } else {
         liveBanner.style.display = 'none';
