@@ -115,7 +115,6 @@ body {
   margin-bottom: 2rem;
   position: relative;
   overflow: hidden;
-  z-index: 1;
 }
 
 .hero::before {
