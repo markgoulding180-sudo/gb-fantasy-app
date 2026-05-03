@@ -127,9 +127,10 @@ module.exports = async (req, res) => {
       const isStarted = fixture.started === true;
       const minutesPlayed = fixture.minutes || 0;
       
-      // Minutes-based finish: if 90+ minutes and started, match is done
-      // This is more reliable than finished_provisional which can be delayed
-      const minutesBasedFinished = isStarted && minutesPlayed >= 90 && !isFinished && !isProvisional;
+      // Minutes-based finish: if 100+ minutes and started, match is definitely done
+      // 90 = full time, extra time can go to 95-100 minutes
+      // Using 100 ensures we don't mark early during extra time
+      const minutesBasedFinished = isStarted && minutesPlayed >= 100 && !isFinished && !isProvisional;
       
       if (isFinished || isProvisional || minutesBasedFinished) {
         status = 'finished';
