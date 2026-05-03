@@ -89,8 +89,33 @@ async function loadUserTournaments() {
       }
       
       const isEntered = !!userEntry;
+      
+      let predictionsCount = '--';
+      let resultPct = '--%';
+      let scorePct = '--%';
+      let tournamentPoints = '--';
+      
+      // Calculate points first if entered
+      if (isEntered) {
+        try {
+          const predResponse = await fetch(`/api/predictions?gameweek=${tournament.gameweek}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (predResponse.ok) {
+            const predData = await predResponse.json();
+            const gameweekMatchIds = new Set((predData.matches || []).map(m => m.id));
+            const tournamentPreds = (predData.predictions || []).filter(p => 
+              gameweekMatchIds.has(p.match_id)
+            );
+            predictionsCount = tournamentPreds.length;
+            tournamentPoints = tournamentPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+          }
+        } catch (e) {
+          console.log('Error fetching predictions for banner:', e);
+        }
+      }
 
-      // Set banner bar to first entered tournament
+      // Set banner bar to first entered tournament (after points are calculated)
       if (isEntered && !bannerSet && bannerBar) {
         bannerSet = true;
         // LIVE badge only shown when matches are actually live - updated after predictions load
@@ -109,12 +134,8 @@ async function loadUserTournaments() {
         `;
       }
       
-      let predictionsCount = '--';
-      let resultPct = '--%';
-      let scorePct = '--%';
-      let tournamentPoints = '--';
-      
-      if (isEntered) {
+      // Calculate result/score percentages if we have prediction data
+      if (isEntered && predictionsCount !== '--') {
         try {
           const predResponse = await fetch(`/api/predictions?gameweek=${tournament.gameweek}`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -125,9 +146,6 @@ async function loadUserTournaments() {
             const tournamentPreds = (predData.predictions || []).filter(p => 
               gameweekMatchIds.has(p.match_id)
             );
-            predictionsCount = tournamentPreds.length;
-            
-            tournamentPoints = tournamentPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
             
             const finishedMatches = (predData.matches || []).filter(m => m.status === 'finished');
             const finishedPreds = tournamentPreds.filter(p => 
