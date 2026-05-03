@@ -124,7 +124,7 @@ module.exports = async (req, res) => {
       const now = new Date();
       const kickoff = new Date(fixture.kickoff_time);
       const minutesSinceKickoff = (now - kickoff) / (1000 * 60);
-      const timeBasedFinished = fixture.started && !fixture.finished && !fixture.finished_provisional && minutesSinceKickoff > 150;
+      const timeBasedFinished = fixture.started && !fixture.finished && !fixture.finished_provisional && minutesSinceKickoff > 110;
       
       if (fixture.finished || fixture.finished_provisional || timeBasedFinished) {
         status = 'finished';
