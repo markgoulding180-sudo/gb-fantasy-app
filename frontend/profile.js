@@ -96,11 +96,16 @@ async function loadUserTournaments() {
         // LIVE badge only shown when matches are actually live - updated after predictions load
         bannerBar.innerHTML = `
           <div class="t-left">
-            <span id="banner-live-badge" style="display:none;" class="live-badge">LIVE</span>
-            <span class="entered-badge"><i class="fas fa-check-circle"></i> ENTERED</span>
             <span class="t-name">${tournament.name}</span>
+            <div class="t-meta">
+              <span id="banner-live-badge" style="display:none;" class="live-badge">LIVE</span>
+              <span class="entered-badge"><i class="fas fa-check-circle"></i> ENTERED</span>
+              <span style="color:rgba(255,255,255,0.7);">GW${tournament.gameweek}</span>
+            </div>
           </div>
-          <div class="t-right">GW${tournament.gameweek}<br><span style="font-size:0.75rem;font-weight:400;color:rgba(255,255,255,0.6);">Gameweek</span></div>
+          <div class="t-right">
+            <span style="color:#22c55e;">${tournamentPoints}</span> <span style="font-size:0.7rem;color:rgba(255,255,255,0.6);">PTS</span>
+          </div>
         `;
       }
       
@@ -625,13 +630,13 @@ async function loadPredictionHistory() {
     
     let tableHTML = `
       <div style="overflow-x: auto;">
-        <table style="width:100%; border-collapse:collapse;">
+        <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
           <thead>
             <tr style="border-bottom:1px solid var(--border);">
-              <th style="text-align:left; padding:0.75rem;">Match</th>
-              <th style="text-align:center; padding:0.75rem;">Your Pick</th>
-              <th style="text-align:center; padding:0.75rem;">Result</th>
-              <th style="text-align:center; padding:0.75rem;">Points</th>
+              <th style="text-align:left; padding:0.75rem; width:40%;">Match</th>
+              <th style="text-align:center; padding:0.75rem; width:25%;">Your Pick</th>
+              <th style="text-align:center; padding:0.75rem; width:20%;">Result</th>
+              <th style="text-align:center; padding:0.75rem; width:15%;">Points</th>
             </tr>
           </thead>
           <tbody>
@@ -658,10 +663,10 @@ async function loadPredictionHistory() {
       
       tableHTML += `
         <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-          <td style="padding:0.75rem;">${match.home_team} vs ${match.away_team}</td>
-          <td style="text-align:center; padding:0.75rem;">${pred.predicted_result} (${pred.home_score}-${pred.away_score})</td>
-          <td style="text-align:center; padding:0.75rem;">${resultCell}</td>
-          <td style="text-align:center; padding:0.75rem; color:${pointsColor}; font-weight:600;">${points}pts</td>
+          <td style="padding:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${match.home_team} vs ${match.away_team}">${match.home_team} vs ${match.away_team}</td>
+          <td style="text-align:center; padding:0.75rem; white-space:nowrap;">${pred.predicted_result} (${pred.home_score}-${pred.away_score})</td>
+          <td style="text-align:center; padding:0.75rem; white-space:nowrap;">${resultCell}</td>
+          <td style="text-align:center; padding:0.75rem; color:${pointsColor}; font-weight:600; white-space:nowrap;">${points}pts</td>
         </tr>
       `;
     });
