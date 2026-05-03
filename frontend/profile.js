@@ -387,14 +387,18 @@ async function loadUserPredictions() {
       return data;
     }
     
-    let predictionsHTML = '<div style="max-height: 350px; overflow-y: auto;">';
-    data.predictions.forEach((pred) => {
+    let predictionsHTML = '<div style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">';
+    data.predictions.forEach((pred, index) => {
       const match = data.matches.find(m => m.id === pred.match_id);
       if (match) {
         const isFinished = match.status === 'finished';
         const isLive = match.status === 'live';
         const points = pred.points_earned || 0;
         const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : 'rgba(255,255,255,0.4)';
+        
+        // Alternating background shades
+        const bgShade = index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)';
+        const borderColor = index % 2 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)';
         
         let statusLine = '';
         if (isLive) {
@@ -407,15 +411,15 @@ async function loadUserPredictions() {
         } else if (isFinished) {
           const actualResult = match.home_score + '-' + match.away_score;
           const checkmark = points > 0 ? '✓' : '✗';
-          statusLine = `<div style="font-size: 0.875rem; color: ${pointsColor}; margin-top:4px;">Result: ${actualResult} ${checkmark} ${points}pts</div>`;
+          statusLine = `<div style="font-size: 0.8rem; color: ${pointsColor}; margin-top:4px;">Result: ${actualResult} ${checkmark} ${points}pts</div>`;
         } else {
-          statusLine = `<div style="font-size: 0.875rem; color: rgba(255,255,255,0.4); margin-top:4px;">Not played yet</div>`;
+          statusLine = `<div style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top:4px;">Not played yet</div>`;
         }
         
         predictionsHTML += `
-          <div style="padding: 0.75rem; border-bottom: 1px solid var(--border);">
-            <div style="font-weight: 600;">${match.home_team} vs ${match.away_team}</div>
-            <div class="text-muted" style="font-size: 0.875rem;">Your prediction: ${pred.predicted_result} | ${pred.home_score}-${pred.away_score}</div>
+          <div style="padding: 0.6rem 0.75rem; background: ${bgShade}; border: 1px solid ${borderColor}; border-radius: 0.5rem;">
+            <div style="font-weight: 600; font-size: 0.9rem;">${match.home_team} vs ${match.away_team}</div>
+            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Your pick: ${pred.predicted_result} (${pred.home_score}-${pred.away_score})</div>
             ${statusLine}
           </div>
         `;
