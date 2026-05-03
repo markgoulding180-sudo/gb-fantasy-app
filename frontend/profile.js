@@ -236,16 +236,14 @@ async function loadMyTournaments() {
                          e.tournament?.status === 'finished' ? 'finished' : '';
       return `
         <div class="tournament-entry ${statusClass}">
-          <div>
-            <div style="font-weight: 600;">${e.tournament?.name || 'Tournament'}</div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary);">
-              GW${e.tournament?.gameweek || '--'}
+          <div class="tournament-entry-info">
+            <div class="tournament-entry-name">${e.tournament?.name || 'Tournament'}</div>
+            <div class="tournament-entry-meta">
+              GW${e.tournament?.gameweek || '--'} • ${e.tournament?.entry_fee ? '£' + e.tournament.entry_fee : 'Free Entry'}
             </div>
           </div>
-          <div style="text-align: right;">
-            <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-green);">
-              ${e.entry_points || 0} pts
-            </div>
+          <div class="tournament-entry-points">
+            <div class="tournament-entry-points-value">${e.entry_points || 0} pts</div>
           </div>
         </div>
       `;

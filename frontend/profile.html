@@ -177,10 +177,11 @@
       gap: 0.5rem;
     }
     .prediction-history-item {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
       align-items: center;
-      padding: 1rem;
+      padding: 1rem 1.25rem;
       background: var(--bg-hover);
       border-radius: 0.5rem;
       margin-bottom: 0.75rem;
@@ -189,19 +190,27 @@
       display: flex;
       align-items: center;
       gap: 1rem;
+      min-width: 0;
+      overflow: hidden;
     }
     .prediction-history-teams {
       font-weight: 600;
+      font-size: 0.9375rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .prediction-history-result {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       color: var(--text-secondary);
+      flex-shrink: 0;
     }
     .prediction-history-points {
       text-align: right;
+      flex-shrink: 0;
     }
     .points-positive {
       color: var(--accent-green);
@@ -213,10 +222,11 @@
       font-size: 1.25rem;
     }
     .tournament-entry {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
       align-items: center;
-      padding: 1rem;
+      padding: 1rem 1.25rem;
       background: var(--bg-hover);
       border-radius: 0.5rem;
       margin-bottom: 0.75rem;
@@ -230,21 +240,62 @@
     .tournament-entry.finished {
       border-left-color: var(--text-secondary);
     }
+    .tournament-entry-info {
+      min-width: 0;
+      overflow: hidden;
+    }
+    .tournament-entry-name {
+      font-weight: 600;
+      font-size: 1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.25rem;
+    }
+    .tournament-entry-meta {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .tournament-entry-points {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .tournament-entry-points-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
     .current-prediction {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
       align-items: center;
-      padding: 0.75rem 1rem;
+      padding: 0.875rem 1.25rem;
       background: var(--bg-hover);
       border-radius: 0.5rem;
       margin-bottom: 0.5rem;
     }
+    .current-prediction-info {
+      min-width: 0;
+      overflow: hidden;
+    }
     .current-prediction-teams {
       font-weight: 600;
+      font-size: 0.9375rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.25rem;
     }
     .current-prediction-guess {
       font-size: 0.875rem;
       color: var(--text-secondary);
+    }
+    .current-prediction-result {
+      text-align: right;
+      flex-shrink: 0;
+      font-weight: 600;
+      color: var(--accent-green);
     }
     .rank-badge {
       display: inline-flex;
@@ -342,21 +393,59 @@
       }
       .dashboard-card {
         padding: 1rem;
+        margin-left: 0;
+        margin-right: 0;
       }
-      .prediction-history-item,
-      .tournament-entry,
-      .current-prediction {
+      .dashboard-card h3 {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+      }
+      /* Tournament entry mobile fixes */
+      .tournament-entry {
+        grid-template-columns: 1fr auto;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        margin-bottom: 0.5rem;
+      }
+      .tournament-entry-name {
+        font-size: 0.9375rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      .tournament-entry-meta {
+        font-size: 0.8125rem;
+      }
+      .tournament-entry-points-value {
+        font-size: 1.1rem;
+      }
+      /* Prediction items mobile */
+      .prediction-history-item {
         flex-direction: column;
         gap: 0.75rem;
         text-align: center;
-        padding: 1rem 0.75rem;
+        padding: 0.875rem 1rem;
       }
       .prediction-history-match {
         flex-direction: column;
         gap: 0.5rem;
+        width: 100%;
+      }
+      .prediction-history-teams {
+        font-size: 0.9375rem;
       }
       .prediction-history-points {
         text-align: center;
+        width: 100%;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+      }
+      .current-prediction {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+        padding: 0.75rem 1rem;
       }
       .performance-chart {
         height: 150px;
@@ -367,6 +456,11 @@
       }
       .live-game-card {
         padding: 0.5rem 0.75rem;
+      }
+      /* Ensure all cards align */
+      .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
       }
     }
   </style>
