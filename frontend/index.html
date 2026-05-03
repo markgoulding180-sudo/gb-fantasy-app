@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GB Fantasy - Premier League Predictions</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="stadium-theme.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -65,52 +66,56 @@
 
   <!-- Main Content -->
   <main class="container">
-    <!-- Hero Section -->
-    <section class="hero">
-      <h1>Premier League Predictions</h1>
-      <p>Predict match results, climb the leaderboard, and win cash prizes. The ultimate Premier League prediction game.</p>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <div class="hero-stat-value">£12,450</div>
-          <div class="hero-stat-label">Total Prize Pool</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-value">1,247</div>
-          <div class="hero-stat-label">Active Players</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-value">GW 34</div>
-          <div class="hero-stat-label">Current Gameweek</div>
+    <!-- Hero Section - Stadium Theme -->
+    <section class="hero-stadium">
+      <div class="hero-stadium-bg"></div>
+      <div class="hero-stadium-overlay"></div>
+      <div class="hero-stadium-content">
+        <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Premier League Predictions</h1>
+        <p style="font-size: 1.1rem; color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; max-width: 600px;">Predict match results, climb the leaderboard, and win cash prizes. The ultimate Premier League prediction game.</p>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <div class="stat-card" style="min-width: 140px;">
+            <div class="stat-card-icon"><i class="fas fa-trophy"></i></div>
+            <div class="stat-card-value" style="color: var(--accent-amber);">£12,450</div>
+            <div class="stat-card-label">Prize Pool</div>
+          </div>
+          <div class="stat-card" style="min-width: 140px;">
+            <div class="stat-card-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-card-value" style="color: var(--accent-blue);">1,247</div>
+            <div class="stat-card-label">Active Players</div>
+          </div>
+          <div class="stat-card" style="min-width: 140px;">
+            <div class="stat-card-icon"><i class="fas fa-calendar"></i></div>
+            <div class="stat-card-value" style="color: var(--accent-green);">GW 34</div>
+            <div class="stat-card-label">Current GW</div>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Quick Actions -->
-    <section class="grid grid-3 mb-3">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title"><i class="fas fa-futbol"></i> Make Predictions</h3>
-        </div>
-        <p class="text-muted mb-2">GW 34 fixtures are now live. Submit your predictions before kickoff.</p>
+    <section class="grid-3 mb-3">
+      <div class="feature-card">
+        <div class="feature-card-icon"><i class="fas fa-futbol"></i></div>
+        <h3>Make Predictions</h3>
+        <p>GW 34 fixtures are now live. Submit your predictions before kickoff.</p>
         <a href="predictions.html" class="btn btn-primary">
           <i class="fas fa-arrow-right"></i> Predict Now
         </a>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title"><i class="fas fa-chart-line"></i> View Leaderboard</h3>
-        </div>
-        <p class="text-muted mb-2">Check your ranking and see who's leading the pack this season.</p>
-        <a href="leaderboard.html" class="btn btn-secondary">
+      <div class="feature-card">
+        <div class="feature-card-icon"><i class="fas fa-chart-line"></i></div>
+        <h3>View Leaderboard</h3>
+        <p>Check your ranking and see who's leading the pack this season.</p>
+        <a href="leaderboard.html" class="btn btn-primary">
           <i class="fas fa-list-ol"></i> See Rankings
         </a>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title"><i class="fas fa-trophy"></i> Join Tournament</h3>
-        </div>
-        <p class="text-muted mb-2">Enter cash tournaments and compete for real money prizes.</p>
-        <a href="tournaments.html" class="btn btn-amber">
+      <div class="feature-card">
+        <div class="feature-card-icon"><i class="fas fa-trophy"></i></div>
+        <h3>Join Tournament</h3>
+        <p>Enter cash tournaments and compete for real money prizes.</p>
+        <a href="tournaments.html" class="btn btn-primary">
           <i class="fas fa-plus"></i> Join Now
         </a>
       </div>
