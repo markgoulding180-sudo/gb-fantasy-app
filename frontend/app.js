@@ -18,6 +18,10 @@ if (typeof createClient !== 'undefined') {
 let currentUser = null;
 let authToken = localStorage.getItem('gbf_token') || null;
 
+// Frontend polling interval (2 minutes)
+let liveScoresPollInterval = null;
+const POLL_INTERVAL_MS = 120000; // 2 minutes
+
 // Load user from localStorage on startup
 const storedUser = localStorage.getItem('gbf_user');
 if (storedUser) {
@@ -140,6 +144,9 @@ async function loginUser(credentials) {
     localStorage.setItem('gbf_refresh', data.session.refresh_token);
     currentUser = data.user;
     localStorage.setItem('gbf_user', JSON.stringify(currentUser));
+    
+    // Start live scores polling
+    startLiveScoresPolling();
 
     return { success: true, user: data.user };
   } catch (error) {
@@ -148,6 +155,9 @@ async function loginUser(credentials) {
 }
 
 function logout() {
+  // Stop polling
+  stopLiveScoresPolling();
+  
   authToken = null;
   currentUser = null;
   localStorage.removeItem('gbf_token');
@@ -753,6 +763,57 @@ function updateCountdowns() {
 initScrollAnimations();
 updateCountdowns();
 setInterval(updateCountdowns, 60000);
+
+// ==================== LIVE SCORES POLLING ====================
+// Poll for live scores every 2 minutes when user is logged in
+// This keeps data fresh for all users
+
+async function pollLiveScores() {
+  if (!authToken) return; // Only poll when logged in
+  
+  try {
+    console.log('[Polling] Fetching live scores...');
+    const response = await fetch(`${API_BASE}/live-scores`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('[Polling] Live scores updated:', data.message, 'GW:', data.gameweek);
+    } else {
+      console.log('[Polling] Live scores request failed:', response.status);
+    }
+  } catch (error) {
+    console.error('[Polling] Error:', error.message);
+  }
+}
+
+function startLiveScoresPolling() {
+  if (liveScoresPollInterval) {
+    clearInterval(liveScoresPollInterval);
+  }
+  
+  // Immediate first call
+  pollLiveScores();
+  
+  // Then every 2 minutes
+  liveScoresPollInterval = setInterval(pollLiveScores, POLL_INTERVAL_MS);
+  console.log('[Polling] Started live scores polling (every 2 mins)');
+}
+
+function stopLiveScoresPolling() {
+  if (liveScoresPollInterval) {
+    clearInterval(liveScoresPollInterval);
+    liveScoresPollInterval = null;
+    console.log('[Polling] Stopped live scores polling');
+  }
+}
+
+// Start polling if user is logged in
+if (authToken) {
+  startLiveScoresPolling();
+}
 
 // Export for potential module use
 if (typeof module !== 'undefined' && module.exports) {
