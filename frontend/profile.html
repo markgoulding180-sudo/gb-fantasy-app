@@ -472,10 +472,38 @@
       /* Chart */
       .chart-container { height: 200px; }
       
-      /* Achievements */
+      /* Achievements - more compact */
       .achievements-grid { 
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.4rem;
+      }
+      .achievement-badge {
+        padding: 0.5rem 0.25rem;
+      }
+      .achievement-icon { 
+        font-size: 1.25rem; 
+        margin-bottom: 0.25rem; 
+      }
+      .achievement-name { 
+        font-size: 0.65rem; 
+      }
+      
+      /* Insights - more compact */
+      .insights-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.5rem;
+      }
+      .insight-card {
+        padding: 0.5rem;
+      }
+      .insight-label {
+        font-size: 0.65rem;
+      }
+      .insight-value {
+        font-size: 1rem;
+      }
+      .insight-detail {
+        font-size: 0.7rem;
       }
       
       /* All text aligned left */

@@ -714,6 +714,59 @@ async function loadPredictionHistory() {
   }
 }
 
+// Recent Activity - shows latest predictions and points earned
+async function loadRecentActivity() {
+  const container = document.getElementById('recent-activity');
+  if (!container) return;
+  
+  try {
+    const data = cachedPredictionsData;
+    if (!data || !data.predictions || data.predictions.length === 0) {
+      container.innerHTML = '<p class="text-muted">No recent activity</p>';
+      return;
+    }
+    
+    const predictions = data.predictions || [];
+    const matches = data.matches || [];
+    
+    // Get finished matches with points
+    const finishedWithPoints = predictions
+      .map(p => {
+        const match = matches.find(m => m.id === p.match_id);
+        return { ...p, match };
+      })
+      .filter(p => p.match && p.match.status === 'finished' && (p.points_earned || 0) > 0)
+      .sort((a, b) => (b.points_earned || 0) - (a.points_earned || 0))
+      .slice(0, 3);
+    
+    if (finishedWithPoints.length === 0) {
+      container.innerHTML = '<p class="text-muted">No points earned yet this gameweek</p>';
+      return;
+    }
+    
+    let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+    finishedWithPoints.forEach(p => {
+      const pointsColor = p.points_earned >= 20 ? '#22c55e' : '#f59e0b';
+      html += `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 0.375rem;">
+          <div style="font-size: 0.8rem;">
+            <div style="font-weight: 600;">${p.match.home_team} vs ${p.match.away_team}</div>
+            <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">Predicted: ${p.predicted_result} (${p.home_score}-${p.away_score})</div>
+          </div>
+          <div style="color: ${pointsColor}; font-weight: 700; font-size: 0.9rem;">+${p.points_earned}pts</div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+    
+  } catch (error) {
+    console.error('Error loading recent activity:', error);
+    container.innerHTML = '<p class="text-muted">Could not load activity</p>';
+  }
+}
+
 // Achievements
 async function loadAchievements() {
   const container = document.getElementById('achievements');
@@ -994,6 +1047,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   await loadUserPredictions();  // fetches and caches data first
   await loadUserTournaments();  // uses cached data for points
   loadPredictionHistory();
+  loadRecentActivity();         // load recent points earned
   loadAchievements();
   loadInsights();
   loadPerformanceGraph();
