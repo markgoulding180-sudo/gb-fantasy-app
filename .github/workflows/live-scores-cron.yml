@@ -2,9 +2,8 @@ name: Live Scores Update
 
 on:
   schedule:
-    # Run every 30 seconds during Premier League match hours
-    # Using multiple cron entries to approximate 30-second intervals
-    - cron: '*/1 * * * *'  # Every minute
+    # Run every minute during all hours (simplified for reliability)
+    - cron: '* * * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
@@ -15,6 +14,9 @@ jobs:
       - name: Trigger Live Scores Update
         run: |
           curl -s -X GET "https://gb-fantasy.vercel.app/api/live-scores" \
-            -H "Content-Type: application/json"
-        env:
-          VERCEL_SITE_URL: ${{ secrets.VERCEL_SITE_URL }}
+            -H "Content-Type: application/json" || echo "Retrying..."
+          
+          # Second call for 30-second approximation
+          sleep 30
+          curl -s -X GET "https://gb-fantasy.vercel.app/api/live-scores" \
+            -H "Content-Type: application/json" || echo "Done"
