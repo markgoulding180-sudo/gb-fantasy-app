@@ -305,6 +305,61 @@
     .rank-2 { background: #94a3b8; color: #000; }
     .rank-3 { background: #b45309; color: #fff; }
     .rank-other { background: var(--bg-hover); color: var(--text-secondary); }
+    
+    /* Active Tournament Banner */
+    .tournament-banner {
+      background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-blue) 100%);
+      border-radius: 0.75rem;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .tournament-banner-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      padding-right: 1rem;
+      border-right: 1px solid rgba(255,255,255,0.3);
+    }
+    .tournament-banner-badge i {
+      font-size: 1.5rem;
+      color: #fff;
+    }
+    .tournament-banner-badge span {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+    }
+    .tournament-banner-info {
+      flex: 1;
+    }
+    .tournament-banner-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.25rem;
+    }
+    .tournament-banner-meta {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.9);
+    }
+    .tournament-banner-gw {
+      text-align: right;
+    }
+    .tournament-banner-gw-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .tournament-banner-gw-label {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.8);
+      text-transform: uppercase;
+    }
     .empty-state {
       text-align: center;
       padding: 2rem;
@@ -493,6 +548,34 @@
         margin-left: 0.5rem;
         margin-right: 0.5rem;
       }
+      /* Tournament banner mobile */
+      .tournament-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      .tournament-banner-badge {
+        padding-right: 0;
+        padding-bottom: 0.75rem;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.3);
+        width: 100%;
+      }
+      .tournament-banner-info {
+        width: 100%;
+      }
+      .tournament-banner-name {
+        font-size: 1rem;
+      }
+      .tournament-banner-gw {
+        text-align: center;
+        width: 100%;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255,255,255,0.3);
+      }
       /* Live games */
       .live-games-bar {
         margin-left: 0.5rem;
@@ -547,6 +630,9 @@
 
   <!-- Main Content -->
   <main class="container">
+    <!-- Active Tournament Banner (if entered in live tournament) -->
+    <div id="active-tournament-banner" style="display: none;"></div>
+
     <!-- Profile Header -->
     <div class="profile-header">
       <div class="profile-avatar" id="profile-avatar">--</div>

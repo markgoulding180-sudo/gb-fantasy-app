@@ -218,6 +218,7 @@ async function loadMyTournaments() {
     
     const data = await response.json();
     const container = document.getElementById('my-tournaments');
+    const bannerContainer = document.getElementById('active-tournament-banner');
     if (!container) return;
 
     const entries = data.entries || [];
@@ -228,9 +229,11 @@ async function loadMyTournaments() {
           <i class="fas fa-trophy"></i>
           <p>No tournament entries yet</p>
         </div>`;
+      if (bannerContainer) bannerContainer.style.display = 'none';
       return;
     }
 
+    // Render the list in "My Tournaments" section
     container.innerHTML = entries.map(e => {
       const statusClass = e.tournament?.status === 'live' ? 'live' : 
                          e.tournament?.status === 'finished' ? 'finished' : '';
@@ -248,6 +251,30 @@ async function loadMyTournaments() {
         </div>
       `;
     }).join('');
+    
+    // Show banner for the first live tournament (if any)
+    const liveEntry = entries.find(e => e.tournament?.status === 'live');
+    if (liveEntry && bannerContainer) {
+      bannerContainer.innerHTML = `
+        <div class="tournament-banner">
+          <div class="tournament-banner-badge">
+            <i class="fas fa-check-circle"></i>
+            <span>Entered</span>
+          </div>
+          <div class="tournament-banner-info">
+            <div class="tournament-banner-name">${liveEntry.tournament.name}</div>
+            <div class="tournament-banner-meta">Tournament - £${liveEntry.tournament.entry_fee || 0} Entry</div>
+          </div>
+          <div class="tournament-banner-gw">
+            <div class="tournament-banner-gw-value">GW${liveEntry.tournament.gameweek}</div>
+            <div class="tournament-banner-gw-label">Gameweek</div>
+          </div>
+        </div>
+      `;
+      bannerContainer.style.display = 'block';
+    } else if (bannerContainer) {
+      bannerContainer.style.display = 'none';
+    }
     
   } catch (error) {
     console.error('Tournaments error:', error);
