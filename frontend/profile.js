@@ -1,5 +1,7 @@
 // Profile page JavaScript
 
+const API_BASE = '/api';
+
 // Global cache for predictions data
 let cachedPredictionsData = null;
 let liveRefreshInterval = null;
