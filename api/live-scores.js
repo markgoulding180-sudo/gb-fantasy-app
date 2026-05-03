@@ -1,7 +1,7 @@
-// Vercel Function: Live scores update - call every 60 seconds during matches
+// Vercel Function: Live scores update
 // GET /api/live-scores
 
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const FPL_FIXTURES_URL = 'https://fantasy.premierleague.com/api/fixtures/';
 
@@ -69,19 +69,14 @@ export default async function handler(req, res) {
       if (!match) continue;
 
       // Determine if match is finished using multiple signals
-      // 1. FPL API says finished (can be delayed)
-      // 2. FPL API says finished_provisional
-      // 3. Time-based: if match started > 105 minutes ago, it's finished
       let isFinished = fixture.finished || fixture.finished_provisional;
       
+      // Time-based finish detection: if match started > 105 minutes ago
       if (!isFinished && fixture.started && match.kickoff_time) {
         const kickoff = new Date(match.kickoff_time);
         const minutesSinceKickoff = (now - kickoff) / (1000 * 60);
-        // Match is 90 mins + halftime (~15) + stoppage (~5) = ~110 mins max
-        // Use 105 minutes as threshold
         if (minutesSinceKickoff >= 105) {
           isFinished = true;
-          console.log(`Time-based finish detected for match ${match.id} (${minutesSinceKickoff.toFixed(0)} mins since kickoff)`);
         }
       }
 
@@ -105,9 +100,7 @@ export default async function handler(req, res) {
           match_id: match.id,
           home: fixture.team_h_score || 0,
           away: fixture.team_a_score || 0,
-          minute: fixture.minutes || 0,
-          home_team: match.home_team,
-          away_team: match.away_team
+          minute: fixture.minutes || 0
         });
       }
 
