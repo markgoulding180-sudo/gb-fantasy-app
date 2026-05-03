@@ -118,17 +118,22 @@ module.exports = async (req, res) => {
       // Determine match status from FPL
       // finished_provisional = match ended, stats being finalized
       // finished = fully confirmed
+      // minutes = 90+ indicates match is complete
       let status = 'upcoming';
       
-      // Time-based fallback: if started > 150 mins ago, mark as finished
-      const now = new Date();
-      const kickoff = new Date(fixture.kickoff_time);
-      const minutesSinceKickoff = (now - kickoff) / (1000 * 60);
-      const timeBasedFinished = fixture.started && !fixture.finished && !fixture.finished_provisional && minutesSinceKickoff > 110;
+      // Check if match is finished using multiple signals
+      const isFinished = fixture.finished === true;
+      const isProvisional = fixture.finished_provisional === true;
+      const isStarted = fixture.started === true;
+      const minutesPlayed = fixture.minutes || 0;
       
-      if (fixture.finished || fixture.finished_provisional || timeBasedFinished) {
+      // Minutes-based finish: if 90+ minutes and started, match is done
+      // This is more reliable than finished_provisional which can be delayed
+      const minutesBasedFinished = isStarted && minutesPlayed >= 90 && !isFinished && !isProvisional;
+      
+      if (isFinished || isProvisional || minutesBasedFinished) {
         status = 'finished';
-      } else if (fixture.started) {
+      } else if (isStarted) {
         status = 'live';
       }
       
@@ -140,12 +145,13 @@ module.exports = async (req, res) => {
       }
 
       // Mark as finished and calculate result if game has ended
-      if (fixture.finished || fixture.finished_provisional) {
+      if (status === 'finished') {
         updateData.result = fixture.team_h_score > fixture.team_a_score ? 'H' :
                            fixture.team_a_score > fixture.team_h_score ? 'A' : 'D';
         results.finished++;
-        console.log(`Match finished${fixture.finished_provisional ? ' (provisional)' : ''}: ${fplHomeName} ${fixture.team_h_score}-${fixture.team_a_score} ${fplAwayName}`);
-      } else if (fixture.started) {
+        const finishReason = isFinished ? '' : (isProvisional ? ' (provisional)' : ' (minutes-based)');
+        console.log(`Match finished${finishReason}: ${fplHomeName} ${fixture.team_h_score}-${fixture.team_a_score} ${fplAwayName}`);
+      } else if (isStarted) {
         results.live.push({
           match_id: dbMatch.id,
           home_team: fplHomeName,
