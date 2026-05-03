@@ -8,6 +8,107 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* Live Games Bar */
+    .live-games-bar {
+      background: linear-gradient(90deg, #16a34a 0%, #22c55e 50%, #16a34a 100%);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      margin-bottom: 1.5rem;
+      border-radius: 0.75rem;
+      display: none;
+      animation: pulse-live 2s ease-in-out infinite;
+    }
+    .live-games-bar.active {
+      display: block;
+    }
+    @keyframes pulse-live {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+    }
+    .live-games-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    .live-games-header i {
+      animation: blink 1s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .live-games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .live-game-card {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .live-game-teams {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .live-game-score {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    .live-game-minute {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .live-game-minute::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #fff;
+      border-radius: 50%;
+      animation: blink 1s ease-in-out infinite;
+    }
+    
+    /* Live indicator for predictions */
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .live-indicator::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: blink 1s ease-in-out infinite;
+    }
+    .live-score {
+      color: #22c55e;
+      font-weight: 700;
+    }
+    .current-prediction.live {
+      border-left: 3px solid #22c55e;
+    }
+    
     .profile-header {
       background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
       border: 1px solid var(--border);
@@ -237,6 +338,19 @@
       </button>
     </div>
   </nav>
+
+  <!-- Live Games Bar -->
+  <div class="container">
+    <div id="live-games-bar" class="live-games-bar">
+      <div class="live-games-header">
+        <i class="fas fa-circle"></i>
+        LIVE MATCHES
+      </div>
+      <div id="live-games-grid" class="live-games-grid">
+        <!-- Live games injected here -->
+      </div>
+    </div>
+  </div>
 
   <!-- Main Content -->
   <main class="container">

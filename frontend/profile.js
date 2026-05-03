@@ -9,6 +9,9 @@ let authToken = localStorage.getItem('gbf_token') || null;
 // Cached predictions data for real-time calculations
 let cachedPredictionsData = null;
 
+// Live games refresh interval (5 minutes)
+let liveGamesInterval = null;
+
 document.addEventListener('DOMContentLoaded', function() {
   initProfile();
 });
@@ -31,6 +34,10 @@ async function initProfile() {
   // Render profile header
   renderProfileHeader(userData);
   
+  // Load live games immediately and start refresh interval
+  await loadLiveGames();
+  startLiveGamesRefresh();
+  
   // Load cached predictions data FIRST (needed for real-time tournament points)
   await loadCachedPredictionsData();
   
@@ -44,6 +51,76 @@ async function initProfile() {
     loadPredictionHistory(),
     loadPerformanceChart()
   ]);
+}
+
+// Start auto-refresh for live games (every 5 minutes)
+function startLiveGamesRefresh() {
+  // Clear any existing interval
+  if (liveGamesInterval) {
+    clearInterval(liveGamesInterval);
+  }
+  
+  // Refresh every 5 minutes (300000 ms)
+  liveGamesInterval = setInterval(async () => {
+    console.log('Auto-refreshing live games...');
+    await loadLiveGames();
+    // Also refresh current predictions to show updated scores
+    await loadCurrentPredictions();
+  }, 300000);
+  
+  console.log('Live games auto-refresh started (5 min interval)');
+}
+
+// Stop auto-refresh (call on page unload)
+function stopLiveGamesRefresh() {
+  if (liveGamesInterval) {
+    clearInterval(liveGamesInterval);
+    liveGamesInterval = null;
+  }
+}
+
+// Load live games from API
+async function loadLiveGames() {
+  try {
+    const response = await fetch(`${API_BASE}/live-scores`);
+    if (!response.ok) throw new Error('Failed to load live scores');
+    
+    const data = await response.json();
+    console.log('Live games data:', data);
+    
+    const liveGamesBar = document.getElementById('live-games-bar');
+    const liveGamesGrid = document.getElementById('live-games-grid');
+    
+    // Check if there are live matches
+    const liveMatches = data.results?.live || [];
+    
+    if (liveMatches.length === 0) {
+      liveGamesBar.classList.remove('active');
+      return;
+    }
+    
+    // Show the live games bar
+    liveGamesBar.classList.add('active');
+    
+    // Render live games
+    liveGamesGrid.innerHTML = liveMatches.map(match => {
+      // Use team names from API response or fallback to cached data
+      const homeTeam = match.home_team || cachedPredictionsData?.matches?.find(m => m.id === match.match_id)?.home_team || 'Home';
+      const awayTeam = match.away_team || cachedPredictionsData?.matches?.find(m => m.id === match.match_id)?.away_team || 'Away';
+      const minute = match.minute || 0;
+      
+      return `
+        <div class="live-game-card">
+          <div class="live-game-teams">${homeTeam} vs ${awayTeam}</div>
+          <div class="live-game-score">${match.home} - ${match.away}</div>
+          <div class="live-game-minute">${minute}'</div>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Error loading live games:', error);
+  }
 }
 
 async function loadUserData() {
@@ -248,33 +325,72 @@ async function loadCurrentPredictions() {
     // Get match details
     const matches = data.matches || [];
     
+    // Also fetch live scores to check for in-play matches
+    let liveScoresData = null;
+    try {
+      const liveResponse = await fetch(`${API_BASE}/live-scores`);
+      if (liveResponse.ok) {
+        liveScoresData = await liveResponse.json();
+      }
+    } catch (e) {
+      console.log('Could not fetch live scores for predictions');
+    }
+    
+    const liveMatches = liveScoresData?.results?.live || [];
+    
     container.innerHTML = data.predictions.map(pred => {
       const match = matches.find(m => m.id === pred.match_id) || {};
       const resultText = pred.predicted_result === 'H' ? 'Home Win' : 
                         pred.predicted_result === 'A' ? 'Away Win' : 'Draw';
       
-      // Check if match is finished
+      // Check match status
       const isFinished = match.status === 'finished';
+      const isLive = match.status === 'live' || liveMatches.some(lm => lm.match_id === pred.match_id);
+      const liveMatch = liveMatches.find(lm => lm.match_id === pred.match_id);
+      
       const actualResult = match.result === 'H' ? 'Home Win' : 
                           match.result === 'A' ? 'Away Win' : 
                           match.result === 'D' ? 'Draw' : null;
       
+      // Build status display
+      let statusHtml = '';
+      if (isFinished) {
+        statusHtml = pred.points_earned > 0 
+          ? `<span class="points-positive">+${pred.points_earned} pts</span>`
+          : `<span style="color: var(--text-secondary);">0 pts</span>`;
+      } else if (isLive && liveMatch) {
+        statusHtml = `
+          <div style="text-align: right;">
+            <span class="live-indicator">LIVE</span>
+            <div class="live-score" style="font-size: 1.1rem; margin-top: 0.25rem;">
+              ${liveMatch.home} - ${liveMatch.away}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">${liveMatch.minute || 0}'</div>
+          </div>
+        `;
+      } else {
+        statusHtml = '<span class="text-muted">Pending</span>';
+      }
+      
+      // Build result text for finished or live matches
+      let resultHtml = '';
+      if (isFinished) {
+        resultHtml = `<br><span style="color: var(--text-secondary);">Result: ${actualResult} ${match.home_score}-${match.away_score} (FT)</span>`;
+      } else if (isLive && liveMatch) {
+        resultHtml = `<br><span style="color: #22c55e;">In Play: ${liveMatch.home} - ${liveMatch.away}</span>`;
+      }
+      
       return `
-        <div class="current-prediction">
+        <div class="current-prediction ${isLive ? 'live' : ''}">
           <div>
             <div class="current-prediction-teams">${match.home_team || 'TBD'} vs ${match.away_team || 'TBD'}</div>
             <div class="current-prediction-guess">
               Your prediction: ${resultText} ${pred.home_score}-${pred.away_score}
-              ${isFinished ? `<br><span style="color: var(--text-secondary);">Result: ${actualResult} ${match.home_score}-${match.away_score} (FT)</span>` : ''}
+              ${resultHtml}
             </div>
           </div>
-          <div style="text-align: right;">
-            ${isFinished 
-              ? (pred.points_earned > 0 
-                ? `<span class="points-positive">+${pred.points_earned} pts</span>`
-                : `<span style="color: var(--text-secondary);">0 pts</span>`)
-              : '<span class="text-muted">Pending</span>'
-            }
+          <div>
+            ${statusHtml}
           </div>
         </div>
       `;
@@ -476,3 +592,6 @@ async function loadPerformanceChart() {
     console.error('Chart error:', error);
   }
 }
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', stopLiveGamesRefresh);

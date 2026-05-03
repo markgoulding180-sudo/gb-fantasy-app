@@ -95,7 +95,9 @@ exports.handler = async (event, context) => {
           match_id: match.id,
           home: fixture.team_h_score || 0,
           away: fixture.team_a_score || 0,
-          minute: fixture.minutes || 0
+          minute: fixture.minutes || 0,
+          home_team: match.home_team,
+          away_team: match.away_team
         });
       }
 
