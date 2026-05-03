@@ -119,7 +119,14 @@ module.exports = async (req, res) => {
       // finished_provisional = match ended, stats being finalized
       // finished = fully confirmed
       let status = 'upcoming';
-      if (fixture.finished || fixture.finished_provisional) {
+      
+      // Time-based fallback: if started > 150 mins ago, mark as finished
+      const now = new Date();
+      const kickoff = new Date(fixture.kickoff_time);
+      const minutesSinceKickoff = (now - kickoff) / (1000 * 60);
+      const timeBasedFinished = fixture.started && !fixture.finished && !fixture.finished_provisional && minutesSinceKickoff > 150;
+      
+      if (fixture.finished || fixture.finished_provisional || timeBasedFinished) {
         status = 'finished';
       } else if (fixture.started) {
         status = 'live';
