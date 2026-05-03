@@ -60,12 +60,24 @@ exports.handler = async (event, context) => {
 
     // Process each fixture
     for (const fixture of gwFixtures) {
-      // Determine status
+      // Determine status - use multiple signals
       let status = 'upcoming';
-      if (fixture.finished_provisional || fixture.finished) {
+      const now = new Date();
+      const kickoff = new Date(fixture.kickoff_time);
+      const minutesSinceKickoff = (now - kickoff) / (1000 * 60);
+      
+      // FPL API flags
+      const isFinished = fixture.finished === true;
+      const isProvisional = fixture.finished_provisional === true;
+      const isStarted = fixture.started === true;
+      
+      // Time-based: if match started > 120 mins ago, mark as finished
+      const timeBasedFinished = isStarted && minutesSinceKickoff > 120;
+      
+      if (isFinished || isProvisional || timeBasedFinished) {
         status = 'finished';
         finished++;
-      } else if (fixture.started) {
+      } else if (isStarted) {
         status = 'live';
         live++;
       }
@@ -97,6 +109,18 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Debug: log what we found
+    const debugInfo = gwFixtures.slice(0, 3).map(f => ({
+      home: f.team_h_code,
+      away: f.team_a_code,
+      started: f.started,
+      finished: f.finished,
+      finished_provisional: f.finished_provisional,
+      h_score: f.team_h_score,
+      a_score: f.team_a_score,
+      kickoff: f.kickoff_time
+    }));
+
     return {
       statusCode: 200,
       headers,
@@ -105,7 +129,9 @@ exports.handler = async (event, context) => {
         gameweek: currentGW,
         updated,
         live,
-        finished
+        finished,
+        totalFixtures: gwFixtures.length,
+        debug: debugInfo
       })
     };
 
