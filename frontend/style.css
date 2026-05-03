@@ -43,7 +43,7 @@ body {
   padding: 1rem 0;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .nav-container {
@@ -97,6 +97,8 @@ body {
   color: var(--text-primary);
   font-size: 1.5rem;
   cursor: pointer;
+  position: relative;
+  z-index: 1001;
 }
 
 /* Main Container */
@@ -810,6 +812,7 @@ body {
     flex-direction: column;
     padding: 1rem;
     border-bottom: 1px solid var(--border-color);
+    z-index: 999;
   }
   
   .nav-links.active {
