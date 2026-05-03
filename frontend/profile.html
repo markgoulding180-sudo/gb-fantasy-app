@@ -327,28 +327,47 @@
       margin-top: 0.25rem;
     }
     @media (max-width: 768px) {
-      .profile-header-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(10,15,46,0.92) 0%, rgba(10,15,46,0.7) 40%, rgba(10,15,46,0.15) 100%);
-      z-index: 1;
-    }
-    .profile-header-content { flex-direction: column; text-align: center; padding: 1.5rem 1rem 0; }
+      /* Profile header mobile layout */
+      .profile-header {
+        min-height: 160px;
+        max-height: 180px;
+      }
+      .profile-header-content {
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        padding: 1rem;
+        gap: 0.75rem;
+        min-height: 120px;
+      }
+      .profile-avatar {
+        width: 70px;
+        height: 70px;
+        font-size: 1.5rem;
+        border-width: 2px;
+      }
+      .profile-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 70px;
+      }
+      .profile-info h1 {
+        font-size: 1.1rem;
+        margin: 0;
+        line-height: 1.2;
+      }
+      .profile-info .username {
+        font-size: 0.8rem;
+        margin: 0.15rem 0;
+      }
+      .profile-info .member-since {
+        font-size: 0.7rem;
+      }
       .profile-tournament-bar {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 3;
-      background: rgba(5, 15, 50, 0.85);
-      backdrop-filter: blur(8px);
-      padding: 0.75rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+      }
       .dashboard-grid { grid-template-columns: 1fr; }
       .prediction-table { font-size: 0.75rem; }
       .prediction-table th, .prediction-table td { padding: 0.5rem; }
