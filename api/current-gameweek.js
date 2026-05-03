@@ -1,19 +1,18 @@
-// Netlify Function: Get current gameweek and deadline info from FPL
-// GET /.netlify/functions/current-gameweek
+// Vercel Function: Get current gameweek from FPL API
+// GET /api/current-gameweek
 
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
@@ -47,17 +46,10 @@ exports.handler = async (event, context) => {
         updated_at: new Date().toISOString()
       }, { onConflict: 'key' });
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify(result)
-    };
+    return res.status(200).json(result);
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to fetch gameweek', details: error.message })
-    };
+    console.error('Current gameweek error:', error);
+    return res.status(500).json({ error: 'Failed to fetch gameweek', details: error.message });
   }
-};
+}

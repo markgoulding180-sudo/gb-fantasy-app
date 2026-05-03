@@ -3,6 +3,12 @@
   "buildCommand": null,
   "outputDirectory": "frontend",
   "framework": null,
+  "crons": [
+    {
+      "path": "/api/live-scores",
+      "schedule": "*/1 * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/.netlify/functions/:path*",

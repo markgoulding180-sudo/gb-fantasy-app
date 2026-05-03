@@ -1,35 +1,27 @@
-// Netlify Function: Sync fixtures from FPL API
-// GET /.netlify/functions/sync-fixtures?gameweek=34
-// This should be called by a scheduled job (Netlify scheduled functions or external cron)
+// Vercel Function: Sync fixtures from FPL API
+// GET /api/sync-fixtures?gameweek=34
 
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
-// FPL API endpoint
 const FPL_FIXTURES_URL = 'https://fantasy.premierleague.com/api/fixtures/';
 const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const params = new URLSearchParams(event.queryStringParameters);
-    const gameweek = params.get('gameweek');
+    const gameweek = req.query.gameweek;
 
     // Initialize Supabase
     const supabase = createClient(
@@ -120,29 +112,17 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // If any matches were updated with results, trigger scoring
-    if (results.updated > 0) {
-      await calculatePointsForGameweek(supabase, gameweek);
-    }
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        message: 'Fixtures synced successfully',
-        gameweek: gameweek || 'all',
-        results
-      })
-    };
+    return res.status(200).json({
+      message: 'Fixtures synced successfully',
+      gameweek: gameweek || 'all',
+      results
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to sync fixtures', details: error.message })
-    };
+    console.error('Sync fixtures error:', error);
+    return res.status(500).json({ error: 'Failed to sync fixtures', details: error.message });
   }
-};
+}
 
 function mapFPLStatus(finished, started) {
   if (finished) return 'finished';
@@ -155,103 +135,3 @@ function calculateResult(homeScore, awayScore) {
   if (awayScore > homeScore) return 'A';
   return 'D';
 }
-
-async function calculatePointsForGameweek(supabase, gameweek) {
-  // Get all finished matches for this gameweek
-  const { data: matches } = await supabase
-    .from('matches')
-    .select('*')
-    .eq('gameweek', gameweek)
-    .eq('status', 'finished')
-    .not('result', 'is', null);
-
-  if (!matches || matches.length === 0) return;
-
-  for (const match of matches) {
-    // Get all predictions for this match
-    const { data: predictions } = await supabase
-      .from('predictions')
-      .select('*')
-      .eq('match_id', match.id);
-
-    if (!predictions) continue;
-
-    for (const pred of predictions) {
-      let points = 0;
-
-      // 10 points for correct result
-      if (pred.predicted_result === match.result) {
-        points += 10;
-
-        // Additional 10 points for correct score
-        if (pred.home_score === match.home_score && pred.away_score === match.away_score) {
-          points += 10;
-        }
-      }
-
-      // Update prediction with points
-      await supabase
-        .from('predictions')
-        .update({ points_earned: points })
-        .eq('id', pred.id);
-    }
-  }
-
-  // Update user totals
-  const { data: users } = await supabase
-    .from('users')
-    .select('id');
-
-  for (const user of users) {
-    const { data: userPreds } = await supabase
-      .from('predictions')
-      .select('points_earned, home_score, away_score')
-      .eq('user_id', user.id);
-
-    const totalPoints = userPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
-    const correctScores = userPreds.filter(p => p.points_earned === 20).length;
-
-    await supabase
-      .from('users')
-      .update({ 
-        total_points: totalPoints,
-        correct_scores: correctScores,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id);
-  }
-
-  // Update tournament entries for this gameweek
-  await updateTournamentEntries(supabase, gameweek);
-}
-
-async function updateTournamentEntries(supabase, gameweek) {
-  // Get all tournaments for this gameweek
-  const { data: tournaments } = await supabase
-    .from('tournaments')
-    .select('*')
-    .eq('gameweek', gameweek);
-
-  for (const tournament of tournaments || []) {
-    // Get all entries for this tournament
-    const { data: entries } = await supabase
-      .from('tournament_entries')
-      .select('*')
-      .eq('tournament_id', tournament.id);
-
-    for (const entry of entries || []) {
-      // Calculate total points for this user in this gameweek
-      const { data: userPreds } = await supabase
-        .from('predictions')
-        .select('points_earned')
-        .eq('user_id', entry.user_id)
-        .eq('gameweek', gameweek);
-
-      const entryPoints = userPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
-
-      await supabase
-        .from('tournament_entries')
-        .update({ entry_points: entryPoints })
-        .eq('id', entry.id);
-    }
-  }

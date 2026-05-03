@@ -2,9 +2,9 @@ name: Live Scores Update
 
 on:
   schedule:
-    # Run every 5 minutes during Premier League match hours
-    # Matches typically run Saturday/Sunday 12:00-19:00 and Monday 20:00
-    - cron: '*/5 * * * *'
+    # Run every 30 seconds during Premier League match hours
+    # Using multiple cron entries to approximate 30-second intervals
+    - cron: '*/1 * * * *'  # Every minute
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
@@ -14,9 +14,7 @@ jobs:
     steps:
       - name: Trigger Live Scores Update
         run: |
-          # Replace with your actual Netlify site URL
-          curl -s -X GET "https://gb-fantasy.netlify.app/.netlify/functions/live-scores" \
-            -H "Content-Type: application/json" || echo "Live scores update triggered"
+          curl -s -X GET "https://gb-fantasy.vercel.app/api/live-scores" \
+            -H "Content-Type: application/json"
         env:
-          # Optional: Add any required headers or auth tokens
-          NETLIFY_SITE_URL: ${{ secrets.NETLIFY_SITE_URL }}
+          VERCEL_SITE_URL: ${{ secrets.VERCEL_SITE_URL }}
