@@ -241,19 +241,39 @@ async function loadUserPredictions() {
     const gwData = await gwResponse.json();
     const gameweek = gwData.current_gameweek || 35;
     
-    const response = await fetch(`/api/predictions?gameweek=${gameweek}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    // Fetch predictions (with auth) and all matches (without auth) in parallel
+    const [predictionsResponse, matchesResponse] = await Promise.all([
+      fetch(`/api/predictions?gameweek=${gameweek}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }),
+      fetch(`/api/predictions?gameweek=${gameweek}`)  // Public endpoint - gets all matches
+    ]);
     
-    if (!response.ok) throw new Error('Failed to load predictions');
+    if (!predictionsResponse.ok) throw new Error('Failed to load predictions');
     
-    const data = await response.json();
+    const data = await predictionsResponse.json();
     cachedPredictionsData = data;
 
-    // Check for live matches
-    const liveMatches = (data.matches || []).filter(m => m.status === 'live');
-    const finishedCount = (data.matches || []).filter(m => m.status === 'finished').length;
-    const totalCount = (data.matches || []).length;
+    // Get ALL matches for live detection (not just ones with predictions)
+    let allMatches = [];
+    if (matchesResponse.ok) {
+      const matchesData = await matchesResponse.json();
+      allMatches = matchesData.matches || [];
+    }
+    // Fallback to matches from predictions if public endpoint fails
+    if (allMatches.length === 0) {
+      allMatches = data.matches || [];
+    }
+
+    // Check for live matches from ALL matches in the gameweek
+    const liveMatches = allMatches.filter(m => m.status === 'live');
+    const finishedCount = allMatches.filter(m => m.status === 'finished').length;
+    const totalCount = allMatches.length;
+    
+    // Debug logging
+    console.log('Live matches found:', liveMatches.length, liveMatches);
+    console.log('Total matches:', totalCount);
+    console.log('All matches statuses:', allMatches.map(m => ({ team: m.home_team + ' vs ' + m.away_team, status: m.status })));
 
     // Update banner LIVE badge based on actual live matches
     const bannerLiveBadge = document.getElementById('banner-live-badge');
