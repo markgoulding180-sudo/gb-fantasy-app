@@ -3,11 +3,12 @@
   "buildCommand": null,
   "outputDirectory": "frontend",
   "framework": null,
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    },
     {
       "source": "/.netlify/functions/:path*",
       "destination": "/api/:path*"
