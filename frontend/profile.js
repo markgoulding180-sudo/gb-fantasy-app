@@ -270,10 +270,24 @@ async function loadUserPredictions() {
     const finishedCount = allMatches.filter(m => m.status === 'finished').length;
     const totalCount = allMatches.length;
     
-    // Debug logging
-    console.log('Live matches found:', liveMatches.length, liveMatches);
-    console.log('Total matches:', totalCount);
-    console.log('All matches statuses:', allMatches.map(m => ({ team: m.home_team + ' vs ' + m.away_team, status: m.status })));
+    // Debug logging - VERBOSE
+    console.log('=== LIVE MATCHES DEBUG ===');
+    console.log('Live matches found:', liveMatches.length);
+    liveMatches.forEach((m, i) => {
+      console.log(`  LIVE ${i+1}: ${m.home_team} ${m.home_score}-${m.away_score} ${m.away_team} (${m.minute || 0}') [ID: ${m.id}]`);
+    });
+    console.log('Total matches in GW:', totalCount);
+    console.log('All matches by status:');
+    const byStatus = { live: [], finished: [], upcoming: [] };
+    allMatches.forEach(m => {
+      const status = m.status || 'unknown';
+      if (!byStatus[status]) byStatus[status] = [];
+      byStatus[status].push(`${m.home_team} vs ${m.away_team} (${m.home_score ?? '-'}-${m.away_score ?? '-'})`);
+    });
+    Object.entries(byStatus).forEach(([status, matches]) => {
+      if (matches.length > 0) console.log(`  ${status.toUpperCase()} (${matches.length}):`, matches.join(', '));
+    });
+    console.log('=== END DEBUG ===');
 
     // Update banner LIVE badge based on actual live matches
     const bannerLiveBadge = document.getElementById('banner-live-badge');
