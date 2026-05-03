@@ -1,19 +1,18 @@
-// Netlify Function: Live scores update - call every 60 seconds during matches
-// GET /.netlify/functions/live-scores
+// Vercel Function: Live scores update - call every 60 seconds during matches
+// GET /api/live-scores
 
 const { createClient } = require('@supabase/supabase-js');
 
 const FPL_FIXTURES_URL = 'https://fantasy.premierleague.com/api/fixtures/';
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
-  };
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
@@ -33,11 +32,7 @@ exports.handler = async (event, context) => {
     const currentGW = setting ? JSON.parse(setting.value).current_gameweek : null;
 
     if (!currentGW) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ message: 'No current gameweek set' })
-      };
+      return res.status(200).json({ message: 'No current gameweek set' });
     }
 
     // Fetch live fixtures from FPL
@@ -50,11 +45,7 @@ exports.handler = async (event, context) => {
     );
 
     if (liveFixtures.length === 0) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ message: 'No live matches', gameweek: currentGW })
-      };
+      return res.status(200).json({ message: 'No live matches', gameweek: currentGW });
     }
 
     const results = {
@@ -135,25 +126,17 @@ exports.handler = async (event, context) => {
       await calculatePointsForGameweek(supabase, currentGW);
     }
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        message: 'Live scores updated',
-        gameweek: currentGW,
-        results
-      })
-    };
+    return res.status(200).json({
+      message: 'Live scores updated',
+      gameweek: currentGW,
+      results
+    });
 
   } catch (error) {
     console.error('Live scores error:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to update live scores', details: error.message })
-    };
+    return res.status(500).json({ error: 'Failed to update live scores', details: error.message });
   }
-};
+}
 
 async function calculatePointsForGameweek(supabase, gameweek) {
   // Get all finished matches for this gameweek that haven't been scored yet
