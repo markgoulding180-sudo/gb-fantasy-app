@@ -88,16 +88,15 @@ async function loadUserTournaments() {
 
       // Set banner bar to first entered tournament
       if (isEntered && !bannerSet && bannerBar) {
-        bannerSet = true;
-        // LIVE badge only shown when matches are actually live - updated after predictions load
         bannerBar.innerHTML = `
           <div class="t-left">
-            <span id="banner-live-badge" style="display:none;" class="live-badge">LIVE</span>
+            <span class="live-badge">LIVE</span>
             <span class="entered-badge"><i class="fas fa-check-circle"></i> ENTERED</span>
             <span class="t-name">${tournament.name}</span>
           </div>
           <div class="t-right">GW${tournament.gameweek}<br><span style="font-size:0.75rem;font-weight:400;color:rgba(255,255,255,0.6);">Gameweek</span></div>
         `;
+        bannerSet = true;
       }
       
       let predictionsCount = '--';
@@ -139,35 +138,29 @@ async function loadUserTournaments() {
       }
       
       tournamentsHTML += `
-        <div class="tournament-section mb-3">
-          <div class="card mb-2" style="background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-blue) 100%); color: white;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
-              <div>
-                <h2 style="margin: 0; font-size: 1.5rem;">${tournament.name}</h2>
-                <p style="margin: 0.25rem 0 0 0; opacity: 0.9;">
-                  <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.875rem;">${tournament.status.toUpperCase()}</span>
-                  ${isEntered ? '<span style="margin-left: 0.5rem;"><i class="fas fa-check-circle"></i> ENTERED</span>' : ''}
-                </p>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 1.25rem; font-weight: 700;">GW${tournament.gameweek}</div>
-                <div style="font-size: 0.875rem; opacity: 0.9;">Gameweek</div>
+        <div class="tournament-section">
+          <div class="tournament-header-card">
+            <div>
+              <h2>${tournament.name}</h2>
+              <div class="t-badges">
+                <span style="background:rgba(255,255,255,0.15); color:rgba(255,255,255,0.9); padding:0.2rem 0.6rem; border-radius:4px; font-size:0.75rem; font-weight:600;">${tournament.status.toUpperCase()}</span>
+                ${isEntered ? '<span class="entered-badge"><i class="fas fa-check-circle"></i> ENTERED</span>' : ''}
               </div>
             </div>
+            <div class="t-gw">GW${tournament.gameweek}<span>Gameweek</span></div>
           </div>
-          
-          <div class="profile-stats mb-3">
+          <div class="profile-stats">
             <div class="profile-stat">
               <div class="profile-stat-value">${tournamentPoints}</div>
-              <div class="profile-stat-label">Tournament Points</div>
+              <div class="profile-stat-label">Points</div>
             </div>
             <div class="profile-stat">
               <div class="profile-stat-value">${isEntered && userEntry.rank ? '#' + userEntry.rank : '--'}</div>
-              <div class="profile-stat-label">Tournament Rank</div>
+              <div class="profile-stat-label">Rank</div>
             </div>
             <div class="profile-stat">
               <div class="profile-stat-value">${predictionsCount}</div>
-              <div class="profile-stat-label">Predictions Made</div>
+              <div class="profile-stat-label">Predictions</div>
             </div>
             <div class="profile-stat">
               <div class="profile-stat-value">${resultPct}</div>
@@ -178,10 +171,9 @@ async function loadUserTournaments() {
               <div class="profile-stat-label">Score %</div>
             </div>
           </div>
-          
           ${!isEntered ? `
-            <div style="text-align: center; margin-bottom: 1rem;">
-              <button class="btn btn-green btn-lg" onclick="enterTournament('${tournament.id}')">
+            <div class="enter-btn-wrap">
+              <button class="btn-green" onclick="enterTournament('${tournament.id}')">
                 <i class="fas fa-ticket-alt"></i> Enter Now - £${tournament.entry_fee}
               </button>
             </div>
@@ -253,16 +245,11 @@ async function loadUserPredictions() {
     const finishedCount = (data.matches || []).filter(m => m.status === 'finished').length;
     const totalCount = (data.matches || []).length;
 
-    // Update banner LIVE badge based on actual live matches
-    const bannerLiveBadge = document.getElementById('banner-live-badge');
-    if (bannerLiveBadge) {
-      bannerLiveBadge.style.display = liveMatches.length > 0 ? 'inline-block' : 'none';
-    }
-
     if (liveBanner && liveBannerText) {
       if (liveMatches.length > 0) {
         liveBanner.style.display = 'flex';
         liveBannerText.textContent = `${liveMatches.length} match${liveMatches.length > 1 ? 'es' : ''} live right now — scores updating every 60s`;
+        // Start auto refresh
         startLiveRefresh();
       } else {
         liveBanner.style.display = 'none';
