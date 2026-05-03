@@ -115,20 +115,29 @@ module.exports = async (req, res) => {
         continue;
       }
 
-      const updateData = {
-        status: fixture.finished ? 'finished' : (fixture.started ? 'live' : 'upcoming')
-      };
+      // Determine match status from FPL
+      // finished_provisional = match ended, stats being finalized
+      // finished = fully confirmed
+      let status = 'upcoming';
+      if (fixture.finished || fixture.finished_provisional) {
+        status = 'finished';
+      } else if (fixture.started) {
+        status = 'live';
+      }
+      
+      const updateData = { status };
 
       if (fixture.team_h_score !== null && fixture.team_a_score !== null) {
         updateData.home_score = fixture.team_h_score;
         updateData.away_score = fixture.team_a_score;
       }
 
-      if (fixture.finished) {
+      // Mark as finished and calculate result if game has ended
+      if (fixture.finished || fixture.finished_provisional) {
         updateData.result = fixture.team_h_score > fixture.team_a_score ? 'H' :
                            fixture.team_a_score > fixture.team_h_score ? 'A' : 'D';
         results.finished++;
-        console.log(`Match finished: ${fplHomeName} ${fixture.team_h_score}-${fixture.team_a_score} ${fplAwayName}`);
+        console.log(`Match finished${fixture.finished_provisional ? ' (provisional)' : ''}: ${fplHomeName} ${fixture.team_h_score}-${fixture.team_a_score} ${fplAwayName}`);
       } else if (fixture.started) {
         results.live.push({
           match_id: dbMatch.id,
