@@ -8,9 +8,11 @@ const API_BASE = '/api';
 const SUPABASE_URL = 'https://sdevgsxrmontdlysjwuq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_qQ94OstBkCkrNrkZskU7MQ_QMkidT6A';
 
-// Initialize Supabase client
-let supabase = null;
-if (typeof createClient !== 'undefined') {
+// Initialize Supabase client - only if not already defined
+if (typeof supabase === 'undefined') {
+  var supabase = null;
+}
+if (typeof createClient !== 'undefined' && !supabase) {
   supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
