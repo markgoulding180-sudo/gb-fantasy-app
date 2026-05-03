@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Injury Updates - GB Fantasy</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -183,6 +184,19 @@
       .stats-summary {
         grid-template-columns: repeat(2, 1fr);
       }
+      /* Force mobile nav to work */
+      .nav-links.active {
+        display: flex !important;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        z-index: 999;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+      }
     }
   </style>
 </head>
@@ -201,6 +215,7 @@
       <a href="tournaments.html" class="sidebar-link" data-page="tournaments"><i class="fas fa-trophy"></i><span>Tournaments</span></a>
       <a href="table.html" class="sidebar-link" data-page="table"><i class="fas fa-table"></i><span>PL Table</span></a>
       <a href="injuries.html" class="sidebar-link active" data-page="injuries"><i class="fas fa-medkit"></i><span>Injuries</span></a>
+      <a href="links.html" class="sidebar-link" data-page="links"><i class="fas fa-link"></i><span>Links</span></a>
       <a href="leaderboard.html" class="sidebar-link" data-page="leaderboard"><i class="fas fa-chart-line"></i><span>Leaderboard</span></a>
       <div class="sidebar-divider"></div>
       <a href="profile.html" class="sidebar-link" data-page="profile"><i class="fas fa-user"></i><span>Profile</span></a>
@@ -306,10 +321,17 @@
       
       if (mobileMenuBtn && navLinks) {
         mobileMenuBtn.addEventListener('click', function(e) {
-          e.preventDefault();
           e.stopPropagation();
-          navLinks.classList.toggle('active');
-          navLinks.style.display = navLinks.classList.contains('active') ? 'flex' : 'none';
+          const isActive = navLinks.classList.toggle('active');
+          navLinks.style.display = isActive ? 'flex' : 'none';
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+          if (!navLinks.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+            navLinks.classList.remove('active');
+            navLinks.style.display = 'none';
+          }
         });
       }
       
