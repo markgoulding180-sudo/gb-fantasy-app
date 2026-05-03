@@ -71,7 +71,14 @@ module.exports = async (req, res) => {
       });
     }
 
-    const results = { updated: 0, finished: 0, live: [], errors: [] };
+    const results = { updated: 0, finished: 0, live: [], errors: [], debug: {
+      totalDbMatches: dbMatches.length,
+      dbMatchTeams: dbMatches.map(m => `${m.home_team} vs ${m.away_team}`),
+      activeFixtures: activeFixtures.length
+    }};
+
+    console.log(`Processing ${activeFixtures.length} active fixtures for GW${currentGW}`);
+    console.log('DB matches:', dbMatches.map(m => `${m.home_team} vs ${m.away_team} (status: ${m.status})`));
 
     for (const fixture of activeFixtures) {
       const fplHomeName = fplCodeToName[fixture.team_h];
@@ -83,11 +90,23 @@ module.exports = async (req, res) => {
       }
 
       // Match by team name (case-insensitive, partial match for names like "Nott'm Forest")
-      const dbMatch = dbMatches.find(m => {
-        const homeMatch = m.home_team.toLowerCase().includes(fplHomeName.toLowerCase().substring(0, 5)) ||
-                         fplHomeName.toLowerCase().includes(m.home_team.toLowerCase().substring(0, 5));
-        const awayMatch = m.away_team.toLowerCase().includes(fplAwayName.toLowerCase().substring(0, 5)) ||
-                         fplAwayName.toLowerCase().includes(m.away_team.toLowerCase().substring(0, 5));
+      // Try exact match first, then partial
+      let dbMatch = dbMatches.find(m => {
+        const dbHome = m.home_team.toLowerCase().trim();
+        const dbAway = m.away_team.toLowerCase().trim();
+        const fplHome = fplHomeName.toLowerCase().trim();
+        const fplAway = fplAwayName.toLowerCase().trim();
+        
+        // Exact match
+        if (dbHome === fplHome && dbAway === fplAway) return true;
+        
+        // Contains match (for shortened names)
+        const homeMatch = dbHome.includes(fplHome) || fplHome.includes(dbHome) ||
+                         dbHome.replace(/[^a-z]/g, '').includes(fplHome.replace(/[^a-z]/g, '')) ||
+                         fplHome.replace(/[^a-z]/g, '').includes(dbHome.replace(/[^a-z]/g, ''));
+        const awayMatch = dbAway.includes(fplAway) || fplAway.includes(dbAway) ||
+                         dbAway.replace(/[^a-z]/g, '').includes(fplAway.replace(/[^a-z]/g, '')) ||
+                         fplAway.replace(/[^a-z]/g, '').includes(dbAway.replace(/[^a-z]/g, ''));
         return homeMatch && awayMatch;
       });
 
@@ -115,9 +134,9 @@ module.exports = async (req, res) => {
           match_id: dbMatch.id,
           home_team: fplHomeName,
           away_team: fplAwayName,
-          home: fixture.team_h_score || 0,
-          away: fixture.team_a_score || 0,
-          minute: fixture.minutes || 0
+          home: fixture.team_h_score ?? 0,
+          away: fixture.team_a_score ?? 0,
+          minute: fixture.minutes ?? 0
         });
         console.log(`Match live: ${fplHomeName} ${fixture.team_h_score}-${fixture.team_a_score} ${fplAwayName} (${fixture.minutes}')`);
       }
