@@ -175,6 +175,8 @@ module.exports = async (req, res) => {
 };
 
 async function calculatePointsForGameweek(supabase, gameweek) {
+  console.log(`=== POINTS CALCULATION START - GW${gameweek} ===`);
+  
   const { data: matches } = await supabase
     .from('matches')
     .select('*')
@@ -182,39 +184,75 @@ async function calculatePointsForGameweek(supabase, gameweek) {
     .eq('status', 'finished')
     .not('result', 'is', null);
 
-  if (!matches || matches.length === 0) return;
+  console.log(`Found ${matches?.length || 0} finished matches to process`);
+  
+  if (!matches || matches.length === 0) {
+    console.log('No finished matches - skipping points calculation');
+    return;
+  }
 
   const usersToUpdate = new Set();
+  let totalPredictionsScored = 0;
+  let totalPointsAwarded = 0;
 
   for (const match of matches) {
+    console.log(`\nProcessing match: ${match.home_team} ${match.home_score}-${match.away_score} ${match.away_team} [Result: ${match.result}]`);
+    
     const { data: predictions } = await supabase
       .from('predictions')
-      .select('*')
+      .select('*, users(username)')
       .eq('match_id', match.id);
+
+    console.log(`  Found ${predictions?.length || 0} predictions for this match`);
 
     if (!predictions || predictions.length === 0) continue;
 
     for (const pred of predictions) {
       let points = 0;
+      const username = pred.users?.username || 'unknown';
+      
+      console.log(`    User ${username}: Predicted ${pred.predicted_result} ${pred.home_score}-${pred.away_score}`);
 
       if (pred.predicted_result === match.result) {
         points += 10;
+        console.log(`      ✓ Correct result (+10 pts)`);
+        
         if (pred.home_score === match.home_score && pred.away_score === match.away_score) {
           points += 10;
+          console.log(`      ✓✓ Exact score! (+10 pts) = 20 pts TOTAL`);
+        } else {
+          console.log(`      ✗ Wrong score (predicted ${pred.home_score}-${pred.away_score}, actual ${match.home_score}-${match.away_score})`);
         }
+      } else {
+        console.log(`      ✗ Wrong result (predicted ${pred.predicted_result}, actual ${match.result})`);
       }
 
-      await supabase
+      console.log(`      → Awarded ${points} points`);
+
+      const { error } = await supabase
         .from('predictions')
         .update({ points_earned: points })
         .eq('id', pred.id);
 
+      if (error) {
+        console.log(`      ✗ ERROR updating prediction: ${error.message}`);
+      }
+
       usersToUpdate.add(pred.user_id);
+      totalPredictionsScored++;
+      totalPointsAwarded += points;
     }
   }
+  
+  console.log(`\n=== POINTS SUMMARY ===`);
+  console.log(`Predictions scored: ${totalPredictionsScored}`);
+  console.log(`Total points awarded: ${totalPointsAwarded}`);
+  console.log(`Users to update: ${usersToUpdate.size}`);
 
   // Update user total points
-  const { data: users } = await supabase.from('users').select('id');
+  console.log(`\n=== UPDATING USER TOTALS ===`);
+  const { data: users } = await supabase.from('users').select('id, username');
+  let usersUpdated = 0;
 
   for (const user of users || []) {
     const { data: userPreds } = await supabase
@@ -225,7 +263,7 @@ async function calculatePointsForGameweek(supabase, gameweek) {
     const totalPoints = (userPreds || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
     const correctScores = (userPreds || []).filter(p => p.points_earned === 20).length;
 
-    await supabase
+    const { error } = await supabase
       .from('users')
       .update({
         total_points: totalPoints,
@@ -233,20 +271,35 @@ async function calculatePointsForGameweek(supabase, gameweek) {
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
+    
+    if (!error) {
+      usersUpdated++;
+      if (usersToUpdate.has(user.id)) {
+        console.log(`  Updated ${user.username || user.id}: ${totalPoints} pts, ${correctScores} perfect scores`);
+      }
+    }
   }
+  console.log(`Updated ${usersUpdated} users`);
 
   // Update tournament entry points
+  console.log(`\n=== UPDATING TOURNAMENT ENTRIES ===`);
   const { data: tournaments } = await supabase
     .from('tournaments')
-    .select('id, gameweek')
+    .select('id, gameweek, name')
     .eq('gameweek', gameweek);
 
+  console.log(`Found ${tournaments?.length || 0} tournaments for GW${gameweek}`);
+
   if (tournaments && tournaments.length > 0) {
+    for (const tournament of tournaments) {
+      console.log(`\nTournament: ${tournament.name}`);
+    }
+    
     for (const userId of usersToUpdate) {
       for (const tournament of tournaments) {
         const { data: entries } = await supabase
           .from('tournament_entries')
-          .select('id')
+          .select('id, user_id')
           .eq('tournament_id', tournament.id)
           .eq('user_id', userId);
 
@@ -268,7 +321,7 @@ async function calculatePointsForGameweek(supabase, gameweek) {
           .filter(p => gameweekMatchIds.has(p.match_id))
           .reduce((sum, p) => sum + (p.points_earned || 0), 0);
 
-        await supabase
+        const { error } = await supabase
           .from('tournament_entries')
           .update({ entry_points: totalPoints })
           .eq('tournament_id', tournament.id)
@@ -276,22 +329,40 @@ async function calculatePointsForGameweek(supabase, gameweek) {
       }
     }
 
+        if (!error) {
+          console.log(`    Updated entry for user ${userId}: ${totalPoints} pts`);
+        }
+      }
+    }
+
     // Recalculate ranks
+    console.log(`\n=== RECALCULATING TOURNAMENT RANKS ===`);
     for (const tournament of tournaments) {
       const { data: entries } = await supabase
         .from('tournament_entries')
-        .select('id, entry_points')
+        .select('id, entry_points, rank')
         .eq('tournament_id', tournament.id)
         .order('entry_points', { ascending: false });
 
       if (entries) {
+        console.log(`  ${tournament.name}: ${entries.length} entries`);
         for (let i = 0; i < entries.length; i++) {
+          const newRank = i + 1;
+          const oldRank = entries[i].rank;
           await supabase
             .from('tournament_entries')
-            .update({ rank: i + 1 })
+            .update({ rank: newRank })
             .eq('id', entries[i].id);
+          if (oldRank !== newRank) {
+            console.log(`    Rank change: ${oldRank} → ${newRank}`);
+          }
+        }
+        if (entries.length > 0) {
+          console.log(`    Top: ${entries[0].entry_points} pts, Bottom: ${entries[entries.length-1].entry_points} pts`);
         }
       }
     }
   }
+  
+  console.log(`\n=== POINTS CALCULATION COMPLETE ===`);
 }
