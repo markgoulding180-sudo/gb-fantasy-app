@@ -268,6 +268,8 @@ function updateMatchStatusIndicator(liveCount, finishedCount, totalCount) {
   statusPoints.style.display = 'none';
   
   // Determine which status to show
+  const isMobile = window.innerWidth <= 768;
+  
   if (liveCount > 0) {
     // Games are live
     statusLive.style.display = 'inline-flex';
@@ -277,7 +279,8 @@ function updateMatchStatusIndicator(liveCount, finishedCount, totalCount) {
     // Some finished, some upcoming - likely in finalising state
     statusFinalising.style.display = 'inline-flex';
     statusFinalising.innerHTML = `<i class="fas fa-clock" style="margin-right: 0.35rem;"></i> FINALISING (${finishedCount}/${totalCount})`;
-    if (statusCount) statusCount.textContent = `Waiting for FPL to confirm results...`;
+    // Shorter message on mobile
+    if (statusCount) statusCount.textContent = isMobile ? `Waiting for FPL...` : `Waiting for FPL to confirm final scores...`;
   } else if (finishedCount === totalCount && totalCount > 0) {
     // All matches finished
     statusPoints.style.display = 'inline-flex';
