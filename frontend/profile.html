@@ -434,6 +434,23 @@
       </div>
     </div>
 
+    <!-- Manual Refresh Button -->
+    <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center;">
+      <button id="manual-refresh-btn" class="btn btn-primary" onclick="manualRefreshScores()">
+        <i class="fas fa-sync"></i> Update from FPL API
+      </button>
+      <span id="refresh-status" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+    </div>
+
+    <!-- Debug Output Panel -->
+    <div id="debug-panel" style="display: none; margin-bottom: 1rem; background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem; padding: 1rem; font-family: monospace; font-size: 0.8rem; max-height: 400px; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <strong style="color: #22c55e;">Debug Output</strong>
+        <button onclick="document.getElementById('debug-panel').style.display='none'" style="background: none; border: none; color: #94a3b8; cursor: pointer;"><i class="fas fa-times"></i></button>
+      </div>
+      <pre id="debug-output" style="margin: 0; white-space: pre-wrap; word-break: break-word; color: #e2e8f0;"></pre>
+    </div>
+
     <!-- Tournament Sections (stats grid) -->
     <div id="tournament-sections">
       <p class="text-muted">Loading your tournaments...</p>

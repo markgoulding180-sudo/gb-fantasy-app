@@ -811,6 +811,86 @@ function stopLiveCarousel() {
   carouselIndex = 0;
 }
 
+// Manual refresh from FPL API with debug output
+async function manualRefreshScores() {
+  const btn = document.getElementById('manual-refresh-btn');
+  const status = document.getElementById('refresh-status');
+  const debugPanel = document.getElementById('debug-panel');
+  const debugOutput = document.getElementById('debug-output');
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+  status.textContent = 'Calling FPL API...';
+  
+  try {
+    console.log('=== MANUAL REFRESH START ===');
+    
+    // Call the live-scores API
+    const response = await fetch(`${API_BASE}/live-scores`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const data = await response.json();
+    
+    console.log('API Response:', data);
+    
+    // Build debug output
+    let debugText = `=== API CALL RESULT ===\n`;
+    debugText += `Status: ${response.status}\n`;
+    debugText += `Gameweek: ${data.gameweek || 'N/A'}\n`;
+    debugText += `Message: ${data.message || 'N/A'}\n\n`;
+    
+    if (data.results) {
+      debugText += `=== UPDATE SUMMARY ===\n`;
+      debugText += `Matches Updated: ${data.results.updated || 0}\n`;
+      debugText += `Finished: ${data.results.finished || 0}\n`;
+      debugText += `Live: ${data.results.live?.length || 0}\n\n`;
+      
+      if (data.results.live && data.results.live.length > 0) {
+        debugText += `=== LIVE MATCHES ===\n`;
+        data.results.live.forEach(m => {
+          debugText += `${m.home_team} ${m.home}-${m.away} ${m.away_team} (${m.minute}')\n`;
+        });
+        debugText += `\n`;
+      }
+      
+      if (data.results.errors && data.results.errors.length > 0) {
+        debugText += `=== ERRORS ===\n`;
+        data.results.errors.forEach(e => debugText += `ERROR: ${e}\n`);
+        debugText += `\n`;
+      }
+      
+      if (data.results.debug) {
+        debugText += `=== DEBUG INFO ===\n`;
+        debugText += JSON.stringify(data.results.debug, null, 2);
+      }
+    }
+    
+    if (data.error) {
+      debugText += `\n=== ERROR ===\n${data.error}\n`;
+      if (data.details) debugText += `Details: ${data.details}\n`;
+    }
+    
+    debugOutput.textContent = debugText;
+    debugPanel.style.display = 'block';
+    
+    status.textContent = `Updated at ${new Date().toLocaleTimeString()}`;
+    
+    // Reload the page data to show updated scores
+    await loadUserPredictions();
+    
+  } catch (error) {
+    console.error('Refresh error:', error);
+    debugOutput.textContent = `ERROR: ${error.message}`;
+    debugPanel.style.display = 'block';
+    status.textContent = 'Update failed';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-sync"></i> Update from FPL API';
+  }
+}
+
 // Single DOMContentLoaded — correct order
 document.addEventListener('DOMContentLoaded', async function() {
   await loadProfile();
