@@ -67,21 +67,26 @@ exports.handler = async (event, context) => {
       let userPredictions = [];
 
       if (authHeader) {
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user } } = await supabase.auth.getUser(token);
+        try {
+          const token = authHeader.replace('Bearer ', '');
+          const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-        if (user) {
-          let predictionsQuery = supabase
-            .from('predictions')
-            .select('*')
-            .eq('user_id', user.id);
-          
-          if (gameweek !== 'all') {
-            predictionsQuery = predictionsQuery.eq('gameweek', gameweek);
+          if (!authError && user) {
+            let predictionsQuery = supabase
+              .from('predictions')
+              .select('*')
+              .eq('user_id', user.id);
+            
+            if (gameweek !== 'all') {
+              predictionsQuery = predictionsQuery.eq('gameweek', gameweek);
+            }
+            
+            const { data: predictions } = await predictionsQuery;
+            userPredictions = predictions || [];
           }
-          
-          const { data: predictions } = await predictionsQuery;
-          userPredictions = predictions || [];
+        } catch (authErr) {
+          // Invalid token, just return empty predictions
+          console.log('Invalid token, returning empty predictions');
         }
       }
 

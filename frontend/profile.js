@@ -21,6 +21,24 @@ async function initProfile() {
     return;
   }
 
+  // Test token validity with a simple request
+  try {
+    const testResponse = await fetch(`${API_BASE}/predictions?gameweek=1&limit=1`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (testResponse.status === 401) {
+      // Token expired, clear and redirect
+      console.log('Token expired, redirecting to login');
+      localStorage.removeItem('gbf_token');
+      localStorage.removeItem('gbf_user');
+      window.location.href = 'login.html';
+      return;
+    }
+  } catch (e) {
+    console.error('Auth check error:', e);
+  }
+
   // Render header
   renderProfileHeader(user);
   
