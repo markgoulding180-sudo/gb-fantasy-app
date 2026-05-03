@@ -230,6 +230,44 @@ async function enterTournament(tournamentId) {
   }
 }
 
+// Update match status indicator on profile page
+function updateMatchStatusIndicator(liveCount, finishedCount, totalCount) {
+  const statusLive = document.getElementById('status-live');
+  const statusFinalising = document.getElementById('status-finalising');
+  const statusPoints = document.getElementById('status-points');
+  const statusCount = document.getElementById('matches-status-count');
+  
+  if (!statusLive || !statusFinalising || !statusPoints) return;
+  
+  // Hide all first
+  statusLive.style.display = 'none';
+  statusFinalising.style.display = 'none';
+  statusPoints.style.display = 'none';
+  
+  // Determine which status to show
+  if (liveCount > 0) {
+    // Games are live
+    statusLive.style.display = 'inline-flex';
+    statusLive.innerHTML = `<i class="fas fa-circle" style="font-size: 0.5rem; animation: pulse-red 1s infinite; margin-right: 0.35rem;"></i> LIVE (${liveCount})`;
+    if (statusCount) statusCount.textContent = `${liveCount} of ${totalCount} matches in play`;
+  } else if (finishedCount > 0 && finishedCount < totalCount) {
+    // Some finished, some upcoming - likely in finalising state
+    statusFinalising.style.display = 'inline-flex';
+    statusFinalising.innerHTML = `<i class="fas fa-clock" style="margin-right: 0.35rem;"></i> FINALISING (${finishedCount}/${totalCount})`;
+    if (statusCount) statusCount.textContent = `Waiting for FPL to confirm results...`;
+  } else if (finishedCount === totalCount && totalCount > 0) {
+    // All matches finished
+    statusPoints.style.display = 'inline-flex';
+    statusPoints.innerHTML = `<i class="fas fa-check" style="margin-right: 0.35rem;"></i> POINTS AWARDED`;
+    if (statusCount) statusCount.textContent = `${finishedCount} matches completed`;
+  } else {
+    // No matches yet or all upcoming
+    statusLive.style.display = 'inline-flex';
+    statusLive.innerHTML = `<i class="fas fa-circle" style="font-size: 0.5rem; margin-right: 0.35rem;"></i> UPCOMING`;
+    if (statusCount) statusCount.textContent = `${totalCount} matches scheduled`;
+  }
+}
+
 async function loadUserPredictions() {
   const token = localStorage.getItem('gbf_token');
   const container = document.getElementById('current-predictions');
@@ -271,6 +309,9 @@ async function loadUserPredictions() {
     const liveMatches = allMatches.filter(m => m.status === 'live');
     const finishedCount = allMatches.filter(m => m.status === 'finished').length;
     const totalCount = allMatches.length;
+    
+    // Update match status indicator
+    updateMatchStatusIndicator(liveMatches.length, finishedCount, totalCount);
     
     // Debug logging - VERBOSE
     console.log('=== LIVE MATCHES DEBUG ===');
