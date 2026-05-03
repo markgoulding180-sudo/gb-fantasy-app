@@ -1,0 +1,34 @@
+name: Update Live Scores
+
+on:
+  schedule:
+    # Every 5 minutes during Premier League hours
+    # Saturday: 12:00-22:00, Sunday: 12:00-20:00, Monday: 20:00-22:00
+    - cron: '*/5 12-21 * * 0,6'   # Sunday and Saturday every 5 mins from 12:00-21:55
+    - cron: '*/5 20-21 * * 1'     # Monday every 5 mins from 20:00-21:55
+  workflow_dispatch:
+
+jobs:
+  update-scores:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Update Scores from FPL API
+        run: |
+          echo "Calling update-scores API..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X GET "https://gb-fantasy.vercel.app/api/update-scores" \
+            -H "Authorization: Bearer ${{ secrets.API_SECRET }}")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "Response code: $HTTP_CODE"
+          echo "Response body: $BODY"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Error: API returned $HTTP_CODE"
+            exit 1
+          fi
+          
+          echo "✅ Scores updated successfully"
