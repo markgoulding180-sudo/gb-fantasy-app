@@ -71,11 +71,14 @@ module.exports = async (req, res) => {
       });
     }
 
-    const results = { updated: 0, finished: 0, live: [], errors: [], debug: {
+    const results = { updated: 0, finished: 0, provisionalToFinished: 0, live: [], errors: [], debug: {
       totalDbMatches: dbMatches.length,
       dbMatchTeams: dbMatches.map(m => `${m.home_team} vs ${m.away_team}`),
       activeFixtures: activeFixtures.length
     }};
+    
+    // Track matches that transition from provisional to finished
+    let provisionalToFinishedCount = 0;
 
     console.log(`Processing ${activeFixtures.length} active fixtures for GW${currentGW}`);
     console.log('DB matches:', dbMatches.map(m => `${m.home_team} vs ${m.away_team} (status: ${m.status})`));
@@ -145,6 +148,14 @@ module.exports = async (req, res) => {
         updateData.away_score = fixture.team_a_score;
       }
 
+      // Check if transitioning from provisional to fully finished
+      const wasProvisional = dbMatch.status === 'finished' && !dbMatch.result;
+      const nowFullyFinished = isFinished && !isProvisional;
+      if (wasProvisional && nowFullyFinished) {
+        provisionalToFinishedCount++;
+        console.log(`Match transitioning provisional→finished: ${fplHomeName} vs ${fplAwayName}`);
+      }
+      
       // Mark as finished and calculate result if game has ended
       if (status === 'finished') {
         updateData.result = fixture.team_h_score > fixture.team_a_score ? 'H' :
@@ -180,6 +191,14 @@ module.exports = async (req, res) => {
     if (results.finished > 0) {
       console.log(`Calculating points for ${results.finished} finished matches`);
       await calculatePointsForGameweek(supabase, currentGW);
+    }
+    
+    // Recalculate points when matches transition from provisional to fully finished
+    // This ensures accuracy as FPL finalizes their data
+    if (provisionalToFinishedCount > 0) {
+      console.log(`Recalculating points for ${provisionalToFinishedCount} matches that transitioned provisional→finished`);
+      await calculatePointsForGameweek(supabase, currentGW);
+      results.provisionalToFinished = provisionalToFinishedCount;
     }
 
     return res.status(200).json({
