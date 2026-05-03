@@ -335,8 +335,6 @@ async function calculatePointsForGameweek(supabase, gameweek) {
           .update({ entry_points: totalPoints })
           .eq('tournament_id', tournament.id)
           .eq('user_id', userId);
-      }
-    }
 
         if (!error) {
           console.log(`    Updated entry for user ${userId}: ${totalPoints} pts`);
