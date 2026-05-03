@@ -6,91 +6,41 @@
   <title>My Profile - GB Fantasy</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    /* ══════════════════════════════════════
-       DESIGN TOKENS
-    ══════════════════════════════════════ */
-    :root {
-      --bg-page:       #0a0f2e;
-      --bg-card:       #0f1a3e;
-      --bg-card-hover: #132040;
-      --border-subtle: rgba(59,130,246,0.15);
-      --border-medium: rgba(59,130,246,0.3);
-      --accent-blue:   #3b82f6;
-      --accent-green:  #22c55e;
-      --accent-amber:  #f59e0b;
-      --accent-red:    #ef4444;
-      --text-primary:  #ffffff;
-      --text-secondary:rgba(255,255,255,0.6);
-      --text-muted:    rgba(255,255,255,0.35);
-      --shadow-card:   0 4px 24px rgba(0,0,0,0.4);
-      --shadow-blue:   0 0 20px rgba(59,130,246,0.15);
-    }
-
-    body {
-      background: var(--bg-page);
-      color: var(--text-primary);
-      font-family: 'Inter', sans-serif;
-    }
-
-    /* ══════════════════════════════════════
-       STADIUM BANNER
-    ══════════════════════════════════════ */
+    /* ── STADIUM BANNER HEADER ── */
     .profile-header {
       position: relative;
       width: 100%;
       border-radius: 1rem;
       overflow: hidden;
-      margin-bottom: 1.5rem;
-      min-height: 300px;
-      box-shadow: var(--shadow-card), 0 0 40px rgba(59,130,246,0.1);
-      border: 1px solid var(--border-subtle);
+      margin-bottom: 2rem;
+      min-height: 420px;
     }
-
-    /* The actual stadium photo */
     .profile-header-bg {
       position: absolute;
       inset: 0;
       background-image: url('images/football-banner.jpg');
       background-size: cover;
-      background-position: center 45%;
-      filter: brightness(0.9) saturate(0.8);
+      background-position: center 55%;
+      filter: brightness(0.78);
     }
-
-    /* Blue colour grade overlay — left dark, right shows image */
     .profile-header-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(
-        90deg,
-        rgba(10,15,46,0.96) 0%,
-        rgba(10,15,46,0.80) 35%,
-        rgba(10,15,46,0.30) 65%,
-        rgba(10,15,46,0.10) 100%
-      );
+      background: linear-gradient(90deg, rgba(10,15,46,0.92) 0%, rgba(10,15,46,0.7) 40%, rgba(10,15,46,0.15) 100%);
+      z-index: 1;
     }
-
-    /* Blue tint overlay to match the cool blue look */
-    .profile-header-tint {
-      position: absolute;
-      inset: 0;
-      background: rgba(15,30,100,0.35);
-      mix-blend-mode: multiply;
-    }
-
     .profile-header-content {
       position: relative;
-      z-index: 3;
-      padding: 2rem 2rem 0 2rem;
+      z-index: 2;
+      padding: 1.5rem 2rem 4.5rem 2rem;
       display: flex;
       align-items: center;
       gap: 1.5rem;
-      min-height: 230px;
     }
-
     .profile-avatar {
       width: 90px;
       height: 90px;
@@ -102,38 +52,33 @@
       font-size: 2rem;
       font-weight: 700;
       color: white;
-      border: 3px solid rgba(59,130,246,0.6);
-      box-shadow: 0 0 20px rgba(59,130,246,0.4);
+      border: 3px solid rgba(255,255,255,0.4);
       flex-shrink: 0;
     }
-
     .profile-info h1 {
-      margin: 0 0 0.3rem 0;
-      font-size: 2rem;
-      font-weight: 800;
+      margin: 0 0 0.25rem 0;
+      font-size: 1.75rem;
       color: #fff;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
     .profile-info .username {
-      color: rgba(255,255,255,0.65);
+      color: rgba(255,255,255,0.75);
       font-size: 0.95rem;
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.25rem;
     }
     .profile-info .member-since {
-      color: rgba(255,255,255,0.55);
+      color: rgba(255,255,255,0.65);
       font-size: 0.85rem;
     }
-
-    /* Tournament bar — sits at bottom of banner */
+    /* Tournament bar at bottom of banner */
     .profile-tournament-bar {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
       z-index: 3;
-      background: rgba(5,10,40,0.88);
-      backdrop-filter: blur(10px);
-      border-top: 1px solid var(--border-medium);
+      background: rgba(5, 15, 50, 0.85);
+      backdrop-filter: blur(8px);
       padding: 0.75rem 2rem;
       display: flex;
       align-items: center;
@@ -152,211 +97,72 @@
       font-size: 1rem;
     }
     .profile-tournament-bar .t-right {
-      color: var(--accent-blue);
+      color: #60a5fa;
       font-weight: 700;
       font-size: 0.95rem;
       text-align: right;
-      line-height: 1.3;
     }
-
-    /* ══════════════════════════════════════
-       BADGES
-    ══════════════════════════════════════ */
     .live-badge {
-      background: var(--accent-red);
+      background: #ef4444;
       color: #fff;
       font-size: 0.7rem;
       font-weight: 700;
-      padding: 0.2rem 0.6rem;
+      padding: 0.2rem 0.5rem;
       border-radius: 4px;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.05em;
       animation: pulse-red 1.5s infinite;
-    }
-    .entered-badge {
-      color: var(--accent-green);
-      font-size: 0.85rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
     }
     @keyframes pulse-red {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.6; }
     }
-
-    /* ══════════════════════════════════════
-       TOURNAMENT SECTION CARD
-    ══════════════════════════════════════ */
-    .tournament-section {
-      margin-bottom: 1.5rem;
-    }
-    .tournament-header-card {
-      background: linear-gradient(135deg, #0f2060 0%, #1a3a8a 50%, #0f2060 100%);
-      border: 1px solid var(--border-medium);
-      border-radius: 1rem 1rem 0 0;
-      padding: 1.25rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 0 30px rgba(59,130,246,0.1);
-    }
-    .tournament-header-card h2 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #fff;
-      margin: 0 0 0.35rem 0;
-    }
-    .tournament-header-card .t-badges {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .tournament-header-card .t-gw {
-      color: var(--accent-blue);
-      font-weight: 700;
-      font-size: 1.1rem;
-      text-align: right;
-    }
-    .tournament-header-card .t-gw span {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      font-weight: 400;
-    }
-
-    /* ══════════════════════════════════════
-       STATS GRID
-    ══════════════════════════════════════ */
-    .profile-stats {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 0;
-    }
-    .profile-stat {
-      text-align: center;
-      padding: 1.25rem 0.75rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-top: none;
-      border-right: none;
-      transition: background 0.2s;
-    }
-    .profile-stat:last-child {
-      border-right: 1px solid var(--border-subtle);
-      border-radius: 0 0 0 0;
-    }
-    .profile-stat:first-child { border-radius: 0 0 0 1rem; }
-    .profile-stat:last-child { border-radius: 0 0 1rem 0; }
-    .profile-stat:hover { background: var(--bg-card-hover); }
-    .profile-stat-value {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--accent-blue);
-    }
-    .profile-stat-label {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-top: 0.25rem;
-    }
-    .enter-btn-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-top: none;
-      border-radius: 0 0 1rem 1rem;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    @media (max-width: 768px) {
-      .profile-stats { grid-template-columns: repeat(3, 1fr); }
-      .profile-stat:nth-child(3) { border-right: 1px solid var(--border-subtle); }
-      .profile-stat:last-child { border-right: 1px solid var(--border-subtle); border-radius: 0 0 1rem 1rem; }
-      .profile-stat:first-child { border-radius: 0; }
-    }
-
-    /* ══════════════════════════════════════
-       DASHBOARD GRID
-    ══════════════════════════════════════ */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 1.5rem;
-      margin-top: 1.5rem;
-    }
-
-    /* ══════════════════════════════════════
-       CARDS
-    ══════════════════════════════════════ */
-    .dashboard-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      box-shadow: var(--shadow-card);
-      margin-bottom: 1.5rem;
-    }
-    .dashboard-card:hover {
-      border-color: var(--border-medium);
-      box-shadow: var(--shadow-card), var(--shadow-blue);
-    }
-    .dashboard-card h3 {
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 1rem;
+    .entered-badge {
+      color: #22c55e;
+      font-size: 0.85rem;
       font-weight: 600;
-      color: var(--text-primary);
     }
-    .dashboard-card h3 i { color: var(--accent-blue); }
 
-    /* ══════════════════════════════════════
-       LIVE BANNER
-    ══════════════════════════════════════ */
+    /* ── LIVE MATCHES BANNER ── */
     .live-matches-banner {
-      background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.05));
-      border: 1px solid rgba(239,68,68,0.35);
+      background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05));
+      border: 1px solid rgba(239,68,68,0.4);
       border-radius: 0.5rem;
       padding: 0.75rem 1rem;
       margin-bottom: 1rem;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      justify-content: space-between;
+      gap: 0.5rem;
     }
-    .live-dot {
+    .live-matches-banner .live-dot {
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: var(--accent-red);
+      background: #ef4444;
       animation: pulse-red 1s infinite;
       flex-shrink: 0;
     }
-    .live-text {
-      color: var(--accent-red);
+    .live-matches-banner .live-text {
+      color: #ef4444;
       font-weight: 600;
       font-size: 0.9rem;
       flex: 1;
     }
-    .refresh-btn {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.7);
+    .live-matches-banner .refresh-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
       cursor: pointer;
       font-size: 0.8rem;
-      padding: 0.35rem 0.75rem;
-      border-radius: 0.4rem;
-      transition: all 0.2s;
+      padding: 0.25rem 0.5rem;
     }
-    .refresh-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .live-matches-banner .refresh-btn:hover {
+      color: #fff;
+    }
 
-    /* ══════════════════════════════════════
-       MATCH STATUS
-    ══════════════════════════════════════ */
+    /* ── MATCH STATUS STYLES ── */
     .match-status-live {
-      color: var(--accent-red);
+      color: #ef4444;
       font-size: 0.8rem;
       font-weight: 700;
       display: inline-flex;
@@ -368,36 +174,76 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--accent-red);
+      background: #ef4444;
       animation: pulse-red 1s infinite;
     }
     .match-live-score {
       font-size: 1rem;
       font-weight: 700;
-      color: var(--accent-red);
+      color: #ef4444;
+    }
+    .match-finished-score {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #94a3b8;
     }
 
-    /* ══════════════════════════════════════
-       EMPTY STATE
-    ══════════════════════════════════════ */
+    /* ── REST OF STYLES (unchanged) ── */
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    @media (max-width: 768px) {
+      .profile-stats { grid-template-columns: repeat(3, 1fr); }
+    }
+    .profile-stat {
+      text-align: center;
+      padding: 1rem;
+      background: var(--bg-hover);
+      border-radius: 0.5rem;
+    }
+    .profile-stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+    .profile-stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+    .dashboard-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+    .dashboard-card h3 {
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
     .empty-state {
       text-align: center;
       padding: 2rem;
       color: var(--text-secondary);
     }
     .empty-state i {
-      font-size: 2.5rem;
-      margin-bottom: 0.75rem;
-      opacity: 0.4;
-      display: block;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
     }
-
-    /* ══════════════════════════════════════
-       CHART
-    ══════════════════════════════════════ */
     .chart-container {
       position: relative;
-      height: 280px;
+      height: 300px;
+      margin-bottom: 1.5rem;
     }
     .chart-toggle {
       display: flex;
@@ -405,159 +251,109 @@
       margin-bottom: 1rem;
     }
     .chart-toggle button {
-      padding: 0.4rem 1rem;
-      border: 1px solid var(--border-medium);
-      background: transparent;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      background: var(--bg-hover);
       color: var(--text-secondary);
       border-radius: 0.5rem;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: 0.875rem;
       transition: all 0.2s;
     }
     .chart-toggle button.active {
-      background: var(--accent-blue);
+      background: var(--accent-green);
       color: white;
-      border-color: var(--accent-blue);
+      border-color: var(--accent-green);
     }
-
-    /* ══════════════════════════════════════
-       PREDICTIONS TABLE
-    ══════════════════════════════════════ */
     .prediction-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.875rem;
     }
-    .prediction-table th {
-      padding: 0.75rem;
-      text-align: left;
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border-subtle);
-    }
+    .prediction-table th,
     .prediction-table td {
       padding: 0.75rem;
-      border-bottom: 1px solid var(--border-subtle);
-      color: var(--text-primary);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
     }
-    .prediction-table tr:hover td { background: var(--bg-card-hover); }
-    .prediction-table tfoot td {
+    .prediction-table th {
       font-weight: 600;
-      color: var(--accent-blue);
-      border-top: 1px solid var(--border-medium);
-      border-bottom: none;
+      color: var(--text-secondary);
+      background: var(--bg-hover);
     }
-
-    /* ══════════════════════════════════════
-       ACHIEVEMENTS
-    ══════════════════════════════════════ */
+    .prediction-table tr:hover { background: var(--bg-hover); }
     .achievements-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
     }
     .achievement-badge {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 1rem 0.5rem;
-      background: rgba(59,130,246,0.06);
-      border: 1px solid var(--border-subtle);
+      padding: 1rem;
+      background: var(--bg-hover);
       border-radius: 0.75rem;
       text-align: center;
-      transition: all 0.2s;
     }
-    .achievement-badge.earned {
-      background: rgba(59,130,246,0.12);
-      border-color: var(--border-medium);
-      box-shadow: 0 0 12px rgba(59,130,246,0.1);
-    }
-    .achievement-icon { font-size: 1.75rem; margin-bottom: 0.4rem; }
-    .achievement-name { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); }
-
-    /* ══════════════════════════════════════
-       INSIGHTS
-    ══════════════════════════════════════ */
+    .achievement-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .achievement-name { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); }
     .insights-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
     }
     .insight-card {
-      background: rgba(59,130,246,0.06);
-      border: 1px solid var(--border-subtle);
+      background: var(--bg-hover);
       border-radius: 0.75rem;
-      padding: 1rem;
+      padding: 1.25rem;
       text-align: center;
     }
     .insight-label {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.4rem;
-    }
-    .insight-value {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--accent-blue);
-    }
-    .insight-detail {
       font-size: 0.75rem;
       color: var(--text-secondary);
-      margin-top: 0.2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
     }
-
-    /* ══════════════════════════════════════
-       BUTTONS
-    ══════════════════════════════════════ */
-    .btn-primary {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      color: #fff;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.625rem;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(59,130,246,0.35);
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      text-decoration: none;
+    .insight-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-green);
     }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.45); }
-    .btn-green {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: #fff;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.625rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(34,197,94,0.3);
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
+    .insight-detail {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
     }
-    .btn-green:hover { transform: translateY(-1px); }
-
-    /* ══════════════════════════════════════
-       RESPONSIVE
-    ══════════════════════════════════════ */
     @media (max-width: 768px) {
-      .profile-header-content { flex-direction: column; text-align: center; padding: 1.5rem 1rem 0; min-height: 200px; }
-      .profile-header-overlay { background: linear-gradient(180deg, rgba(10,15,46,0.7) 0%, rgba(10,15,46,0.85) 100%); }
-      .profile-tournament-bar { padding: 0.75rem 1rem; }
+      .profile-header-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(10,15,46,0.92) 0%, rgba(10,15,46,0.7) 40%, rgba(10,15,46,0.15) 100%);
+      z-index: 1;
+    }
+    .profile-header-content { flex-direction: column; text-align: center; padding: 1.5rem 1rem 0; }
+      .profile-tournament-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 3;
+      background: rgba(5, 15, 50, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
       .dashboard-grid { grid-template-columns: 1fr; }
-      .insights-grid { grid-template-columns: 1fr; }
-      .achievements-grid { grid-template-columns: repeat(3, 1fr); }
       .prediction-table { font-size: 0.75rem; }
       .prediction-table th, .prediction-table td { padding: 0.5rem; }
+      .chart-container { height: 250px; }
+      .achievements-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -571,15 +367,15 @@
       </a>
     </div>
     <nav class="sidebar-nav">
-      <a href="index.html" class="sidebar-link"><i class="fas fa-home"></i><span>Home</span></a>
-      <a href="predictions.html" class="sidebar-link"><i class="fas fa-futbol"></i><span>Predictions</span></a>
-      <a href="tournaments.html" class="sidebar-link"><i class="fas fa-trophy"></i><span>Tournaments</span></a>
-      <a href="table.html" class="sidebar-link"><i class="fas fa-table"></i><span>PL Table</span></a>
-      <a href="injuries.html" class="sidebar-link"><i class="fas fa-medkit"></i><span>Injuries</span></a>
-      <a href="leaderboard.html" class="sidebar-link"><i class="fas fa-chart-line"></i><span>Leaderboard</span></a>
+      <a href="index.html" class="sidebar-link" data-page="index"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="predictions.html" class="sidebar-link" data-page="predictions"><i class="fas fa-futbol"></i><span>Predictions</span></a>
+      <a href="tournaments.html" class="sidebar-link" data-page="tournaments"><i class="fas fa-trophy"></i><span>Tournaments</span></a>
+      <a href="table.html" class="sidebar-link" data-page="table"><i class="fas fa-table"></i><span>PL Table</span></a>
+      <a href="injuries.html" class="sidebar-link" data-page="injuries"><i class="fas fa-medkit"></i><span>Injuries</span></a>
+      <a href="leaderboard.html" class="sidebar-link" data-page="leaderboard"><i class="fas fa-chart-line"></i><span>Leaderboard</span></a>
       <div class="sidebar-divider"></div>
-      <a href="profile.html" class="sidebar-link active"><i class="fas fa-user"></i><span>Profile</span></a>
-      <a href="admin.html" class="sidebar-link"><i class="fas fa-cog"></i><span>Admin</span></a>
+      <a href="profile.html" class="sidebar-link active" data-page="profile"><i class="fas fa-user"></i><span>Profile</span></a>
+      <a href="admin.html" class="sidebar-link" data-page="admin"><i class="fas fa-cog"></i><span>Admin</span></a>
     </nav>
     <div class="sidebar-footer">
       <a href="profile.html" class="sidebar-user" id="sidebar-user">
@@ -595,7 +391,10 @@
   <!-- Mobile Navigation -->
   <nav class="navbar">
     <div class="nav-container">
-      <a href="index.html" class="logo"><i class="fas fa-trophy"></i> GB Fantasy</a>
+      <a href="index.html" class="logo">
+        <i class="fas fa-trophy"></i>
+        GB Fantasy
+      </a>
       <ul class="nav-links">
         <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
         <li><a href="predictions.html"><i class="fas fa-futbol"></i> Predictions</a></li>
@@ -606,57 +405,52 @@
         <li><a href="profile.html" class="active"><i class="fas fa-user"></i> Profile</a></li>
         <li><a href="admin.html"><i class="fas fa-cog"></i> Admin</a></li>
       </ul>
-      <button class="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+      <button class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+      </button>
     </div>
   </nav>
 
+  <!-- Main Content -->
   <main class="container">
 
-    <!-- ══ STADIUM BANNER HEADER ══ -->
+    <!-- STADIUM BANNER PROFILE HEADER -->
     <div class="profile-header">
       <div class="profile-header-bg"></div>
       <div class="profile-header-overlay"></div>
-      <div class="profile-header-tint"></div>
-
       <div class="profile-header-content">
         <div class="profile-avatar" id="profile-avatar">--</div>
         <div class="profile-info">
           <h1 id="profile-name">Loading...</h1>
           <div class="username" id="profile-username">@username</div>
-          <div class="member-since">
-            <i class="fas fa-calendar-alt" style="margin-right:5px; color:var(--accent-blue);"></i>
-            Member since <span id="join-date">--</span>
-          </div>
+          <div class="member-since"><i class="fas fa-calendar" style="margin-right:4px;"></i>Member since <span id="join-date">--</span></div>
         </div>
       </div>
-
-      <!-- Tournament info bar at bottom of image -->
+      <!-- Tournament bar populated by JS -->
       <div class="profile-tournament-bar" id="profile-tournament-bar">
         <div class="t-left">
-          <span style="color:var(--text-muted); font-size:0.85rem;">Loading tournament...</span>
+          <span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">Loading tournament...</span>
         </div>
       </div>
     </div>
 
-    <!-- ══ TOURNAMENT SECTIONS ══ -->
+    <!-- Tournament Sections (stats grid) -->
     <div id="tournament-sections">
-      <p style="color:var(--text-muted);">Loading your tournaments...</p>
+      <p class="text-muted">Loading your tournaments...</p>
     </div>
 
-    <!-- ══ DASHBOARD ══ -->
     <div class="dashboard-grid">
-
-      <!-- LEFT COLUMN -->
+      <!-- Left Column -->
       <div>
         <!-- This Week's Predictions -->
-        <div class="dashboard-card">
-          <h3><i class="fas fa-futbol"></i> This Week's Predictions</h3>
+        <div class="dashboard-card mb-3">
+          <h3><i class="fas fa-futbol text-green"></i> This Week's Predictions</h3>
+          <!-- Live matches banner — shown only when matches are live -->
           <div class="live-matches-banner" id="live-banner" style="display:none;">
             <div class="live-dot"></div>
-            <div class="live-text" id="live-banner-text">Matches are live!</div>
-            <button class="refresh-btn" onclick="refreshLiveScores()">
-              <i class="fas fa-sync-alt"></i> Refresh
-            </button>
+            <div class="live-text" id="live-banner-text" style="white-space:nowrap;"></div>
+            <div id="live-score-display" style="flex:1; display:flex; align-items:center; justify-content:center; gap:0.25rem; font-size:0.9rem; transition:opacity 0.2s; padding:0 0.5rem;"></div>
+            <button class="refresh-btn" onclick="refreshLiveScores()"><i class="fas fa-sync-alt"></i> Refresh</button>
           </div>
           <div id="current-predictions">
             <div class="empty-state">
@@ -667,8 +461,8 @@
         </div>
 
         <!-- Performance Graph -->
-        <div class="dashboard-card">
-          <h3><i class="fas fa-chart-line"></i> Performance History</h3>
+        <div class="dashboard-card mb-3">
+          <h3><i class="fas fa-chart-line text-blue"></i> Performance History</h3>
           <div class="chart-toggle">
             <button id="toggle-points" class="active" onclick="switchChart('points')">Points</button>
             <button id="toggle-rank" onclick="switchChart('rank')">Rank</button>
@@ -684,7 +478,7 @@
 
         <!-- Prediction History -->
         <div class="dashboard-card">
-          <h3><i class="fas fa-history"></i> Prediction History</h3>
+          <h3><i class="fas fa-history text-amber"></i> Prediction History</h3>
           <div id="prediction-history-container">
             <div class="empty-state">
               <i class="fas fa-futbol"></i>
@@ -694,36 +488,37 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN -->
+      <!-- Right Column -->
       <div>
         <!-- Recent Activity -->
-        <div class="dashboard-card">
-          <h3><i class="fas fa-bolt"></i> Recent Activity</h3>
+        <div class="dashboard-card mb-3">
+          <h3><i class="fas fa-bolt text-green"></i> Recent Activity</h3>
           <div id="recent-activity">
             <div class="empty-state" style="padding:1rem;">
-              <p style="color:var(--text-muted);">No recent activity</p>
+              <p class="text-muted">No recent activity</p>
             </div>
           </div>
         </div>
 
         <!-- Achievements -->
-        <div class="dashboard-card">
-          <h3><i class="fas fa-medal"></i> Achievements</h3>
+        <div class="dashboard-card mb-3">
+          <h3><i class="fas fa-medal text-amber"></i> Achievements</h3>
           <div id="achievements" class="achievements-grid"></div>
         </div>
 
         <!-- Detailed Insights -->
         <div class="dashboard-card">
-          <h3><i class="fas fa-lightbulb"></i> Detailed Insights</h3>
+          <h3><i class="fas fa-lightbulb text-blue"></i> Detailed Insights</h3>
           <div id="insights" class="insights-grid"></div>
         </div>
       </div>
-
     </div>
   </main>
 
-  <footer style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
-    &copy; 2026 GB Fantasy. Your Profile.
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2026 GB Fantasy. Your Profile.</p>
+    </div>
   </footer>
 
   <script src="auth-gate.js"></script>
@@ -738,7 +533,7 @@
           const avatarEl = document.getElementById('sidebar-avatar');
           if (usernameEl) usernameEl.textContent = user.display_name || user.username;
           if (avatarEl) avatarEl.textContent = (user.display_name || user.username).substring(0, 2).toUpperCase();
-        } catch(e) {}
+        } catch (e) {}
       }
     });
   </script>

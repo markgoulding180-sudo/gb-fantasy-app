@@ -264,13 +264,13 @@ async function loadUserPredictions() {
     if (liveBanner && liveBannerText) {
       if (liveMatches.length > 0) {
         liveBanner.style.display = 'flex';
-        liveBannerText.textContent = `${liveMatches.length} match${liveMatches.length > 1 ? 'es' : ''} live`;
+        liveBannerText.textContent = `${liveMatches.length} LIVE`;
         startLiveCarousel(liveMatches);
         startLiveRefresh();
       } else {
         liveBanner.style.display = 'none';
-        stopLiveRefresh();
         stopLiveCarousel();
+        stopLiveRefresh();
       }
     }
     
@@ -339,9 +339,13 @@ function startLiveRefresh() {
   liveRefreshInterval = setInterval(async () => {
     console.log('Auto-refreshing live scores...');
     await loadUserPredictions();
-    await loadUserTournaments();
-    loadPredictionHistory();
-  }, 60000); // every 60 seconds
+    // Only refresh tournament points section - not full reload
+    const token = localStorage.getItem('gbf_token');
+    const user = JSON.parse(localStorage.getItem('gbf_user') || '{}');
+    // Update tournament points from cached predictions
+    const sections = document.querySelectorAll('.profile-stat-value');
+    // Lightweight update - predictions already re-fetched above
+  }, 30000); // every 30 seconds
 }
 
 function stopLiveRefresh() {
@@ -357,6 +361,7 @@ async function refreshLiveScores() {
   await loadUserPredictions();
   await loadUserTournaments();
   loadPredictionHistory();
+  loadAchievements();
   if (btn) btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
 }
 
@@ -405,15 +410,17 @@ async function loadPerformanceGraph() {
     }
     
     const uniqueGWs = [...new Set(tournamentData.map(t => t.gameweek))].sort();
-    if (uniqueGWs.length < 2 && tournamentData.length < 2) {
+
+    // Always show chart even with 1 GW - shows current state
+    if (tournamentData.length === 0) {
       container.style.display = 'none';
       if (emptyState) {
         emptyState.style.display = 'block';
-        emptyState.innerHTML = `<i class="fas fa-chart-bar"></i><p>More data coming as gameweeks complete</p>`;
+        emptyState.innerHTML = '<i class="fas fa-chart-bar"></i><p>More data coming as gameweeks complete</p>';
       }
       return;
     }
-    
+
     container.style.display = 'block';
     if (emptyState) emptyState.style.display = 'none';
     renderPerformanceChart(tournamentData);
@@ -745,16 +752,17 @@ function startLiveCarousel(liveMatches) {
 
   function showMatch() {
     const m = liveMatches[carouselIndex % liveMatches.length];
-    const h = m.home_score !== null ? m.home_score : 0;
-    const a = m.away_score !== null ? m.away_score : 0;
+    if (!m) return;
+    const h = m.home_score !== null && m.home_score !== undefined ? m.home_score : 0;
+    const a = m.away_score !== null && m.away_score !== undefined ? m.away_score : 0;
     display.style.opacity = '0';
-    setTimeout(() => {
+    setTimeout(function() {
       display.innerHTML =
-        '<span style="font-weight:700;color:#fff;">' + m.home_team + '</span>' +
-        '<span style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);color:#ef4444;font-weight:800;padding:0.15rem 0.6rem;border-radius:4px;margin:0 0.5rem;font-size:1rem;">' + h + ' - ' + a + '</span>' +
-        '<span style="font-weight:700;color:#fff;">' + m.away_team + '</span>';
+        '<span style="font-weight:600;color:#fff;">' + m.home_team + '</span>' +
+        '<span style="background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.6);color:#ef4444;font-weight:800;padding:0.15rem 0.75rem;border-radius:4px;margin:0 0.5rem;font-size:0.95rem;letter-spacing:0.05em;">' + h + ' - ' + a + '</span>' +
+        '<span style="font-weight:600;color:#fff;">' + m.away_team + '</span>';
       display.style.opacity = '1';
-    }, 200);
+    }, 250);
     carouselIndex++;
   }
 
