@@ -374,13 +374,23 @@ function startLiveRefresh() {
   if (liveRefreshInterval) return; // already running
   liveRefreshInterval = setInterval(async () => {
     console.log('Auto-refreshing live scores...');
+    
+    // First, trigger live-scores API to fetch fresh data from FPL
+    try {
+      const liveResponse = await fetch('/api/live-scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (liveResponse.ok) {
+        const liveData = await liveResponse.json();
+        console.log('Live scores updated:', liveData.message, 'Finished:', liveData.results?.finished || 0);
+      }
+    } catch (e) {
+      console.error('Error in auto-refresh:', e);
+    }
+    
+    // Then reload predictions with updated data
     await loadUserPredictions();
-    // Only refresh tournament points section - not full reload
-    const token = localStorage.getItem('gbf_token');
-    const user = JSON.parse(localStorage.getItem('gbf_user') || '{}');
-    // Update tournament points from cached predictions
-    const sections = document.querySelectorAll('.profile-stat-value');
-    // Lightweight update - predictions already re-fetched above
   }, 30000); // every 30 seconds
 }
 
@@ -394,6 +404,23 @@ function stopLiveRefresh() {
 async function refreshLiveScores() {
   const btn = document.querySelector('.refresh-btn');
   if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+  
+  // First, trigger live-scores API to fetch fresh data from FPL
+  try {
+    console.log('Fetching fresh data from FPL API...');
+    const liveResponse = await fetch('/api/live-scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (liveResponse.ok) {
+      const liveData = await liveResponse.json();
+      console.log('Live scores updated:', liveData.message, 'Finished:', liveData.results?.finished || 0);
+    }
+  } catch (e) {
+    console.error('Error fetching live scores:', e);
+  }
+  
+  // Then reload predictions with updated data
   await loadUserPredictions();
   await loadUserTournaments();
   loadPredictionHistory();
