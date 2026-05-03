@@ -38,10 +38,11 @@ body {
 .hero-stadium {
   position: relative;
   width: 100%;
-  min-height: 400px;
+  min-height: 280px;
+  max-height: 320px;
   border-radius: 1rem;
   overflow: hidden;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .hero-stadium-bg {
@@ -63,11 +64,11 @@ body {
 .hero-stadium-content {
   position: relative;
   z-index: 2;
-  padding: 2.5rem;
+  padding: 1.5rem 2rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 400px;
+  min-height: 280px;
 }
 
 /* Stadium Hero - Right aligned (for pages with lots of content) */
@@ -81,12 +82,13 @@ body {
 
 /* Stadium Hero - Compact (for inner pages) */
 .hero-stadium.compact {
-  min-height: 280px;
+  min-height: 180px;
+  max-height: 200px;
 }
 
 .hero-stadium.compact .hero-stadium-content {
-  min-height: 280px;
-  padding: 1.5rem 2rem;
+  min-height: 180px;
+  padding: 1rem 1.5rem;
 }
 
 /* Cards */
