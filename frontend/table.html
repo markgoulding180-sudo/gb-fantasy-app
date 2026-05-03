@@ -275,8 +275,10 @@
           e.stopPropagation();
           console.log('Hamburger clicked');
           navLinks.classList.toggle('active');
-          navLinks.style.display = navLinks.classList.contains('active') ? 'flex' : 'none';
-          console.log('Nav display:', navLinks.style.display);
+          const isActive = navLinks.classList.contains('active');
+          navLinks.style.display = isActive ? 'flex' : 'none';
+          navLinks.style.background = 'red'; // Debug - make it visible
+          console.log('Nav display:', navLinks.style.display, 'active:', isActive);
         });
       } else {
         console.error('Mobile menu elements not found');
