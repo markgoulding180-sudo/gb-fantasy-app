@@ -42,7 +42,7 @@ body {
   padding: 1rem 0;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .nav-container {
@@ -115,6 +115,7 @@ body {
   margin-bottom: 2rem;
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
 .hero::before {
