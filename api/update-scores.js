@@ -71,8 +71,8 @@ exports.handler = async (event, context) => {
       const isProvisional = fixture.finished_provisional === true;
       const isStarted = fixture.started === true;
       
-      // Time-based: if match started > 120 mins ago, mark as finished
-      const timeBasedFinished = isStarted && minutesSinceKickoff > 120;
+      // Time-based fallback: only if FPL says started AND > 150 mins passed (2.5 hrs allows for delays)
+      const timeBasedFinished = isStarted && !isFinished && !isProvisional && minutesSinceKickoff > 150;
       
       if (isFinished || isProvisional || timeBasedFinished) {
         status = 'finished';
