@@ -1,6 +1,5 @@
 // Premier League Table
 const API_BASE = '/api';
-const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 
 document.addEventListener('DOMContentLoaded', function() {
   loadTable();
@@ -8,36 +7,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadTable() {
   try {
-    // Fetch from FPL API
-    const response = await fetch(FPL_BOOTSTRAP_URL);
+    // Fetch from our API (no CORS issues)
+    const response = await fetch(`${API_BASE}/table`);
+    if (!response.ok) throw new Error('Failed to load table');
+    
     const data = await response.json();
     
-    // Get teams and their stats
-    const teams = data.teams.sort((a, b) => {
-      // Sort by points, then goal difference
-      if (b.points !== a.points) return b.points - a.points;
-      return (b.goals_for - b.goals_against) - (a.goals_for - a.goals_against);
-    });
-    
     // Update stats
-    const totalMatches = teams.reduce((sum, t) => sum + t.played, 0) / 2;
-    const totalGoals = teams.reduce((sum, t) => sum + t.goals_for, 0);
-    const avgGoals = totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : '0';
-    
-    document.getElementById('total-matches').textContent = Math.floor(totalMatches);
-    document.getElementById('total-goals').textContent = totalGoals;
-    document.getElementById('avg-goals').textContent = avgGoals;
-    
-    // Get current gameweek
-    const currentEvent = data.events.find(e => e.is_current);
-    if (currentEvent) {
-      document.getElementById('current-gameweek').textContent = 'GW' + currentEvent.id;
-    }
+    document.getElementById('total-matches').textContent = data.stats.totalMatches;
+    document.getElementById('total-goals').textContent = data.stats.totalGoals;
+    document.getElementById('avg-goals').textContent = data.stats.avgGoals;
+    document.getElementById('current-gameweek').textContent = 'GW' + data.stats.currentGameweek;
     
     // Render table
-    renderTable(teams);
+    renderTable(data.table);
     
-    document.getElementById('last-updated').textContent = new Date().toLocaleString();
+    document.getElementById('last-updated').textContent = new Date(data.lastUpdated).toLocaleString();
     
   } catch (error) {
     console.error('Table load error:', error);
@@ -54,9 +39,9 @@ async function loadTable() {
 function renderTable(teams) {
   const tbody = document.getElementById('league-table-body');
   
-  tbody.innerHTML = teams.map((team, index) => {
-    const position = index + 1;
-    const gd = team.goals_for - team.goals_against;
+  tbody.innerHTML = teams.map((team) => {
+    const gd = team.gd;
+    const position = team.position;
     
     // Determine position class
     let posClass = 'pos-mid';
@@ -65,11 +50,11 @@ function renderTable(teams) {
     else if (position <= 6) posClass = 'pos-conference';
     else if (position >= 18) posClass = 'pos-relegation';
     
-    // Get team shirt (try to match by name)
+    // Get team shirt
     const shirtName = getShirtFileName(team.name);
     
-    // Mock form (W-W-D-L-W) - in real app, fetch from fixtures
-    const form = generateMockForm(position);
+    // Format form
+    const form = team.form.map(r => `<span class="form-indicator form-${r.toLowerCase()}">${r}</span>`).join('');
     
     return `
       <tr>
@@ -82,10 +67,10 @@ function renderTable(teams) {
         </td>
         <td>${team.played}</td>
         <td>${team.won}</td>
-        <td>${team.draw}</td>
+        <td>${team.drawn}</td>
         <td>${team.lost}</td>
-        <td>${team.goals_for}</td>
-        <td>${team.goals_against}</td>
+        <td>${team.gf}</td>
+        <td>${team.ga}</td>
         <td style="font-weight: 600; ${gd > 0 ? 'color: var(--accent-green);' : gd < 0 ? 'color: var(--accent-red);' : ''}">${gd > 0 ? '+' : ''}${gd}</td>
         <td style="font-weight: 700;">${team.points}</td>
         <td>${form}</td>
@@ -95,7 +80,6 @@ function renderTable(teams) {
 }
 
 function getShirtFileName(teamName) {
-  // Map team names to shirt file names
   const mapping = {
     'Arsenal': 'arsenal.webp',
     'Aston Villa': 'aston villa.webp',
@@ -120,23 +104,4 @@ function getShirtFileName(teamName) {
   };
   
   return mapping[teamName] || 'arsenal.webp';
-}
-
-function generateMockForm(position) {
-  // Generate realistic form based on table position
-  const forms = [
-    ['W', 'W', 'D', 'W', 'W'],
-    ['W', 'W', 'W', 'D', 'L'],
-    ['W', 'D', 'W', 'W', 'D'],
-    ['D', 'W', 'W', 'L', 'W'],
-    ['W', 'L', 'W', 'D', 'W'],
-    ['D', 'W', 'L', 'W', 'D'],
-    ['W', 'D', 'D', 'W', 'L'],
-    ['L', 'W', 'W', 'D', 'D'],
-    ['D', 'D', 'W', 'L', 'W'],
-    ['W', 'L', 'D', 'W', 'L']
-  ];
-  
-  const form = forms[position % forms.length];
-  return form.map(r => `<span class="form-indicator form-${r.toLowerCase()}">${r}</span>`).join('');
 }

@@ -157,7 +157,7 @@
         <i class="fas fa-trophy"></i>
         GB Fantasy
       </a>
-      <ul class="nav-links" style="background: var(--bg-secondary) !important;">
+      <ul class="nav-links">
         <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
         <li><a href="predictions.html"><i class="fas fa-futbol"></i> Predictions</a></li>
         <li><a href="table.html" class="active"><i class="fas fa-table"></i> PL Table</a></li>
@@ -267,26 +267,20 @@
       const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
       const navLinks = document.querySelector('.nav-links');
       
-      console.log('Mobile menu init:', mobileMenuBtn, navLinks);
-      
       if (mobileMenuBtn && navLinks) {
         mobileMenuBtn.addEventListener('click', function(e) {
-          e.preventDefault();
           e.stopPropagation();
-          console.log('Hamburger clicked');
-          navLinks.classList.toggle('active');
-          const isActive = navLinks.classList.contains('active');
-          if (isActive) {
-            navLinks.style.display = 'flex';
-            navLinks.style.visibility = 'visible';
-            navLinks.style.opacity = '1';
-          } else {
+          const isActive = navLinks.classList.toggle('active');
+          navLinks.style.display = isActive ? 'flex' : 'none';
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+          if (!navLinks.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+            navLinks.classList.remove('active');
             navLinks.style.display = 'none';
           }
-          console.log('Nav display:', navLinks.style.display, 'active:', isActive, 'visible:', navLinks.style.visibility);
         });
-      } else {
-        console.error('Mobile menu elements not found');
       }
       
       // Sidebar user info
