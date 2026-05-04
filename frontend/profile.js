@@ -1166,8 +1166,8 @@ async function loadUserTrends() {
     const gwData = await gwResponse.json();
     const gameweek = gwData.current_gameweek || gwData.next_gameweek || 35;
     
-    // Fetch trends data
-    const response = await fetch(`/api/trends?gameweek=${gameweek}`);
+    // Fetch trends data (using predictions API with trends=true)
+    const response = await fetch(`/api/predictions?gameweek=${gameweek}&trends=true`);
     if (!response.ok) throw new Error('Failed to load trends');
     
     const data = await response.json();
