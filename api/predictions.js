@@ -78,8 +78,8 @@ module.exports = async (req, res) => {
           return res.status(500).json({ error: 'Failed to fetch matches', details: matchesError.message });
         }
 
-        // Get all predictions for this gameweek
-        const { data: predictions, error: predError } = await supabase
+        // Get all predictions for this gameweek (use admin client to bypass RLS)
+        const { data: predictions, error: predError } = await supabaseAdmin
           .from('predictions')
           .select('*')
           .eq('gameweek', gameweek);
