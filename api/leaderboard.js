@@ -3,6 +3,8 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
+const FPL_BOOTSTRAP_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
+
 module.exports = async (req, res) => {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -27,6 +29,17 @@ module.exports = async (req, res) => {
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SECRET
     );
+    
+    // Fetch current gameweek from FPL API
+    let currentGameweek = null;
+    try {
+      const fplResponse = await fetch(FPL_BOOTSTRAP_URL);
+      const fplData = await fplResponse.json();
+      const currentEvent = fplData.events.find(e => e.is_current);
+      currentGameweek = currentEvent ? currentEvent.id : null;
+    } catch (fplError) {
+      console.error('Failed to fetch current gameweek:', fplError);
+    }
 
     let query;
 
@@ -57,8 +70,31 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch leaderboard', details: error.message });
     }
 
+    // Get user IDs to fetch their current GW points
+    const userIds = data.map(entry => entry.id || entry.users?.id).filter(Boolean);
+    
+    // Fetch current gameweek points for all users
+    let gwPointsMap = {};
+    if (currentGameweek && userIds.length > 0) {
+      const { data: predictionsData, error: predictionsError } = await supabase
+        .from('predictions')
+        .select('user_id, points_earned')
+        .in('user_id', userIds)
+        .eq('gameweek', currentGameweek);
+      
+      if (!predictionsError && predictionsData) {
+        // Sum points per user
+        predictionsData.forEach(pred => {
+          gwPointsMap[pred.user_id] = (gwPointsMap[pred.user_id] || 0) + (pred.points_earned || 0);
+        });
+      }
+    }
+
     // Format the response
     const formattedData = data.map((entry, index) => {
+      const userId = entry.id || entry.users?.id;
+      const gwPoints = gwPointsMap[userId] || 0;
+      
       if (tournament === 'all' || tournament === 'season') {
         return {
           rank: offset + index + 1,
@@ -71,7 +107,7 @@ module.exports = async (req, res) => {
           total_points: entry.total_points,
           correct_scores: entry.correct_scores,
           streak: entry.current_streak,
-          gw_points: null // Would need to calculate from predictions
+          gw_points: gwPoints
         };
       } else {
         return {
@@ -84,7 +120,8 @@ module.exports = async (req, res) => {
           },
           total_points: entry.entry_points,
           correct_scores: entry.users.correct_scores,
-          streak: entry.users.current_streak
+          streak: entry.users.current_streak,
+          gw_points: gwPoints
         };
       }
     });
