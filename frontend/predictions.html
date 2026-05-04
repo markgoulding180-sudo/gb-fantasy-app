@@ -20,11 +20,14 @@
       display: none;
     }
     .fixture {
-      background: #240007;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
     }
     .fixture-finished {
       opacity: 0.95;
-      background: #240007;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
     }
     .team-name {
       color: inherit;
@@ -34,8 +37,8 @@
       text-decoration: underline;
     }
     .result-indicator {
-      background: #ffd700;
-      color: #240007;
+      background: var(--accent-amber);
+      color: var(--bg-primary);
       padding: 2px 8px;
       border-radius: 4px;
       font-weight: bold;
@@ -46,8 +49,8 @@
       pointer-events: none;
     }
     .final-score {
-      background: #28a745;
-      color: white;
+      background: var(--accent-green);
+      color: var(--bg-primary);
       padding: 4px 12px;
       border-radius: 4px;
       font-weight: bold;
@@ -57,14 +60,14 @@
       color: inherit;
     }
     .badge-success {
-      background: #28a745;
-      color: white;
+      background: var(--accent-green);
+      color: var(--bg-primary);
       padding: 2px 8px;
       border-radius: 4px;
       font-size: 0.75rem;
     }
     .text-red {
-      color: #dc3545;
+      color: var(--accent-red);
     }
     .text-center {
       text-align: center;
@@ -270,7 +273,7 @@
       .prediction-option input:checked + label {
         background: var(--accent-green) !important;
         border-color: var(--accent-green) !important;
-        color: white !important;
+        color: var(--bg-primary) !important;
       }
       
       /* Score inputs - centered */
@@ -293,7 +296,7 @@
       .score-input.predicted-score {
         background: var(--accent-green) !important;
         border-color: var(--accent-green) !important;
-        color: white !important;
+        color: var(--bg-primary) !important;
       }
       
       .score-separator {
