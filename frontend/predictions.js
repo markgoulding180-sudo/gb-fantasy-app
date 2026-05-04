@@ -4,14 +4,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   const fixtureList = document.querySelector('.fixture-list');
   const predictionsForm = document.getElementById('predictions-form');
   
-  // Default to next gameweek for predictions
+  // Default to current gameweek (or next if current is finished)
   let currentGameweek = 35;
   
   // Fetch current gameweek info
   try {
     const gwResponse = await fetch('/api/current-gameweek');
     const gwData = await gwResponse.json();
-    currentGameweek = gwData.next_gameweek || gwData.current_gameweek || 35;
+    // Use current gameweek if not finished, otherwise use next
+    currentGameweek = gwData.finished ? gwData.next_gameweek : (gwData.current_gameweek || gwData.next_gameweek || 35);
   } catch (e) {
     console.error('Failed to fetch gameweek:', e);
   }

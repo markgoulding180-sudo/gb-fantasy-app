@@ -271,8 +271,10 @@ async function initHomePage() {
     updateQuickActions(gameweekData);
     
     // Update prediction status bar for logged in users
-    if (authToken && gameweekData.next_gameweek) {
-      await updatePredictionStatusBar(gameweekData.next_gameweek);
+    // Use current gameweek if not finished, otherwise use next
+    const predictionGameweek = gameweekData.finished ? gameweekData.next_gameweek : gameweekData.current_gameweek;
+    if (authToken && predictionGameweek) {
+      await updatePredictionStatusBar(predictionGameweek, gameweekData.finished);
     }
 
   } catch (error) {
@@ -280,7 +282,7 @@ async function initHomePage() {
   }
 }
 
-async function updatePredictionStatusBar(gameweek) {
+async function updatePredictionStatusBar(gameweek, currentFinished) {
   const statusBar = document.getElementById('prediction-status-bar');
   if (!statusBar) return;
   
@@ -293,7 +295,7 @@ async function updatePredictionStatusBar(gameweek) {
   const btnEl = document.getElementById('prediction-status-btn');
   
   try {
-    // Fetch user's predictions for the current gameweek
+    // Fetch user's predictions for the gameweek
     const response = await fetch(`${API_BASE}/predictions?gameweek=${gameweek}`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
@@ -303,6 +305,9 @@ async function updatePredictionStatusBar(gameweek) {
     const data = await response.json();
     const hasPredictions = data.predictions && data.predictions.length > 0;
     
+    // Determine status message based on whether current GW is finished
+    const gwLabel = currentFinished ? 'next GW' : 'current GW';
+    
     if (hasPredictions) {
       // User has predicted
       iconEl.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
@@ -310,7 +315,9 @@ async function updatePredictionStatusBar(gameweek) {
       iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
       titleEl.textContent = `You've predicted for GW ${gameweek}`;
       titleEl.style.color = 'var(--accent-green)';
-      subtitleEl.textContent = `${data.predictions.length} predictions submitted`;
+      subtitleEl.textContent = currentFinished 
+        ? `${data.predictions.length} predictions ready for next gameweek`
+        : `${data.predictions.length} predictions submitted for current gameweek`;
       btnEl.innerHTML = '<i class="fas fa-edit"></i> Edit Predictions';
       btnEl.href = 'predictions.html';
       btnEl.className = 'btn btn-success btn-sm';
@@ -321,7 +328,9 @@ async function updatePredictionStatusBar(gameweek) {
       iconEl.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
       titleEl.textContent = `You haven't predicted for GW ${gameweek}`;
       titleEl.style.color = 'var(--accent-amber)';
-      subtitleEl.textContent = 'Submit your predictions before the deadline';
+      subtitleEl.textContent = currentFinished
+        ? 'Submit your predictions for the next gameweek'
+        : 'Submit your predictions before the deadline';
       btnEl.innerHTML = '<i class="fas fa-futbol"></i> Predict Now';
       btnEl.href = 'predictions.html';
       btnEl.className = 'btn btn-primary btn-sm';
@@ -667,8 +676,10 @@ function updateHeroStats(tournaments, leaderboard, gameweekData) {
   // Get active player count from leaderboard
   const activePlayers = leaderboard ? leaderboard.length : 0;
   
-  // Get current gameweek
-  const currentGW = gameweekData?.current_gameweek || gameweekData?.next_gameweek || '--';
+  // Get current gameweek (current if not finished, otherwise next)
+  const currentGW = gameweekData?.finished 
+    ? gameweekData?.next_gameweek 
+    : (gameweekData?.current_gameweek || gameweekData?.next_gameweek || '--');
 
   // Update Prize Pool
   const prizePoolEl = document.getElementById('hero-prize-pool');
@@ -690,10 +701,13 @@ function updateHeroStats(tournaments, leaderboard, gameweekData) {
 }
 
 function updateQuickActions(gameweekData) {
-  const nextGW = gameweekData?.next_gameweek || '--';
+  // Use current gameweek if not finished, otherwise use next
+  const activeGW = gameweekData?.finished 
+    ? gameweekData?.next_gameweek 
+    : (gameweekData?.current_gameweek || gameweekData?.next_gameweek);
   const predictionsText = document.getElementById('quick-action-predictions-text');
   if (predictionsText) {
-    predictionsText.textContent = `GW ${nextGW} fixtures are now live. Submit your predictions before kickoff.`;
+    predictionsText.textContent = `GW ${activeGW || '--'} fixtures are now live. Submit your predictions before kickoff.`;
   }
 }
 
