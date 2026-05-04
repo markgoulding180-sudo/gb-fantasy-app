@@ -232,22 +232,27 @@ function initMobileMenu() {
 async function initHomePage() {
   // Fetch live stats
   try {
-    const [tournamentsRes, leaderboardRes] = await Promise.all([
+    const [tournamentsRes, leaderboardRes, gameweekRes] = await Promise.all([
       fetch(`${API_BASE}/tournaments?status=live&limit=2`),
-      fetch(`${API_BASE}/leaderboard?limit=5`)
+      fetch(`${API_BASE}/leaderboard?limit=5`),
+      fetch(`${API_BASE}/current-gameweek`)
     ]);
 
     const tournamentsData = await tournamentsRes.json();
     const leaderboardData = await leaderboardRes.json();
+    const gameweekData = await gameweekRes.json();
 
     // Update hero stats if elements exist
-    updateHeroStats(tournamentsData.tournaments, leaderboardData.leaderboard);
+    updateHeroStats(tournamentsData.tournaments, leaderboardData.leaderboard, gameweekData);
     
     // Update live tournaments section
     updateLiveTournaments(tournamentsData.tournaments);
     
     // Update top players
     updateTopPlayers(leaderboardData.leaderboard);
+    
+    // Update quick actions text
+    updateQuickActions(gameweekData);
 
   } catch (error) {
     console.error('Failed to load home page data:', error);
@@ -571,63 +576,144 @@ async function handlePredictionSubmit(e) {
 
 // ==================== RENDER FUNCTIONS ====================
 
-function updateHeroStats(tournaments, leaderboard) {
+function updateHeroStats(tournaments, leaderboard, gameweekData) {
   // Calculate total prize pool from live tournaments
   const totalPrizePool = tournaments 
     ? tournaments.reduce((sum, t) => sum + (t.prize_pool || 0), 0)
-    : 12450;
+    : 0;
 
-  // Get active player count
-  const activePlayers = leaderboard ? leaderboard.length : 1247;
+  // Get active player count from leaderboard
+  const activePlayers = leaderboard ? leaderboard.length : 0;
+  
+  // Get current gameweek
+  const currentGW = gameweekData?.current_gameweek || gameweekData?.next_gameweek || '--';
 
-  // Update DOM elements if they exist
-  const prizePoolEl = document.querySelector('.hero-stat-value');
-  if (prizePoolEl && tournaments) {
+  // Update Prize Pool
+  const prizePoolEl = document.getElementById('hero-prize-pool');
+  if (prizePoolEl) {
     prizePoolEl.textContent = '£' + totalPrizePool.toLocaleString();
   }
 
-  const playersEl = document.querySelectorAll('.hero-stat-value')[1];
-  if (playersEl && leaderboard) {
+  // Update Active Players
+  const playersEl = document.getElementById('hero-active-players');
+  if (playersEl) {
     playersEl.textContent = activePlayers.toLocaleString();
+  }
+  
+  // Update Current GW
+  const gwEl = document.getElementById('hero-current-gw');
+  if (gwEl) {
+    gwEl.textContent = 'GW ' + currentGW;
+  }
+}
+
+function updateQuickActions(gameweekData) {
+  const nextGW = gameweekData?.next_gameweek || '--';
+  const predictionsText = document.getElementById('quick-action-predictions-text');
+  if (predictionsText) {
+    predictionsText.textContent = `GW ${nextGW} fixtures are now live. Submit your predictions before kickoff.`;
   }
 }
 
 function updateLiveTournaments(tournaments) {
-  // This would dynamically update the live tournaments section
-  // For now, the static HTML serves as fallback
+  const container = document.getElementById('live-tournaments-container');
+  if (!container) return;
+  
+  if (!tournaments || tournaments.length === 0) {
+    container.innerHTML = `
+      <div class="tournament-card">
+        <div class="tournament-header">
+          <div>
+            <div class="tournament-name">No Live Tournaments</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Check back soon for new tournaments</div>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = tournaments.slice(0, 2).map(t => {
+    const timeRemaining = t.time_remaining || 'Closing soon';
+    const status = t.status === 'live' ? 'Live' : t.status;
+    const statusClass = t.status === 'live' ? 'live' : t.status;
+    
+    return `
+      <div class="tournament-card ${statusClass}">
+        <div class="tournament-header">
+          <div>
+            <div class="tournament-name">${t.name}</div>
+            <div class="text-muted" style="font-size: 0.875rem;">Closes in ${timeRemaining}</div>
+          </div>
+          <span class="tournament-status ${statusClass}">${status}</span>
+        </div>
+        <div class="tournament-details">
+          <div class="tournament-detail">
+            <div class="tournament-detail-value">£${(t.prize_pool || 0).toLocaleString()}</div>
+            <div class="tournament-detail-label">Prize Pool</div>
+          </div>
+          <div class="tournament-detail">
+            <div class="tournament-detail-value">£${t.entry_fee || 0}</div>
+            <div class="tournament-detail-label">Entry Fee</div>
+          </div>
+          <div class="tournament-detail">
+            <div class="tournament-detail-value">${t.current_entries || 0}</div>
+            <div class="tournament-detail-label">Entries</div>
+          </div>
+        </div>
+        <a href="predictions.html?tournament=${t.id}" class="btn btn-primary" style="width: 100%;">
+          <i class="fas fa-ticket"></i> Enter Tournament
+        </a>
+      </div>
+    `;
+  }).join('');
 }
 
 function updateTopPlayers(leaderboard) {
-  if (!leaderboard || leaderboard.length === 0) return;
-
-  const tbody = document.querySelector('.leaderboard-table tbody');
+  const tbody = document.getElementById('top-players-tbody');
   if (!tbody) return;
-
-  // Only update if we're on the home page with the preview table
-  const rows = tbody.querySelectorAll('tr');
-  if (rows.length <= 5) {
-    leaderboard.slice(0, 5).forEach((entry, index) => {
-      if (rows[index]) {
-        const rankClass = index < 3 ? `rank-${index + 1}` : 'rank';
-        const initials = entry.user.avatar_initials || entry.user.display_name.substring(0, 2).toUpperCase();
-        
-        rows[index].innerHTML = `
-          <td><span class="rank ${rankClass}">${entry.rank}</span></td>
-          <td>
-            <div class="player-info">
-              <div class="player-avatar">${initials}</div>
-              <div>
-                <div style="font-weight: 600;">${entry.user.display_name}</div>
-                <div class="text-muted" style="font-size: 0.875rem;">@${entry.user.username}</div>
-              </div>
-            </div>
-          </td>
-          <td class="text-right points">${entry.total_points.toLocaleString()}</td>
-          <td class="text-right text-green">${entry.gw_points || '-'}</td>
-        `;
-      }
-    });
+  
+  if (!leaderboard || leaderboard.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No players yet</td></tr>';
+    return;
   }
+
+  // Avatar colors for variety
+  const avatarColors = [
+    'var(--accent-blue)',
+    'var(--accent-red)',
+    'var(--accent-amber)',
+    '#8b5cf6',
+    '#ec4899',
+    '#10b981',
+    '#f59e0b'
+  ];
+
+  tbody.innerHTML = leaderboard.slice(0, 5).map((entry, index) => {
+    const rankClass = entry.rank <= 3 ? `rank-${entry.rank}` : 'rank';
+    const initials = entry.user?.avatar_initials || 
+                    (entry.user?.display_name || '??').substring(0, 2).toUpperCase();
+    const displayName = entry.user?.display_name || 'Unknown';
+    const username = entry.user?.username || 'unknown';
+    const avatarColor = avatarColors[index % avatarColors.length];
+    
+    return `
+      <tr>
+        <td><span class="rank ${rankClass}">${entry.rank}</span></td>
+        <td>
+          <div class="player-info">
+            <div class="player-avatar" style="background-color: ${avatarColor};">${initials}</div>
+            <div>
+              <div style="font-weight: 600;">${displayName}</div>
+              <div class="text-muted" style="font-size: 0.875rem;">@${username}</div>
+            </div>
+          </div>
+        </td>
+        <td class="text-right points">${(entry.total_points || 0).toLocaleString()}</td>
+        <td class="text-right text-green">${entry.gw_points || '-'}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function populateExistingPredictions(predictions) {

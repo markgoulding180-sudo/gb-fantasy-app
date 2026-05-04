@@ -76,17 +76,17 @@
         <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
           <div class="stat-card" style="min-width: 140px;">
             <div class="stat-card-icon"><i class="fas fa-trophy"></i></div>
-            <div class="stat-card-value" style="color: var(--accent-amber);">£12,450</div>
+            <div class="stat-card-value" id="hero-prize-pool" style="color: var(--accent-amber);">£--</div>
             <div class="stat-card-label">Prize Pool</div>
           </div>
           <div class="stat-card" style="min-width: 140px;">
             <div class="stat-card-icon"><i class="fas fa-users"></i></div>
-            <div class="stat-card-value" style="color: var(--accent-blue);">1,247</div>
+            <div class="stat-card-value" id="hero-active-players" style="color: var(--accent-blue);">--</div>
             <div class="stat-card-label">Active Players</div>
           </div>
           <div class="stat-card" style="min-width: 140px;">
             <div class="stat-card-icon"><i class="fas fa-calendar"></i></div>
-            <div class="stat-card-value" style="color: var(--accent-green);">GW 34</div>
+            <div class="stat-card-value" id="hero-current-gw" style="color: var(--accent-green);">GW --</div>
             <div class="stat-card-label">Current GW</div>
           </div>
         </div>
@@ -98,7 +98,7 @@
       <div class="feature-card">
         <div class="feature-card-icon"><i class="fas fa-futbol"></i></div>
         <h3>Make Predictions</h3>
-        <p>GW 34 fixtures are now live. Submit your predictions before kickoff.</p>
+        <p id="quick-action-predictions-text">GW -- fixtures are now live. Submit your predictions before kickoff.</p>
         <a href="predictions.html" class="btn btn-primary">
           <i class="fas fa-arrow-right"></i> Predict Now
         </a>
@@ -127,58 +127,14 @@
         <h2><i class="fas fa-fire text-amber"></i> Live Tournaments</h2>
         <a href="tournaments.html" class="btn btn-sm btn-outline">View All</a>
       </div>
-      <div class="grid grid-2">
-        <div class="tournament-card live">
+      <div class="grid grid-2" id="live-tournaments-container">
+        <!-- Tournaments loaded dynamically -->
+        <div class="tournament-card loading">
           <div class="tournament-header">
             <div>
-              <div class="tournament-name">GW 34 Mega Pot</div>
-              <div class="text-muted" style="font-size: 0.875rem;">Closes in 2 days</div>
-            </div>
-            <span class="tournament-status live">Live</span>
-          </div>
-          <div class="tournament-details">
-            <div class="tournament-detail">
-              <div class="tournament-detail-value">£5,000</div>
-              <div class="tournament-detail-label">Prize Pool</div>
-            </div>
-            <div class="tournament-detail">
-              <div class="tournament-detail-value">£20</div>
-              <div class="tournament-detail-label">Entry Fee</div>
-            </div>
-            <div class="tournament-detail">
-              <div class="tournament-detail-value">247</div>
-              <div class="tournament-detail-label">Entries</div>
+              <div class="tournament-name">Loading tournaments...</div>
             </div>
           </div>
-          <a href="predictions.html" class="btn btn-primary" style="width: 100%;">
-            <i class="fas fa-ticket"></i> Enter Tournament
-          </a>
-        </div>
-        <div class="tournament-card live">
-          <div class="tournament-header">
-            <div>
-              <div class="tournament-name">Weekend Warrior</div>
-              <div class="text-muted" style="font-size: 0.875rem;">Closes in 1 day</div>
-            </div>
-            <span class="tournament-status live">Live</span>
-          </div>
-          <div class="tournament-details">
-            <div class="tournament-detail">
-              <div class="tournament-detail-value">£2,500</div>
-              <div class="tournament-detail-label">Prize Pool</div>
-            </div>
-            <div class="tournament-detail">
-              <div class="tournament-detail-value">£10</div>
-              <div class="tournament-detail-label">Entry Fee</div>
-            </div>
-            <div class="tournament-detail">
-              <div class="tournament-detail-value">189</div>
-              <div class="tournament-detail-label">Entries</div>
-            </div>
-          </div>
-          <a href="predictions.html" class="btn btn-primary" style="width: 100%;">
-            <i class="fas fa-ticket"></i> Enter Tournament
-          </a>
         </div>
       </div>
     </section>
@@ -199,77 +155,9 @@
               <th class="text-right">GW Points</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><span class="rank rank-1">1</span></td>
-              <td>
-                <div class="player-info">
-                  <div class="player-avatar">SR</div>
-                  <div>
-                    <div style="font-weight: 600;">SuperRed</div>
-                    <div class="text-muted" style="font-size: 0.875rem;">@superred</div>
-                  </div>
-                </div>
-              </td>
-              <td class="text-right points">2,840</td>
-              <td class="text-right text-green">180</td>
-            </tr>
-            <tr>
-              <td><span class="rank rank-2">2</span></td>
-              <td>
-                <div class="player-info">
-                  <div class="player-avatar" style="background-color: var(--accent-red);">FK</div>
-                  <div>
-                    <div style="font-weight: 600;">FantasyKing</div>
-                    <div class="text-muted" style="font-size: 0.875rem;">@fantasyking</div>
-                  </div>
-                </div>
-              </td>
-              <td class="text-right points">2,765</td>
-              <td class="text-right text-green">165</td>
-            </tr>
-            <tr>
-              <td><span class="rank rank-3">3</span></td>
-              <td>
-                <div class="player-info">
-                  <div class="player-avatar" style="background-color: var(--accent-amber);">PL</div>
-                  <div>
-                    <div style="font-weight: 600;">PremierLegend</div>
-                    <div class="text-muted" style="font-size: 0.875rem;">@premierlegend</div>
-                  </div>
-                </div>
-              </td>
-              <td class="text-right points">2,720</td>
-              <td class="text-right text-green">155</td>
-            </tr>
-            <tr>
-              <td><span class="rank">4</span></td>
-              <td>
-                <div class="player-info">
-                  <div class="player-avatar" style="background-color: #8b5cf6;">GP</div>
-                  <div>
-                    <div style="font-weight: 600;">GoalPredictor</div>
-                    <div class="text-muted" style="font-size: 0.875rem;">@goalpredictor</div>
-                  </div>
-                </div>
-              </td>
-              <td class="text-right points">2,685</td>
-              <td class="text-right text-green">140</td>
-            </tr>
-            <tr>
-              <td><span class="rank">5</span></td>
-              <td>
-                <div class="player-info">
-                  <div class="player-avatar" style="background-color: #ec4899;">MS</div>
-                  <div>
-                    <div style="font-weight: 600;">MatchSage</div>
-                    <div class="text-muted" style="font-size: 0.875rem;">@matchsage</div>
-                  </div>
-                </div>
-              </td>
-              <td class="text-right points">2,640</td>
-              <td class="text-right text-green">135</td>
-            </tr>
+          <tbody id="top-players-tbody">
+            <!-- Top players loaded dynamically -->
+            <tr><td colspan="4" class="text-center">Loading leaderboard...</td></tr>
           </tbody>
         </table>
       </div>
