@@ -2,11 +2,6 @@
   "version": 2,
   "name": "gb-fantasy",
   "outputDirectory": "frontend",
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs20"
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
