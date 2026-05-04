@@ -8,15 +8,10 @@ const API_BASE = '/api';
 const SUPABASE_URL = 'https://sdevgsxrmontdlysjwuq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_qQ94OstBkCkrNrkZskU7MQ_QMkidT6A';
 
-// Initialize Supabase client - check if library loaded properly
-if (typeof supabase === 'undefined' || supabase === null) {
-  // Try to create client if the library provides createClient
-  if (typeof createClient !== 'undefined') {
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } else if (typeof window !== 'undefined' && window.supabase) {
-    // Use global supabase if available
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
+// Initialize Supabase client
+let supabase = null;
+if (typeof window !== 'undefined' && window.supabase) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
 // Auth state
