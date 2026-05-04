@@ -397,11 +397,29 @@ async function loadUserPredictions() {
         const isFinished = match.status === 'finished';
         const isLive = match.status === 'live';
         const points = pred.points_earned || 0;
-        const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : 'rgba(255,255,255,0.4)';
+        const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : '#ef4444';
         
         // Alternating background shades
         const bgShade = index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)';
         const borderColor = index % 2 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)';
+        
+        // Status icon - green circle with tick for played, yellow circle for not played
+        let statusIcon = '';
+        if (isFinished || isLive) {
+          // Game has started or finished - show green circle with tick
+          statusIcon = `
+            <div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--accent-green); border-radius: 50%; flex-shrink: 0;">
+              <i class="fas fa-check" style="color: var(--bg-primary); font-size: 0.75rem;"></i>
+            </div>
+          `;
+        } else {
+          // Game not played yet - show yellow circle
+          statusIcon = `
+            <div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--accent-amber); border-radius: 50%; flex-shrink: 0;">
+              <div style="width: 8px; height: 8px; background: var(--bg-primary); border-radius: 50%;"></div>
+            </div>
+          `;
+        }
         
         let statusLine = '';
         if (isLive) {
@@ -413,17 +431,19 @@ async function loadUserPredictions() {
           `;
         } else if (isFinished) {
           const actualResult = match.home_score + '-' + match.away_score;
-          const checkmark = points > 0 ? '✓' : '✗';
-          statusLine = `<div style="font-size: 0.8rem; color: ${pointsColor}; margin-top:4px;">Result: ${actualResult} ${checkmark} ${points}pts</div>`;
+          statusLine = `<div style="font-size: 0.8rem; color: ${pointsColor}; margin-top:4px;">Result: ${actualResult} • ${points} pts</div>`;
         } else {
           statusLine = `<div style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top:4px;">Not played yet</div>`;
         }
         
         predictionsHTML += `
-          <div style="padding: 0.6rem 0.75rem; background: ${bgShade}; border: 1px solid ${borderColor}; border-radius: 0.5rem;">
-            <div style="font-weight: 600; font-size: 0.9rem;">${match.home_team} vs ${match.away_team}</div>
-            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Your pick: ${pred.predicted_result} (${pred.home_score}-${pred.away_score})</div>
-            ${statusLine}
+          <div style="padding: 0.6rem 0.75rem; background: ${bgShade}; border: 1px solid ${borderColor}; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${match.home_team} vs ${match.away_team}</div>
+              <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Your pick: ${pred.predicted_result} (${pred.home_score}-${pred.away_score})</div>
+              ${statusLine}
+            </div>
+            ${statusIcon}
           </div>
         `;
       }
