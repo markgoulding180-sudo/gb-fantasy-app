@@ -2,11 +2,5 @@
   "version": 2,
   "buildCommand": null,
   "outputDirectory": "frontend",
-  "framework": null,
-  "rewrites": [
-    {
-      "source": "/.netlify/functions/:path*",
-      "destination": "/api/:path*"
-    }
-  ]
+  "framework": null
 }
