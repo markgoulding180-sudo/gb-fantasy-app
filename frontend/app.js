@@ -13,6 +13,12 @@ const SUPABASE_KEY = 'your-anon-key'; // Configured in Vercel env
 let currentUser = null;
 let authToken = localStorage.getItem('gbf_token') || null;
 
+// Initialize Supabase client (loaded from CDN)
+let supabase = null;
+if (typeof window !== 'undefined' && window.supabase) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
   initApp();
