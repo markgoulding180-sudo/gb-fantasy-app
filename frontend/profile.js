@@ -1177,8 +1177,11 @@ async function loadUserTrends() {
       container.innerHTML = `
         <div class="empty-state" style="padding: 1rem;">
           <i class="fas fa-users" style="opacity: 0.5;"></i>
-          <p>No prediction data yet</p>
-          <p class="text-muted" style="font-size: 0.75rem;">Trends appear once users start predicting</p>
+          <p>No predictions for GW${gameweek} yet</p>
+          <p class="text-muted" style="font-size: 0.75rem;">${data.total_users || 0} users have predicted this gameweek</p>
+          <a href="predictions.html" class="btn btn-primary btn-sm" style="margin-top: 0.75rem;">
+            <i class="fas fa-futbol"></i> Make Predictions
+          </a>
         </div>
       `;
       return;
