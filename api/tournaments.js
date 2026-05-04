@@ -77,7 +77,7 @@ module.exports = async (req, res) => {
         return res.status(500).json({ error: 'Failed to fetch tournaments', details: error.message });
       }
 
-      // Calculate time remaining for each tournament
+      // Calculate time remaining and live prize pool for each tournament
       const now = new Date();
       const formattedData = (data || []).map(t => {
         const closesAt = new Date(t.closes_at);
@@ -93,9 +93,15 @@ module.exports = async (req, res) => {
             timeRemaining = `${hours} hour${hours > 1 ? 's' : ''}`;
           }
         }
+        
+        // Calculate live prize pool from entry fee × current entries
+        const entryFee = parseFloat(t.entry_fee) || 0;
+        const currentEntries = parseInt(t.current_entries) || 0;
+        const calculatedPrizePool = entryFee * currentEntries;
 
         return {
           ...t,
+          prize_pool: calculatedPrizePool, // Use calculated value, not stored value
           time_remaining: timeRemaining,
           is_full: t.max_entries && t.current_entries >= t.max_entries
         };

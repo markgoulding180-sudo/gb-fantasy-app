@@ -574,9 +574,13 @@ async function handlePredictionSubmit(e) {
 // ==================== RENDER FUNCTIONS ====================
 
 function updateHeroStats(tournaments, leaderboard, gameweekData) {
-  // Calculate total prize pool from live tournaments
+  // Calculate total prize pool from live tournaments (entry_fee × entries)
   const totalPrizePool = tournaments 
-    ? tournaments.reduce((sum, t) => sum + (t.prize_pool || 0), 0)
+    ? tournaments.reduce((sum, t) => {
+        const entryFee = parseFloat(t.entry_fee) || 0;
+        const entries = parseInt(t.current_entries) || 0;
+        return sum + (entryFee * entries);
+      }, 0)
     : 0;
 
   // Get active player count from leaderboard
