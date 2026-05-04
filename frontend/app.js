@@ -4,9 +4,10 @@
 // API Base URL - Vercel API Routes
 const API_BASE = '/api';
 
+// Cache-bust: v3 - Force fresh deploy
 // Supabase client configuration (anon key for frontend)
-const SUPABASE_URL = 'https://your-project.supabase.co'; // Will be replaced by Netlify env
-const SUPABASE_KEY = 'your-anon-key'; // Will be replaced by Netlify env
+const SUPABASE_URL = 'https://your-project.supabase.co'; // Configured in Vercel env
+const SUPABASE_KEY = 'your-anon-key'; // Configured in Vercel env
 
 // Auth state
 let currentUser = null;
