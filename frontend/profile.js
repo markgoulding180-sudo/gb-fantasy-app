@@ -1169,6 +1169,21 @@ async function loadUserTrends() {
     console.log('User Trends - Checking GW:', gameweek);
     console.log('User Trends - GW Data:', gwData);
     
+    // Check what gameweek the user's predictions are actually stored under
+    const token = localStorage.getItem('gbf_token');
+    if (token) {
+      const myPredsResponse = await fetch(`/api/predictions?gameweek=${gameweek}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (myPredsResponse.ok) {
+        const myPreds = await myPredsResponse.json();
+        console.log('User Trends - My predictions for GW' + gameweek + ':', myPreds.predictions?.length || 0);
+        if (myPreds.predictions?.length > 0) {
+          console.log('User Trends - First prediction gameweek:', myPreds.predictions[0].gameweek);
+        }
+      }
+    }
+    
     // Fetch trends data (using predictions API with trends=true)
     const response = await fetch(`/api/predictions?gameweek=${gameweek}&trends=true`);
     if (!response.ok) throw new Error('Failed to load trends');
