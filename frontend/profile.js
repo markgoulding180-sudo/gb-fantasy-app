@@ -554,12 +554,14 @@ async function loadPerformanceGraph() {
     for (let i = 0; i < tournaments.length; i++) {
       const tournament = tournaments[i];
       const gwData = await fetchGameweekData(tournament.gameweek, token);
+      const rankData = await fetchRankData(tournament.id, token);
       
       if (gwData && gwData.predictions) {
         tournamentData.push({
           name: tournament.name,
           gameweek: tournament.gameweek,
           points: gwData.totalPoints || 0,
+          rank: rankData || null,
           color: colors[i % colors.length]
         });
       }
@@ -588,6 +590,21 @@ async function loadPerformanceGraph() {
   }
 }
 
+async function fetchRankData(tournamentId, token) {
+  try {
+    const user = JSON.parse(localStorage.getItem('gbf_user') || '{}');
+    const response = await fetch(`/api/tournaments?leaderboard=true&tournament_id=${tournamentId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const userEntry = data.leaderboard?.find(e => e.user_id === user.id);
+    return userEntry?.rank || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function fetchGameweekData(gameweek, token) {
   try {
     const response = await fetch(`/api/predictions?gameweek=${gameweek}`, {
@@ -608,34 +625,85 @@ function renderPerformanceChart(tournamentData) {
   if (!ctx) return;
   
   const gameweeks = [...new Set(tournamentData.map(t => t.gameweek))].sort((a, b) => a - b);
+  const labels = gameweeks.map(gw => `GW${gw}`);
   
-  // Build cumulative data starting from 0
-  let cumulativePoints = 0;
-  const cumulativeData = gameweeks.map(gw => {
-    const gwPoints = tournamentData
-      .filter(t => t.gameweek === gw)
-      .reduce((sum, t) => sum + t.points, 0);
-    cumulativePoints += gwPoints;
-    return cumulativePoints;
-  });
+  let datasets, yAxisConfig;
   
-  // Add starting point of 0 before first gameweek
-  const labels = ['Start', ...gameweeks.map(gw => `GW${gw}`)];
-  const dataWithStart = [0, ...cumulativeData];
-  
-  const datasets = [{
-    label: 'Total Points',
-    data: dataWithStart,
-    borderColor: '#60a5fa', // Light blue
-    backgroundColor: 'rgba(96, 165, 250, 0.1)',
-    tension: 0.3,
-    fill: true,
-    pointBackgroundColor: '#60a5fa',
-    pointBorderColor: '#fff',
-    pointBorderWidth: 2,
-    pointRadius: 5,
-    pointHoverRadius: 7
-  }];
+  if (currentChartMode === 'rank') {
+    // RANK MODE: Show rank over time (lower is better, so invert Y axis)
+    const rankData = gameweeks.map(gw => {
+      const tournament = tournamentData.find(t => t.gameweek === gw);
+      return tournament?.rank || null;
+    });
+    
+    datasets = [{
+      label: 'Rank',
+      data: rankData,
+      borderColor: '#f59e0b', // Amber for rank
+      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      tension: 0.3,
+      fill: true,
+      pointBackgroundColor: '#f59e0b',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      spanGaps: true // Connect lines across null values
+    }];
+    
+    // Inverted Y axis for rank (1 at top)
+    const maxRank = Math.max(...rankData.filter(r => r !== null)) || 100;
+    yAxisConfig = {
+      reverse: true, // 1 at top, higher numbers below
+      min: 1,
+      max: Math.ceil(maxRank * 1.1), // Add some padding
+      grid: { color: 'rgba(255,255,255,0.1)' },
+      ticks: { 
+        color: '#94a3b8',
+        stepSize: 1
+      },
+      title: {
+        display: true,
+        text: 'Rank (lower is better)',
+        color: '#94a3b8'
+      }
+    };
+  } else {
+    // POINTS MODE: Cumulative points starting from 0
+    let cumulativePoints = 0;
+    const cumulativeData = gameweeks.map(gw => {
+      const gwPoints = tournamentData
+        .filter(t => t.gameweek === gw)
+        .reduce((sum, t) => sum + t.points, 0);
+      cumulativePoints += gwPoints;
+      return cumulativePoints;
+    });
+    
+    datasets = [{
+      label: 'Total Points',
+      data: cumulativeData,
+      borderColor: '#60a5fa', // Light blue
+      backgroundColor: 'rgba(96, 165, 250, 0.1)',
+      tension: 0.3,
+      fill: true,
+      pointBackgroundColor: '#60a5fa',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7
+    }];
+    
+    yAxisConfig = {
+      beginAtZero: true,
+      grid: { color: 'rgba(255,255,255,0.1)' },
+      ticks: { color: '#94a3b8' },
+      title: {
+        display: true,
+        text: 'Points',
+        color: '#94a3b8'
+      }
+    };
+  }
   
   if (performanceChart) performanceChart.destroy();
   
@@ -649,14 +717,15 @@ function renderPerformanceChart(tournamentData) {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(255,255,255,0.1)' },
-          ticks: { color: '#94a3b8' }
-        },
+        y: yAxisConfig,
         x: {
           grid: { color: 'rgba(255,255,255,0.1)' },
-          ticks: { color: '#94a3b8' }
+          ticks: { color: '#94a3b8' },
+          title: {
+            display: true,
+            text: 'Gameweek',
+            color: '#94a3b8'
+          }
         }
       },
       plugins: {
