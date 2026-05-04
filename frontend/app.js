@@ -236,7 +236,7 @@ async function initHomePage() {
       fetch(`${API_BASE}/current-gameweek`)
     ];
     
-    // If logged in, also fetch user's tournament entries
+    // If logged in, also fetch user's tournament entries and predictions
     if (authToken) {
       fetchPromises.push(
         fetch(`${API_BASE}/tournaments?my_entries=true`, {
@@ -269,9 +269,71 @@ async function initHomePage() {
     
     // Update quick actions text
     updateQuickActions(gameweekData);
+    
+    // Update prediction status bar for logged in users
+    if (authToken && gameweekData.next_gameweek) {
+      await updatePredictionStatusBar(gameweekData.next_gameweek);
+    }
 
   } catch (error) {
     console.error('Failed to load home page data:', error);
+  }
+}
+
+async function updatePredictionStatusBar(gameweek) {
+  const statusBar = document.getElementById('prediction-status-bar');
+  if (!statusBar) return;
+  
+  // Show the bar for logged in users
+  statusBar.style.display = 'block';
+  
+  const iconEl = document.getElementById('prediction-status-icon');
+  const titleEl = document.getElementById('prediction-status-title');
+  const subtitleEl = document.getElementById('prediction-status-subtitle');
+  const btnEl = document.getElementById('prediction-status-btn');
+  
+  try {
+    // Fetch user's predictions for the current gameweek
+    const response = await fetch(`${API_BASE}/predictions?gameweek=${gameweek}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to fetch predictions');
+    
+    const data = await response.json();
+    const hasPredictions = data.predictions && data.predictions.length > 0;
+    
+    if (hasPredictions) {
+      // User has predicted
+      iconEl.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+      iconEl.style.color = 'var(--accent-green)';
+      iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
+      titleEl.textContent = `You've predicted for GW ${gameweek}`;
+      titleEl.style.color = 'var(--accent-green)';
+      subtitleEl.textContent = `${data.predictions.length} predictions submitted`;
+      btnEl.innerHTML = '<i class="fas fa-edit"></i> Edit Predictions';
+      btnEl.href = 'predictions.html';
+      btnEl.className = 'btn btn-success btn-sm';
+    } else {
+      // User hasn't predicted
+      iconEl.style.backgroundColor = 'rgba(245, 158, 11, 0.2)';
+      iconEl.style.color = 'var(--accent-amber)';
+      iconEl.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+      titleEl.textContent = `You haven't predicted for GW ${gameweek}`;
+      titleEl.style.color = 'var(--accent-amber)';
+      subtitleEl.textContent = 'Submit your predictions before the deadline';
+      btnEl.innerHTML = '<i class="fas fa-futbol"></i> Predict Now';
+      btnEl.href = 'predictions.html';
+      btnEl.className = 'btn btn-primary btn-sm';
+    }
+  } catch (error) {
+    console.error('Failed to check prediction status:', error);
+    iconEl.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+    iconEl.style.color = 'var(--accent-red)';
+    iconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
+    titleEl.textContent = 'Unable to check predictions';
+    titleEl.style.color = 'var(--accent-red)';
+    subtitleEl.textContent = 'Please refresh the page';
   }
 }
 

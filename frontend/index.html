@@ -93,6 +93,24 @@
       </div>
     </section>
 
+    <!-- Prediction Status Bar (Logged in users only) -->
+    <section id="prediction-status-bar" class="mb-3" style="display: none;">
+      <div class="prediction-status-container" style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-hover) 100%); border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div id="prediction-status-icon" style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+            <i class="fas fa-question-circle"></i>
+          </div>
+          <div>
+            <div id="prediction-status-title" style="font-weight: 600; font-size: 1.1rem;">Checking predictions...</div>
+            <div id="prediction-status-subtitle" class="text-muted" style="font-size: 0.875rem;">Please wait</div>
+          </div>
+        </div>
+        <a href="profile.html" class="btn btn-outline btn-sm" id="prediction-status-btn">
+          <i class="fas fa-user"></i> View Profile
+        </a>
+      </div>
+    </section>
+
     <!-- Quick Actions -->
     <section class="grid-3 mb-3">
       <div class="feature-card">
