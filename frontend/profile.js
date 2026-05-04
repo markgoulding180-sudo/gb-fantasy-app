@@ -332,7 +332,18 @@ async function loadUserPredictions() {
     }
 
     // Check for live matches from ALL matches in the gameweek
-    const liveMatches = allMatches.filter(m => m.status === 'live');
+    // A match is "live" if: status is 'live', OR (has scores AND not finished AND kickoff time has passed)
+    const now = new Date();
+    const liveMatches = allMatches.filter(m => {
+      if (m.status === 'live') return true;
+      // Also consider matches with scores that aren't marked as finished
+      if (m.status === 'finished') return false;
+      // Check if match has started (has any score) and kickoff time has passed
+      const kickoff = new Date(m.kickoff_time);
+      const hasStarted = (m.home_score !== null && m.home_score !== undefined) || 
+                         (m.away_score !== null && m.away_score !== undefined);
+      return hasStarted && kickoff < now;
+    });
     const finishedCount = allMatches.filter(m => m.status === 'finished').length;
     const totalCount = allMatches.length;
     
