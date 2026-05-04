@@ -33,7 +33,51 @@ module.exports = async (req, res) => {
       const gameweek = params.get('gameweek');
       const tournamentId = params.get('tournament_id');
       const leaderboard = params.get('leaderboard'); // if set, return leaderboard
+      const myEntries = params.get('my_entries'); // if set, return user's entered tournaments
       
+      // Return user's tournament entries
+      if (myEntries) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+          return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+        if (authError || !user) {
+          return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        // Get tournaments the user has entered
+        const { data: entries, error: entriesError } = await supabaseAdmin
+          .from('tournament_entries')
+          .select('tournament_id')
+          .eq('user_id', user.id);
+
+        if (entriesError) {
+          return res.status(500).json({ error: 'Failed to fetch entries', details: entriesError.message });
+        }
+
+        // Get full tournament details for entered tournaments
+        const tournamentIds = entries.map(e => e.tournament_id);
+        
+        if (tournamentIds.length === 0) {
+          return res.status(200).json({ tournaments: [] });
+        }
+
+        const { data: tournaments, error: tournamentsError } = await supabase
+          .from('tournaments')
+          .select('*')
+          .in('id', tournamentIds);
+
+        if (tournamentsError) {
+          return res.status(500).json({ error: 'Failed to fetch tournaments', details: tournamentsError.message });
+        }
+
+        return res.status(200).json({ tournaments: tournaments || [] });
+      }
+
       // Return leaderboard for specific tournament
       if (leaderboard && tournamentId) {
         const { data: entries, error: entriesError } = await supabaseAdmin

@@ -229,21 +229,40 @@ function initMobileMenu() {
 async function initHomePage() {
   // Fetch live stats
   try {
-    const [tournamentsRes, leaderboardRes, gameweekRes] = await Promise.all([
+    // Build fetch array - only add user entries if logged in
+    const fetchPromises = [
       fetch(`${API_BASE}/tournaments?status=live&limit=2`),
       fetch(`${API_BASE}/leaderboard?limit=5`),
       fetch(`${API_BASE}/current-gameweek`)
-    ]);
+    ];
+    
+    // If logged in, also fetch user's tournament entries
+    if (authToken) {
+      fetchPromises.push(
+        fetch(`${API_BASE}/tournaments?my_entries=true`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        })
+      );
+    }
 
-    const tournamentsData = await tournamentsRes.json();
-    const leaderboardData = await leaderboardRes.json();
-    const gameweekData = await gameweekRes.json();
+    const responses = await Promise.all(fetchPromises);
+    
+    const tournamentsData = await responses[0].json();
+    const leaderboardData = await responses[1].json();
+    const gameweekData = await responses[2].json();
+    
+    // Get user's tournament entries if logged in
+    let userEntries = [];
+    if (authToken && responses[3]) {
+      const entriesData = await responses[3].json();
+      userEntries = entriesData.tournaments?.map(t => t.id) || [];
+    }
 
     // Update hero stats if elements exist
     updateHeroStats(tournamentsData.tournaments, leaderboardData.leaderboard, gameweekData);
     
-    // Update live tournaments section
-    updateLiveTournaments(tournamentsData.tournaments);
+    // Update live tournaments section with user entry status
+    updateLiveTournaments(tournamentsData.tournaments, userEntries);
     
     // Update top players
     updateTopPlayers(leaderboardData.leaderboard);
@@ -616,7 +635,7 @@ function updateQuickActions(gameweekData) {
   }
 }
 
-function updateLiveTournaments(tournaments) {
+function updateLiveTournaments(tournaments, userEntries = []) {
   const container = document.getElementById('live-tournaments-container');
   if (!container) return;
   
@@ -634,10 +653,30 @@ function updateLiveTournaments(tournaments) {
     return;
   }
   
+  const isLoggedIn = !!authToken;
+  
   container.innerHTML = tournaments.slice(0, 2).map(t => {
     const timeRemaining = t.time_remaining || 'Closing soon';
     const status = t.status === 'live' ? 'Live' : t.status;
     const statusClass = t.status === 'live' ? 'live' : t.status;
+    const isRegistered = userEntries.includes(t.id);
+    const hasStarted = t.status === 'live' || t.status === 'closed' || t.status === 'finished';
+    
+    // Determine button state
+    let buttonHtml = '';
+    if (!isLoggedIn) {
+      // Not logged in - show login to enter
+      buttonHtml = `<a href="login.html" class="btn btn-outline" style="width: 100%;"><i class="fas fa-sign-in-alt"></i> Login to Enter</a>`;
+    } else if (isRegistered) {
+      // Registered - show view predictions button
+      buttonHtml = `<a href="predictions.html?tournament=${t.id}" class="btn btn-success" style="width: 100%;"><i class="fas fa-eye"></i> View Predictions</a>`;
+    } else if (hasStarted) {
+      // Not registered and tournament has started - show disabled button
+      buttonHtml = `<button class="btn btn-disabled" style="width: 100%;" disabled><i class="fas fa-lock"></i> Tournament Started</button>`;
+    } else {
+      // Not registered and tournament not started - show enter button
+      buttonHtml = `<a href="predictions.html?tournament=${t.id}" class="btn btn-primary" style="width: 100%;"><i class="fas fa-ticket"></i> Enter Tournament</a>`;
+    }
     
     return `
       <div class="tournament-card ${statusClass}">
@@ -662,9 +701,7 @@ function updateLiveTournaments(tournaments) {
             <div class="tournament-detail-label">Entries</div>
           </div>
         </div>
-        <a href="predictions.html?tournament=${t.id}" class="btn btn-primary" style="width: 100%;">
-          <i class="fas fa-ticket"></i> Enter Tournament
-        </a>
+        ${buttonHtml}
       </div>
     `;
   }).join('');
