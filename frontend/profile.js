@@ -607,23 +607,42 @@ function renderPerformanceChart(tournamentData) {
   const ctx = document.getElementById('performanceChart');
   if (!ctx) return;
   
-  const gameweeks = [...new Set(tournamentData.map(t => t.gameweek))].sort();
+  const gameweeks = [...new Set(tournamentData.map(t => t.gameweek))].sort((a, b) => a - b);
   
-  const datasets = tournamentData.map((t) => ({
-    label: t.name,
-    data: gameweeks.map(gw => t.gameweek === gw ? t.points : null),
-    borderColor: t.color,
-    backgroundColor: t.color + '20',
-    tension: 0.4,
-    fill: false
-  }));
+  // Build cumulative data starting from 0
+  let cumulativePoints = 0;
+  const cumulativeData = gameweeks.map(gw => {
+    const gwPoints = tournamentData
+      .filter(t => t.gameweek === gw)
+      .reduce((sum, t) => sum + t.points, 0);
+    cumulativePoints += gwPoints;
+    return cumulativePoints;
+  });
+  
+  // Add starting point of 0 before first gameweek
+  const labels = ['Start', ...gameweeks.map(gw => `GW${gw}`)];
+  const dataWithStart = [0, ...cumulativeData];
+  
+  const datasets = [{
+    label: 'Total Points',
+    data: dataWithStart,
+    borderColor: '#60a5fa', // Light blue
+    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+    tension: 0.3,
+    fill: true,
+    pointBackgroundColor: '#60a5fa',
+    pointBorderColor: '#fff',
+    pointBorderWidth: 2,
+    pointRadius: 5,
+    pointHoverRadius: 7
+  }];
   
   if (performanceChart) performanceChart.destroy();
   
   performanceChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: gameweeks.map(gw => `GW${gw}`),
+      labels: labels,
       datasets: datasets
     },
     options: {
@@ -632,7 +651,6 @@ function renderPerformanceChart(tournamentData) {
       scales: {
         y: {
           beginAtZero: true,
-          max: 200,
           grid: { color: 'rgba(255,255,255,0.1)' },
           ticks: { color: '#94a3b8' }
         },
@@ -642,7 +660,9 @@ function renderPerformanceChart(tournamentData) {
         }
       },
       plugins: {
-        legend: { labels: { color: '#94a3b8' } }
+        legend: { 
+          display: false 
+        }
       }
     }
   });
