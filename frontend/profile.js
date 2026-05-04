@@ -431,8 +431,9 @@ async function loadUserPredictions() {
           `;
         } else if (isFinished) {
           const actualResult = match.home_score + '-' + match.away_score;
-          // Points always shown in green to match the status circle
-          statusLine = `<div style="font-size: 0.8rem; color: var(--accent-green); margin-top:4px;">Result: ${actualResult} • ${points} pts</div>`;
+          // Points: 0 = red, any points = green
+          const pointsColor = points === 0 ? 'var(--accent-red)' : 'var(--accent-green)';
+          statusLine = `<div style="font-size: 0.8rem; color: ${pointsColor}; margin-top:4px;">Result: ${actualResult} • ${points} pts</div>`;
         } else {
           statusLine = `<div style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top:4px;">Not played yet</div>`;
         }
