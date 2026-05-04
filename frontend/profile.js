@@ -1155,6 +1155,107 @@ async function manualRefreshScores() {
   }
 }
 
+// User Trends - Load aggregate prediction data
+async function loadUserTrends() {
+  const container = document.getElementById('user-trends-container');
+  if (!container) return;
+  
+  try {
+    // Get current gameweek
+    const gwResponse = await fetch('/api/current-gameweek');
+    const gwData = await gwResponse.json();
+    const gameweek = gwData.current_gameweek || gwData.next_gameweek || 35;
+    
+    // Fetch trends data
+    const response = await fetch(`/api/trends?gameweek=${gameweek}`);
+    if (!response.ok) throw new Error('Failed to load trends');
+    
+    const data = await response.json();
+    const trends = data.trends || [];
+    
+    if (trends.length === 0 || trends.every(t => t.total_predictions === 0)) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding: 1rem;">
+          <i class="fas fa-users" style="opacity: 0.5;"></i>
+          <p>No prediction data yet</p>
+          <p class="text-muted" style="font-size: 0.75rem;">Trends appear once users start predicting</p>
+        </div>
+      `;
+      return;
+    }
+    
+    let trendsHTML = `<div class="trends-grid">`;
+    
+    trends.forEach(trend => {
+      if (trend.total_predictions === 0) return;
+      
+      const { H, D, A } = trend.result_distribution;
+      const mostCommon = trend.most_common_result;
+      const mostCommonScore = trend.most_common_score;
+      
+      // Determine which result is most popular for highlighting
+      const maxPct = Math.max(H, D, A);
+      
+      trendsHTML += `
+        <div class="trend-card">
+          <div class="trend-match">${trend.home_team} vs ${trend.away_team}</div>
+          
+          <!-- Result Distribution Bar -->
+          <div class="trend-bar-container">
+            ${H > 0 ? `<div class="trend-bar trend-bar-home" style="width: ${H}%; ${H === maxPct ? 'box-shadow: 0 0 8px rgba(59,130,246,0.5);' : ''}">${H > 15 ? H + '%' : ''}</div>` : ''}
+            ${D > 0 ? `<div class="trend-bar trend-bar-draw" style="width: ${D}%; ${D === maxPct ? 'box-shadow: 0 0 8px rgba(245,158,11,0.5);' : ''}">${D > 15 ? D + '%' : ''}</div>` : ''}
+            ${A > 0 ? `<div class="trend-bar trend-bar-away" style="width: ${A}%; ${A === maxPct ? 'box-shadow: 0 0 8px rgba(239,68,68,0.5);' : ''}">${A > 15 ? A + '%' : ''}</div>` : ''}
+          </div>
+          
+          <!-- Legend -->
+          <div class="trend-stats">
+            <span><i class="fas fa-home" style="color: var(--accent-blue);"></i> ${H}%</span>
+            <span><i class="fas fa-equals" style="color: var(--accent-amber);"></i> ${D}%</span>
+            <span><i class="fas fa-plane" style="color: var(--accent-red);"></i> ${A}%</span>
+            <span style="color: var(--text-muted);">${trend.total_predictions} preds</span>
+          </div>
+          
+          <!-- Most Popular -->
+          ${mostCommon ? `
+            <div class="trend-most-popular">
+              <i class="fas fa-fire" style="color: var(--accent-amber);"></i> 
+              Most picked: <strong>${mostCommon.result === 'H' ? 'Home' : mostCommon.result === 'D' ? 'Draw' : 'Away'}</strong> 
+              (${mostCommon.percentage}%)
+              ${mostCommonScore ? `<span class="trend-score-tag">${mostCommonScore.score}</span>` : ''}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    });
+    
+    trendsHTML += `</div>`;
+    
+    // Add summary stats
+    const totalUsers = data.total_users || 0;
+    trendsHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-hover); border-radius: 0.5rem;">
+        <span style="font-size: 0.85rem; color: var(--text-secondary);">
+          <i class="fas fa-users" style="color: var(--accent-green);"></i> 
+          ${totalUsers} users predicted this gameweek
+        </span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">GW${gameweek}</span>
+      </div>
+      ${trendsHTML}
+    `;
+    
+    container.innerHTML = trendsHTML;
+    
+  } catch (error) {
+    console.error('Error loading user trends:', error);
+    container.innerHTML = `
+      <div class="empty-state" style="padding: 1rem;">
+        <i class="fas fa-exclamation-circle" style="color: var(--accent-red);"></i>
+        <p>Could not load trends</p>
+      </div>
+    `;
+  }
+}
+
 // Single DOMContentLoaded — correct order
 document.addEventListener('DOMContentLoaded', async function() {
   await loadProfile();
@@ -1165,4 +1266,5 @@ document.addEventListener('DOMContentLoaded', async function() {
   loadAchievements();
   loadInsights();
   loadPerformanceGraph();
+  loadUserTrends();             // load aggregate prediction trends
 });
