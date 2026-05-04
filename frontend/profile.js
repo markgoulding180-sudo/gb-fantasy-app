@@ -1166,12 +1166,24 @@ async function loadUserTrends() {
     const gwData = await gwResponse.json();
     const gameweek = gwData.current_gameweek || gwData.next_gameweek || 35;
     
+    console.log('User Trends - Checking GW:', gameweek);
+    console.log('User Trends - GW Data:', gwData);
+    
     // Fetch trends data (using predictions API with trends=true)
     const response = await fetch(`/api/predictions?gameweek=${gameweek}&trends=true`);
     if (!response.ok) throw new Error('Failed to load trends');
     
     const data = await response.json();
+    console.log('User Trends - Response:', data);
+    console.log('User Trends - Matches found:', data.trends?.length || 0);
+    console.log('User Trends - Total users:', data.total_users);
+    
     const trends = data.trends || [];
+    
+    // Debug: Show first few matches and their prediction counts
+    trends.slice(0, 3).forEach((t, i) => {
+      console.log(`Match ${i+1}: ${t.home_team} vs ${t.away_team} - ${t.total_predictions} predictions`);
+    });
     
     if (trends.length === 0 || trends.every(t => t.total_predictions === 0)) {
       container.innerHTML = `
@@ -1179,7 +1191,7 @@ async function loadUserTrends() {
           <i class="fas fa-users" style="opacity: 0.5;"></i>
           <p>No predictions for GW${gameweek} yet</p>
           <p class="text-muted" style="font-size: 0.75rem;">${data.total_users || 0} users have predicted this gameweek</p>
-          <a href="predictions.html" class="btn btn-primary btn-sm" style="margin-top: 0.75rem;">
+          <a href="predictions.html?gameweek=${gameweek}" class="btn btn-primary btn-sm" style="margin-top: 0.75rem;">
             <i class="fas fa-futbol"></i> Make Predictions
           </a>
         </div>
