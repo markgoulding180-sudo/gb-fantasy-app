@@ -140,7 +140,7 @@ async function syncFixtures() {
     const url = gameweek ? `/api/sync-fixtures?gameweek=${gameweek}` : '/api/sync-fixtures';
     
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
