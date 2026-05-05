@@ -292,20 +292,38 @@ async function finaliseGameweek(supabase, gameweek) {
       .eq('user_id', userId);
     
     for (const entry of userTournaments || []) {
-      // Check if this tournament is for the current gameweek
+      // Check if this tournament includes the current gameweek
       const { data: tournament } = await supabase
         .from('tournaments')
-        .select('gameweek')
+        .select('gameweek, end_gameweek')
         .eq('id', entry.tournament_id)
         .single();
       
-      if (tournament && tournament.gameweek === gameweek) {
-        // Update entry_points with this gameweek's points
-        await supabase
-          .from('tournament_entries')
-          .update({ entry_points: gwTotalPoints })
-          .eq('tournament_id', entry.tournament_id)
-          .eq('user_id', userId);
+      if (tournament) {
+        const startGW = tournament.gameweek;
+        const endGW = tournament.end_gameweek || startGW;
+        
+        // Check if current gameweek is within tournament range
+        if (gameweek >= startGW && gameweek <= endGW) {
+          // For multi-week tournaments, accumulate points
+          // Get all gameweek summaries for this user within tournament range
+          const { data: gwSummaries } = await supabase
+            .from('gameweek_summary')
+            .select('total_points')
+            .eq('user_id', userId)
+            .gte('gameweek', startGW)
+            .lte('gameweek', endGW);
+          
+          const totalTournamentPoints = (gwSummaries || [])
+            .reduce((sum, s) => sum + (s.total_points || 0), 0);
+          
+          // Update entry_points with accumulated total
+          await supabase
+            .from('tournament_entries')
+            .update({ entry_points: totalTournamentPoints })
+            .eq('tournament_id', entry.tournament_id)
+            .eq('user_id', userId);
+        }
       }
     }
   }
@@ -363,10 +381,20 @@ async function updateTournamentRankings(supabase, gameweek) {
         .eq('id', entries[i].id);
     }
 
-    // Mark tournament as finished
-    await supabase
-      .from('tournaments')
-      .update({ status: 'finished' })
-      .eq('id', tournament.id);
+    // Only mark tournament as finished if it's a single-gameweek tournament
+    // Multi-week tournaments should have end_gameweek > gameweek
+    if (tournament.end_gameweek && tournament.end_gameweek === gameweek) {
+      await supabase
+        .from('tournaments')
+        .update({ status: 'finished' })
+        .eq('id', tournament.id);
+    } else if (!tournament.end_gameweek || tournament.end_gameweek === tournament.gameweek) {
+      // Single gameweek tournament (no end_gameweek or end_gameweek same as start)
+      await supabase
+        .from('tournaments')
+        .update({ status: 'finished' })
+        .eq('id', tournament.id);
+    }
+    // If it's a multi-week tournament, keep it live
   }
 }
