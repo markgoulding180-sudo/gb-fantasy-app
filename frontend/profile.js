@@ -957,46 +957,95 @@ function checkConsecutiveCorrect(predictions, matches, count) {
   return false;
 }
 
-// Detailed Insights
-async function loadInsights() {
-  const container = document.getElementById('insights');
+// This Week Stats (Current GW only)
+async function loadThisWeekInsights() {
+  const container = document.getElementById('this-week-insights');
   if (!container) return;
   
   try {
     const data = cachedPredictionsData;
-    if (!data) {
-      container.innerHTML = '<p class="text-muted">Make predictions to see insights</p>';
+    if (!data || !data.predictions || data.predictions.length === 0) {
+      container.innerHTML = '<p class="text-muted">Make predictions to see this week\'s stats</p>';
       return;
     }
     
-    const predictions = data.predictions || [];
-    const matches = data.matches || [];
+    renderInsights(container, data, 'This Week');
+  } catch (error) {
+    console.error('Error loading this week insights:', error);
+    container.innerHTML = '<p class="text-muted">Could not load stats</p>';
+  }
+}
+
+// Season Stats (All GWs combined)
+async function loadSeasonInsights() {
+  const container = document.getElementById('season-insights');
+  if (!container) return;
+  
+  try {
+    const token = localStorage.getItem('gbf_token');
     
-    if (predictions.length === 0) {
-      container.innerHTML = '<p class="text-muted">Make predictions to see insights</p>';
-      return;
-    }
+    // Fetch predictions for multiple gameweeks (35-38)
+    const allPredictions = [];
+    const allMatches = [];
     
-    const finishedPreds = predictions.filter(p => {
-      const match = matches.find(m => m.id === p.match_id);
-      return match && match.status === 'finished';
-    });
-    
-    const pointsArray = finishedPreds.map(p => p.points_earned || 0);
-    const bestMatch = pointsArray.length > 0 ? Math.max(...pointsArray) : 0;
-    const worstMatch = pointsArray.length > 0 ? Math.min(...pointsArray) : 0;
-    const avgPoints = pointsArray.length > 0 
-      ? Math.round(pointsArray.reduce((a, b) => a + b, 0) / pointsArray.length) 
-      : 0;
-    
-    const resultCounts = { H: 0, X: 0, A: 0 };
-    predictions.forEach(p => {
-      if (resultCounts[p.predicted_result] !== undefined) {
-        resultCounts[p.predicted_result]++;
+    for (let gw = 35; gw <= 38; gw++) {
+      try {
+        const response = await fetch(`/api/predictions?gameweek=${gw}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.predictions) {
+            allPredictions.push(...data.predictions);
+            allMatches.push(...(data.matches || []));
+          }
+        }
+      } catch (e) {
+        console.log(`Could not load GW${gw}`);
       }
-    });
-    const total = predictions.length;
-    const favResult = Object.entries(resultCounts).sort((a, b) => b[1] - a[1])[0][0];
+    }
+    
+    if (allPredictions.length === 0) {
+      container.innerHTML = '<p class="text-muted">Make predictions to see season stats</p>';
+      return;
+    }
+    
+    // Remove duplicates
+    const uniquePreds = [...new Map(allPredictions.map(p => [p.id, p])).values()];
+    const uniqueMatches = [...new Map(allMatches.map(m => [m.id, m])).values()];
+    
+    renderInsights(container, { predictions: uniquePreds, matches: uniqueMatches }, 'Season');
+  } catch (error) {
+    console.error('Error loading season insights:', error);
+    container.innerHTML = '<p class="text-muted">Could not load stats</p>';
+  }
+}
+
+// Shared insights renderer
+function renderInsights(container, data, label) {
+  const predictions = data.predictions || [];
+  const matches = data.matches || [];
+  
+  const finishedPreds = predictions.filter(p => {
+    const match = matches.find(m => m.id === p.match_id);
+    return match && match.status === 'finished';
+  });
+  
+  const pointsArray = finishedPreds.map(p => p.points_earned || 0);
+  const bestMatch = pointsArray.length > 0 ? Math.max(...pointsArray) : 0;
+  const worstMatch = pointsArray.length > 0 ? Math.min(...pointsArray) : 0;
+  const avgPoints = pointsArray.length > 0 
+    ? Math.round(pointsArray.reduce((a, b) => a + b, 0) / pointsArray.length) 
+    : 0;
+  
+  const resultCounts = { H: 0, X: 0, A: 0 };
+  predictions.forEach(p => {
+    if (resultCounts[p.predicted_result] !== undefined) {
+      resultCounts[p.predicted_result]++;
+    }
+  });
+  const total = predictions.length;
+  const favResult = total > 0 ? Object.entries(resultCounts).sort((a, b) => b[1] - a[1])[0][0] : '-';
     
     const accuracyByResult = {};
     ['H', 'X', 'A'].forEach(result => {
@@ -1316,10 +1365,10 @@ function switchProfileTab(tabName) {
 
 // Initialize tabs on page load
 function initProfileTabs() {
-  const savedTab = localStorage.getItem('profileActiveTab');
-  if (savedTab) {
-    switchProfileTab(savedTab);
-  }
+  // Always default to Overview tab on fresh load
+  // Remove any saved preference to ensure Overview is default
+  localStorage.removeItem('profileActiveTab');
+  switchProfileTab('overview');
 }
 
 // Single DOMContentLoaded — correct order
@@ -1330,7 +1379,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   loadPredictionHistory();
   loadRecentActivity();         // load recent points earned
   loadAchievements();
-  loadInsights();
+  loadThisWeekInsights();       // This Week stats (Overview tab)
+  loadSeasonInsights();         // Season stats (Performance tab)
   loadPerformanceGraph();
   loadUserTrends();             // load aggregate prediction trends
   initProfileTabs();            // initialize tab state

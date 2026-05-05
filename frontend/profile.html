@@ -621,6 +621,44 @@
       .dashboard-card > * {
         text-align: left;
       }
+      
+      /* Tabs - ensure no overflow */
+      .profile-tabs {
+        padding: 0 0.25rem;
+        gap: 0.25rem;
+      }
+      .profile-tab {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.8rem;
+        gap: 0.35rem;
+      }
+      .profile-tab i {
+        font-size: 0.85rem;
+      }
+      
+      /* Ensure insights don't overflow */
+      .insights-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.4rem;
+      }
+      .insight-card[style*="grid-column: span 2"] {
+        grid-column: span 2 !important;
+      }
+      
+      /* Trends grid - single column on mobile */
+      .trends-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+      
+      /* Ensure no horizontal scroll on any container */
+      .dashboard-card,
+      .profile-tab-content,
+      #prediction-history-container,
+      #current-predictions {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
     }
   </style>
 </head>
@@ -767,6 +805,17 @@
           </div>
         </div>
       </div>
+
+      <!-- This Week Quick Stats -->
+      <div class="dashboard-card">
+        <h3><i class="fas fa-chart-pie text-blue"></i> This Week Stats</h3>
+        <div id="this-week-insights" class="insights-grid">
+          <div class="empty-state" style="padding: 1rem;">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading stats...</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Tab 2: Performance -->
@@ -798,10 +847,15 @@
         </div>
       </div>
 
-      <!-- Detailed Insights -->
+      <!-- Season Stats (All GWs) -->
       <div class="dashboard-card">
-        <h3><i class="fas fa-lightbulb text-blue"></i> Detailed Insights</h3>
-        <div id="insights" class="insights-grid"></div>
+        <h3><i class="fas fa-lightbulb text-blue"></i> Season Stats</h3>
+        <div id="season-insights" class="insights-grid">
+          <div class="empty-state" style="padding: 1rem;">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading season stats...</p>
+          </div>
+        </div>
       </div>
     </div>
 
