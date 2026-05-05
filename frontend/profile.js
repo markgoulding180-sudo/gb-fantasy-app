@@ -1297,6 +1297,31 @@ async function loadUserTrends() {
   }
 }
 
+// Profile Tab Switching
+function switchProfileTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.profile-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+  
+  // Update tab content
+  document.querySelectorAll('.profile-tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+  
+  // Save preference
+  localStorage.setItem('profileActiveTab', tabName);
+}
+
+// Initialize tabs on page load
+function initProfileTabs() {
+  const savedTab = localStorage.getItem('profileActiveTab');
+  if (savedTab) {
+    switchProfileTab(savedTab);
+  }
+}
+
 // Single DOMContentLoaded — correct order
 document.addEventListener('DOMContentLoaded', async function() {
   await loadProfile();
@@ -1308,4 +1333,5 @@ document.addEventListener('DOMContentLoaded', async function() {
   loadInsights();
   loadPerformanceGraph();
   loadUserTrends();             // load aggregate prediction trends
+  initProfileTabs();            // initialize tab state
 });

@@ -412,6 +412,57 @@
       margin-left: 0.25rem;
     }
     
+    /* ── TABBED LAYOUT STYLES ── */
+    .profile-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .profile-tabs::-webkit-scrollbar {
+      display: none;
+    }
+    .profile-tab {
+      padding: 0.75rem 1.25rem;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .profile-tab:hover {
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.05);
+      border-radius: 0.5rem 0.5rem 0 0;
+    }
+    .profile-tab.active {
+      color: var(--accent-green);
+      border-bottom-color: var(--accent-green);
+      background: rgba(34, 197, 94, 0.1);
+      border-radius: 0.5rem 0.5rem 0 0;
+    }
+    .profile-tab-content {
+      display: none;
+    }
+    .profile-tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
     /* Prevent horizontal scrolling */
     html, body {
       max-width: 100%;
@@ -681,89 +732,109 @@
       <p class="text-muted">Loading your tournaments...</p>
     </div>
 
-    <div class="dashboard-grid">
-      <!-- Left Column -->
-      <div>
-        <!-- This Week's Predictions -->
-        <div class="dashboard-card mb-3">
-          <h3><i class="fas fa-futbol text-green"></i> This Week's Predictions</h3>
-          <!-- Live matches banner — shown only when matches are live -->
-          <div class="live-matches-banner" id="live-banner" style="display:none;">
-            <div class="live-dot"></div>
-            <div class="live-text" id="live-banner-text" style="white-space:nowrap;"></div>
-            <div id="live-score-display" style="flex:1; display:flex; align-items:center; justify-content:center; gap:0.25rem; font-size:0.9rem; transition:opacity 0.2s; padding:0 0.5rem;"></div>
-            <button class="refresh-btn" onclick="refreshLiveScores()"><i class="fas fa-sync-alt"></i> Refresh</button>
-          </div>
-          <div id="current-predictions">
-            <div class="empty-state">
-              <i class="fas fa-spinner fa-spin"></i>
-              <p>Loading predictions...</p>
-            </div>
+    <!-- Tab Navigation -->
+    <div class="profile-tabs">
+      <button class="profile-tab active" onclick="switchProfileTab('overview')" data-tab="overview">
+        <i class="fas fa-chart-pie"></i> Overview
+      </button>
+      <button class="profile-tab" onclick="switchProfileTab('performance')" data-tab="performance">
+        <i class="fas fa-chart-line"></i> Performance
+      </button>
+      <button class="profile-tab" onclick="switchProfileTab('achievements')" data-tab="achievements">
+        <i class="fas fa-medal"></i> Achievements
+      </button>
+      <button class="profile-tab" onclick="switchProfileTab('trends')" data-tab="trends">
+        <i class="fas fa-users"></i> Trends
+      </button>
+    </div>
+
+    <!-- Tab 1: Overview -->
+    <div id="tab-overview" class="profile-tab-content active">
+      <!-- This Week's Predictions -->
+      <div class="dashboard-card mb-3">
+        <h3><i class="fas fa-futbol text-green"></i> This Week's Predictions</h3>
+        <!-- Live matches banner — shown only when matches are live -->
+        <div class="live-matches-banner" id="live-banner" style="display:none;">
+          <div class="live-dot"></div>
+          <div class="live-text" id="live-banner-text" style="white-space:nowrap;"></div>
+          <div id="live-score-display" style="flex:1; display:flex; align-items:center; justify-content:center; gap:0.25rem; font-size:0.9rem; transition:opacity 0.2s; padding:0 0.5rem;"></div>
+          <button class="refresh-btn" onclick="refreshLiveScores()"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+        <div id="current-predictions">
+          <div class="empty-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading predictions...</p>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Performance Graph -->
-        <div class="dashboard-card mb-3">
-          <h3><i class="fas fa-chart-line text-blue"></i> Performance History</h3>
-          <div class="chart-toggle">
-            <button id="toggle-points" class="active" onclick="switchChart('points')">Points</button>
-            <button id="toggle-rank" onclick="switchChart('rank')">Rank</button>
-          </div>
-          <div id="performance-chart-container" class="chart-container">
-            <canvas id="performanceChart"></canvas>
-          </div>
-          <div id="performance-empty" class="empty-state" style="display:none;">
-            <i class="fas fa-chart-bar"></i>
-            <p>More data coming as gameweeks complete</p>
-          </div>
+    <!-- Tab 2: Performance -->
+    <div id="tab-performance" class="profile-tab-content">
+      <!-- Performance Graph -->
+      <div class="dashboard-card mb-3">
+        <h3><i class="fas fa-chart-line text-blue"></i> Performance History</h3>
+        <div class="chart-toggle">
+          <button id="toggle-points" class="active" onclick="switchChart('points')">Points</button>
+          <button id="toggle-rank" onclick="switchChart('rank')">Rank</button>
         </div>
-
-        <!-- Prediction History -->
-        <div class="dashboard-card mb-3">
-          <h3><i class="fas fa-history text-amber"></i> Prediction History</h3>
-          <div id="prediction-history-container">
-            <div class="empty-state">
-              <i class="fas fa-futbol"></i>
-              <p>No predictions yet</p>
-            </div>
-          </div>
+        <div id="performance-chart-container" class="chart-container">
+          <canvas id="performanceChart"></canvas>
         </div>
+        <div id="performance-empty" class="empty-state" style="display:none;">
+          <i class="fas fa-chart-bar"></i>
+          <p>More data coming as gameweeks complete</p>
+        </div>
+      </div>
 
-        <!-- User Trends -->
-        <div class="dashboard-card">
-          <h3><i class="fas fa-users text-green"></i> User Trends</h3>
-          <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">See what other users are predicting this gameweek</p>
-          <div id="user-trends-container">
-            <div class="empty-state">
-              <i class="fas fa-spinner fa-spin"></i>
-              <p>Loading trends...</p>
-            </div>
+      <!-- Prediction History -->
+      <div class="dashboard-card mb-3">
+        <h3><i class="fas fa-history text-amber"></i> Prediction History</h3>
+        <div id="prediction-history-container">
+          <div class="empty-state">
+            <i class="fas fa-futbol"></i>
+            <p>No predictions yet</p>
           </div>
         </div>
       </div>
 
-      <!-- Right Column -->
-      <div>
-        <!-- Recent Activity -->
-        <div class="dashboard-card mb-3">
-          <h3><i class="fas fa-bolt text-green"></i> Recent Activity</h3>
-          <div id="recent-activity">
-            <div class="empty-state" style="padding:1rem;">
-              <p class="text-muted">No recent activity</p>
-            </div>
+      <!-- Detailed Insights -->
+      <div class="dashboard-card">
+        <h3><i class="fas fa-lightbulb text-blue"></i> Detailed Insights</h3>
+        <div id="insights" class="insights-grid"></div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Achievements -->
+    <div id="tab-achievements" class="profile-tab-content">
+      <!-- Achievements -->
+      <div class="dashboard-card mb-3">
+        <h3><i class="fas fa-medal text-amber"></i> Achievements</h3>
+        <div id="achievements" class="achievements-grid"></div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="dashboard-card">
+        <h3><i class="fas fa-bolt text-green"></i> Recent Activity</h3>
+        <div id="recent-activity">
+          <div class="empty-state" style="padding:1rem;">
+            <p class="text-muted">No recent activity</p>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Achievements -->
-        <div class="dashboard-card mb-3">
-          <h3><i class="fas fa-medal text-amber"></i> Achievements</h3>
-          <div id="achievements" class="achievements-grid"></div>
-        </div>
-
-        <!-- Detailed Insights -->
-        <div class="dashboard-card">
-          <h3><i class="fas fa-lightbulb text-blue"></i> Detailed Insights</h3>
-          <div id="insights" class="insights-grid"></div>
+    <!-- Tab 4: Trends -->
+    <div id="tab-trends" class="profile-tab-content">
+      <!-- User Trends -->
+      <div class="dashboard-card">
+        <h3><i class="fas fa-users text-green"></i> User Trends</h3>
+        <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">See what other users are predicting this gameweek</p>
+        <div id="user-trends-container">
+          <div class="empty-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading trends...</p>
+          </div>
         </div>
       </div>
     </div>
