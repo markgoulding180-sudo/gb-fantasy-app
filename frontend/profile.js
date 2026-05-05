@@ -305,7 +305,8 @@ async function loadUserPredictions() {
   try {
     const gwResponse = await fetch('/api/current-gameweek');
     const gwData = await gwResponse.json();
-    const gameweek = gwData.current_gameweek || 35;
+    // Always show next gameweek for "This Week's Predictions" (predict upcoming games)
+    const gameweek = gwData.next_gameweek || gwData.current_gameweek || 36;
     
     // Fetch predictions (with auth) and all matches (without auth) in parallel
     const [predictionsResponse, matchesResponse] = await Promise.all([
@@ -390,11 +391,12 @@ async function loadUserPredictions() {
     
     if (!data.predictions || data.predictions.length === 0) {
       container.innerHTML = `
-        <div class="empty-state">
-          <i class="fas fa-futbol"></i>
-          <p>No predictions yet for GW${gameweek}</p>
-          <a href="predictions.html" class="btn btn-primary btn-sm" style="margin-top: 1rem;">
-            <i class="fas fa-edit"></i> Make Predictions
+        <div class="empty-state" style="padding: 2rem 1rem;">
+          <i class="fas fa-exclamation-circle" style="color: var(--accent-amber); font-size: 2.5rem; margin-bottom: 1rem;"></i>
+          <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">You haven't predicted for GW${gameweek} yet!</p>
+          <p class="text-muted" style="margin-bottom: 1.5rem;">Submit your predictions before the deadline to compete.</p>
+          <a href="predictions.html" class="btn btn-primary btn-lg" style="margin-top: 0.5rem;">
+            <i class="fas fa-futbol"></i> Predict Now
           </a>
         </div>
       `;
