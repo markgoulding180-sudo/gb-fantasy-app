@@ -17,7 +17,23 @@ module.exports = async (req, res) => {
   try {
     // Fetch from FPL API
     const response = await fetch(FPL_BOOTSTRAP_URL);
-    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(`FPL API returned ${response.status}: ${response.statusText}`);
+    }
+    
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      throw new Error('FPL API returned empty response');
+    }
+    
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Failed to parse FPL response:', text.substring(0, 200));
+      throw new Error('Invalid JSON from FPL API');
+    }
 
     const currentEvent = data.events.find(e => e.is_current);
     const nextEvent = data.events.find(e => e.is_next);
