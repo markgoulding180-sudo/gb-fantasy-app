@@ -132,21 +132,21 @@ document.addEventListener('DOMContentLoaded', async function() {
               ${pointsDisplay}
             </div>
             
-            <!-- Middle row: Compact layout for mobile -->
+            <!-- Middle row: 3 cards - Home | VS/Score | Away -->
             <div class="fixture-teams">
-              <!-- Home team: Shirt above, name below -->
-              <div class="team-column home">
+              <!-- Card 1: Home team -->
+              <div class="team-card">
                 <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
                 <div class="team-name ${homeWinnerClass}">${match.home_team}</div>
               </div>
               
-              <!-- VS or Score in middle -->
-              <div class="vs-container">
-                ${isFinished ? inlineScoreHTML : '<span class="vs">VS</span>'}
+              <!-- Card 2: VS or Score -->
+              <div class="score-card">
+                ${isFinished ? `<div class="final-score">${match.home_score}-${match.away_score}</div>` : '<span class="vs">VS</span>'}
               </div>
               
-              <!-- Away team: Shirt above, name below -->
-              <div class="team-column away">
+              <!-- Card 3: Away team -->
+              <div class="team-card">
                 <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
                 <div class="team-name ${awayWinnerClass}">${match.away_team}</div>
               </div>

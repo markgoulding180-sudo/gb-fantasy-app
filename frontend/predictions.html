@@ -30,33 +30,38 @@
       border: 1px solid var(--border-color);
     }
     
-    /* Mobile-first: Compact team layout */
+    /* Mobile: 3 cards layout - Home | VS/Score | Away */
     .fixture-teams {
       display: flex;
-      justify-content: space-around;
-      align-items: center;
+      justify-content: space-between;
+      align-items: stretch;
       gap: 0.5rem;
-      margin: 0.5rem 0;
+      margin: 0.75rem 0;
       flex-wrap: nowrap;
     }
     
-    .fixture-teams .team-column {
+    .fixture-teams .team-card {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 35%;
+      justify-content: center;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 0.5rem;
+      padding: 0.75rem 0.5rem;
+      flex: 1;
       min-width: 0;
     }
     
-    .fixture-teams .team-column .team-shirt {
-      width: 50px;
-      height: 50px;
-      margin-bottom: 0.3rem;
+    .fixture-teams .team-card .team-shirt {
+      width: 45px;
+      height: 45px;
+      margin-bottom: 0.5rem;
       object-fit: contain;
     }
     
-    .fixture-teams .team-name {
-      font-size: 0.8rem;
+    .fixture-teams .team-card .team-name {
+      font-size: 0.75rem;
       font-weight: 600;
       text-align: center;
       white-space: nowrap;
@@ -65,21 +70,27 @@
       width: 100%;
     }
     
-    .fixture-teams .vs-container {
+    .fixture-teams .score-card {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-width: 50px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 0.5rem;
+      padding: 0.75rem 0.5rem;
+      min-width: 60px;
+      flex-shrink: 0;
     }
     
-    .fixture-teams .vs {
-      font-size: 0.75rem;
+    .fixture-teams .score-card .vs {
+      font-size: 0.8rem;
       color: var(--text-muted);
-      font-weight: 500;
+      font-weight: 600;
     }
     
-    .fixture-teams .inline-score {
-      font-size: 1.1rem;
+    .fixture-teams .score-card .final-score {
+      font-size: 1rem;
       font-weight: 700;
       color: var(--accent-green);
     }
@@ -232,35 +243,39 @@
         color: var(--text-muted) !important;
       }
       
-      /* Middle row: Shirt/Name - Score - Shirt/Name all on one row */
+      /* Middle row: 3 cards - Home | VS/Score | Away */
       .fixture-teams {
         display: flex !important;
-        justify-content: space-around !important;
-        align-items: center !important;
-        gap: 0.75rem !important;
+        justify-content: space-between !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
         margin: 0.75rem 0 !important;
         flex-wrap: nowrap !important;
         padding: 0 0.25rem !important;
       }
       
-      .fixture-teams .team-column {
+      .fixture-teams .team-card {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
-        width: 30% !important;
+        justify-content: center !important;
+        background: rgba(255,255,255,0.05) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        border-radius: 0.5rem !important;
+        padding: 0.75rem 0.5rem !important;
+        flex: 1 !important;
         min-width: 0 !important;
       }
       
-      .fixture-teams .team-column .team-shirt {
-        width: 50px !important;
-        height: 50px !important;
-        margin-bottom: 0.4rem !important;
-        flex-shrink: 0 !important;
+      .fixture-teams .team-card .team-shirt {
+        width: 45px !important;
+        height: 45px !important;
+        margin-bottom: 0.5rem !important;
         object-fit: contain !important;
       }
       
-      .fixture-teams .team-name {
-        font-size: 0.8rem !important;
+      .fixture-teams .team-card .team-name {
+        font-size: 0.75rem !important;
         font-weight: 600 !important;
         text-align: center !important;
         white-space: nowrap !important;
@@ -269,23 +284,27 @@
         width: 100% !important;
       }
       
-      .fixture-teams .vs-container {
+      .fixture-teams .score-card {
         display: flex !important;
+        flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        flex-shrink: 0 !important;
+        background: rgba(255,255,255,0.08) !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+        border-radius: 0.5rem !important;
+        padding: 0.75rem 0.5rem !important;
         min-width: 60px !important;
+        flex-shrink: 0 !important;
       }
       
-      .fixture-teams .vs {
-        font-size: 0.75rem !important;
+      .fixture-teams .score-card .vs {
+        font-size: 0.8rem !important;
         color: var(--text-muted) !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
       }
       
-      /* Inline score for finished matches */
-      .fixture-teams .inline-score {
-        font-size: 1.1rem !important;
+      .fixture-teams .score-card .final-score {
+        font-size: 1rem !important;
         font-weight: 700 !important;
         color: var(--accent-green) !important;
       }
