@@ -68,7 +68,7 @@ async function launchTournament() {
     log('Getting current gameweek...');
     const gwResponse = await fetch('/api/current-gameweek');
     const gwData = await gwResponse.json();
-    const currentGameweek = gwData.next_gameweek || gwData.current_gameweek || 35;
+    const currentGameweek = gwData.current_gameweek || 35;
     log(`Current gameweek: ${currentGameweek}`);
     
     // Step 1: Sync fixtures

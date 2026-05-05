@@ -271,8 +271,8 @@ async function initHomePage() {
     updateQuickActions(gameweekData);
     
     // Update prediction status bar for logged in users
-    // Always use next gameweek for predictions (predict upcoming games)
-    const predictionGameweek = gameweekData.next_gameweek || gameweekData.current_gameweek;
+    // Use current gameweek if not finished, otherwise use next
+    const predictionGameweek = gameweekData.finished ? gameweekData.next_gameweek : gameweekData.current_gameweek;
     if (authToken && predictionGameweek) {
       await updatePredictionStatusBar(predictionGameweek, gameweekData.finished);
     }

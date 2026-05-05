@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const gwResponse = await fetch('/api/current-gameweek');
     if (gwResponse.ok) {
       const gwData = await gwResponse.json();
-      // Always use next_gameweek for predictions page (predict upcoming games)
-      currentGameweek = gwData.next_gameweek || gwData.current_gameweek || 36;
+      // Use current gameweek if not finished, otherwise use next
+      currentGameweek = gwData.finished ? gwData.next_gameweek : gwData.current_gameweek;
     }
   } catch (e) {
     console.error('Failed to fetch gameweek:', e);

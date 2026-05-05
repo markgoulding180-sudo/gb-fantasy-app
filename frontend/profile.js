@@ -305,8 +305,8 @@ async function loadUserPredictions() {
   try {
     const gwResponse = await fetch('/api/current-gameweek');
     const gwData = await gwResponse.json();
-    // Always show next gameweek for "This Week's Predictions" (predict upcoming games)
-    const gameweek = gwData.next_gameweek || gwData.current_gameweek || 36;
+    // Show current gameweek if not finished, otherwise next
+    const gameweek = gwData.finished ? gwData.next_gameweek : gwData.current_gameweek;
     
     // Fetch predictions (with auth) and all matches (without auth) in parallel
     const [predictionsResponse, matchesResponse] = await Promise.all([
