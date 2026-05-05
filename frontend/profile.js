@@ -757,33 +757,79 @@ function switchChart(mode) {
   loadPerformanceGraph();
 }
 
-// Prediction History Table
+// Prediction History Table - Now loads from prediction_history table
 async function loadPredictionHistory() {
   const container = document.getElementById('prediction-history-container');
   if (!container) return;
   
   try {
-    const data = cachedPredictionsData;
-    if (!data) {
-      container.innerHTML = '<p class="text-muted">Loading...</p>';
-      return;
+    const token = localStorage.getItem('gbf_token');
+    
+    // Fetch historical data from API
+    const historyResponse = await fetch('/api/predictions?action=history', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    let historyData = { history: [], summaries: [] };
+    if (historyResponse.ok) {
+      historyData = await historyResponse.json();
     }
     
-    const predictions = data.predictions || [];
-    const matches = data.matches || [];
+    // Also get current predictions
+    const currentData = cachedPredictionsData || { predictions: [], matches: [] };
     
-    if (predictions.length === 0) {
+    const history = historyData.history || [];
+    const summaries = historyData.summaries || [];
+    const currentPredictions = currentData.predictions || [];
+    const currentMatches = currentData.matches || [];
+    
+    // Combine historical and current predictions
+    const allPredictions = [...history];
+    
+    // Add current predictions if they have points
+    currentPredictions.forEach(pred => {
+      const match = currentMatches.find(m => m.id === pred.match_id);
+      if (match && match.status === 'finished') {
+        allPredictions.push({
+          gameweek: pred.gameweek,
+          home_team: match.home_team,
+          away_team: match.away_team,
+          predicted_home_score: pred.home_score,
+          predicted_away_score: pred.away_score,
+          predicted_result: pred.predicted_result,
+          actual_home_score: match.home_score,
+          actual_away_score: match.away_score,
+          actual_result: match.result,
+          points_earned: pred.points_earned || 0,
+          is_current: true
+        });
+      }
+    });
+    
+    if (allPredictions.length === 0 && currentPredictions.length === 0) {
       container.innerHTML = `<div class="empty-state"><i class="fas fa-futbol"></i><p>No predictions yet</p></div>`;
       return;
     }
+    
+    // Group predictions by gameweek
+    const byGameweek = {};
+    allPredictions.forEach(pred => {
+      const gw = pred.gameweek;
+      if (!byGameweek[gw]) byGameweek[gw] = [];
+      byGameweek[gw].push(pred);
+    });
+    
+    // Sort gameweeks descending
+    const sortedGWs = Object.keys(byGameweek).sort((a, b) => b - a);
     
     let tableHTML = `
       <div style="overflow-x: auto;">
         <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
           <thead>
             <tr style="border-bottom:1px solid var(--border);">
-              <th style="text-align:left; padding:0.75rem; width:40%;">Match</th>
-              <th style="text-align:center; padding:0.75rem; width:25%;">Your Pick</th>
+              <th style="text-align:left; padding:0.75rem; width:10%;">GW</th>
+              <th style="text-align:left; padding:0.75rem; width:35%;">Match</th>
+              <th style="text-align:center; padding:0.75rem; width:20%;">Your Pick</th>
               <th style="text-align:center; padding:0.75rem; width:20%;">Result</th>
               <th style="text-align:center; padding:0.75rem; width:15%;">Points</th>
             </tr>
@@ -792,30 +838,50 @@ async function loadPredictionHistory() {
     `;
     
     let totalPoints = 0;
-    let correctResults = 0;
+    let totalCorrectResults = 0;
+    let totalCorrectScores = 0;
+    let totalPredictions = 0;
     
-    predictions.forEach(pred => {
-      const match = matches.find(m => m.id === pred.match_id);
-      if (!match) return;
+    sortedGWs.forEach(gw => {
+      const gwPredictions = byGameweek[gw];
+      let gwPoints = 0;
+      let gwCorrect = 0;
       
-      const points = pred.points_earned || 0;
-      totalPoints += points;
-      if (points >= 10) correctResults++;
+      gwPredictions.forEach((pred, idx) => {
+        const points = pred.points_earned || 0;
+        gwPoints += points;
+        totalPoints += points;
+        if (points >= 10) {
+          gwCorrect++;
+          totalCorrectResults++;
+        }
+        if (points === 20) totalCorrectScores++;
+        totalPredictions++;
+        
+        const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : '#64748b';
+        const isCurrent = pred.is_current;
+        const gwLabel = idx === 0 ? `GW${gw}` : '';
+        const gwStyle = idx === 0 ? 'border-top:2px solid var(--border);' : '';
+        
+        tableHTML += `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); ${gwStyle}">
+            <td style="padding:0.75rem; font-weight:600; color:var(--accent-blue);">${gwLabel}</td>
+            <td style="padding:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${pred.home_team} vs ${pred.away_team}">${pred.home_team} vs ${pred.away_team}</td>
+            <td style="text-align:center; padding:0.75rem; white-space:nowrap;">${pred.predicted_result} (${pred.predicted_home_score}-${pred.predicted_away_score})</td>
+            <td style="text-align:center; padding:0.75rem; white-space:nowrap;">${pred.actual_home_score}-${pred.actual_away_score}</td>
+            <td style="text-align:center; padding:0.75rem; color:${pointsColor}; font-weight:600; white-space:nowrap;">${points}pts ${isCurrent ? '<span style="font-size:0.7rem; opacity:0.6;">(cur)</span>' : ''}</td>
+          </tr>
+        `;
+      });
       
-      const pointsColor = points >= 20 ? '#22c55e' : points >= 10 ? '#f59e0b' : '#64748b';
-      const isFinished = match.status === 'finished';
-      const isLive = match.status === 'live';
-      
-      let resultCell = '-';
-      if (isFinished) resultCell = `${match.home_score}-${match.away_score}`;
-      else if (isLive) resultCell = `<span style="color:#ef4444; font-weight:700;">⚽ ${match.home_score ?? 0}-${match.away_score ?? 0}</span>`;
-      
+      // Add gameweek summary row
       tableHTML += `
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-          <td style="padding:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${match.home_team} vs ${match.away_team}">${match.home_team} vs ${match.away_team}</td>
-          <td style="text-align:center; padding:0.75rem; white-space:nowrap;">${pred.predicted_result} (${pred.home_score}-${pred.away_score})</td>
-          <td style="text-align:center; padding:0.75rem; white-space:nowrap;">${resultCell}</td>
-          <td style="text-align:center; padding:0.75rem; color:${pointsColor}; font-weight:600; white-space:nowrap;">${points}pts</td>
+        <tr style="background:rgba(255,255,255,0.03); border-bottom:1px solid var(--border);">
+          <td style="padding:0.5rem 0.75rem;" colspan="2"></td>
+          <td style="text-align:center; padding:0.5rem 0.75rem; font-size:0.8rem; color:var(--text-secondary);" colspan="2">
+            GW${gw}: ${gwCorrect}/${gwPredictions.length} correct
+          </td>
+          <td style="text-align:center; padding:0.5rem 0.75rem; color:var(--accent-green); font-weight:600;">${gwPoints}pts</td>
         </tr>
       `;
     });
@@ -823,10 +889,10 @@ async function loadPredictionHistory() {
     tableHTML += `
           </tbody>
           <tfoot>
-            <tr style="font-weight:600; border-top:1px solid var(--border);">
-              <td style="padding:0.75rem;" colspan="2">Total: ${predictions.length} predictions</td>
-              <td style="text-align:center; padding:0.75rem;">${correctResults} correct</td>
-              <td style="text-align:center; padding:0.75rem; color:var(--accent-green);">${totalPoints}pts</td>
+            <tr style="font-weight:600; border-top:2px solid var(--border); background:rgba(34,197,94,0.1);">
+              <td style="padding:0.75rem;" colspan="2">TOTAL: ${totalPredictions} predictions</td>
+              <td style="text-align:center; padding:0.75rem;">${totalCorrectResults} results<br><span style="font-size:0.75rem; color:var(--text-secondary);">${totalCorrectScores} exact scores</span></td>
+              <td style="text-align:center; padding:0.75rem; color:var(--accent-green); font-size:1.1rem;">${totalPoints}pts</td>
             </tr>
           </tfoot>
         </table>

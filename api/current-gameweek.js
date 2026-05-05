@@ -14,61 +14,70 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SECRET
-  );
-
   try {
-    // FIRST: Try to get gameweek from our database (set by admin finalisation)
-    const { data: setting, error: settingError } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'current_gameweek')
-      .single();
+    // Initialize Supabase
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SECRET
+    );
 
-    if (!settingError && setting?.value) {
-      const storedGW = JSON.parse(setting.value);
-      // If we have a stored gameweek, use it (allows manual override of FPL)
-      if (storedGW.next_gameweek) {
-        console.log('Using stored gameweek from database:', storedGW);
-        return res.status(200).json(storedGW);
-      }
-    }
-
-    // FALLBACK: Fetch from FPL API if no stored gameweek
+    // Fetch from FPL API
     const response = await fetch(FPL_BOOTSTRAP_URL);
-    
-    if (!response.ok) {
-      throw new Error(`FPL API returned ${response.status}: ${response.statusText}`);
-    }
-    
-    const text = await response.text();
-    if (!text || text.trim() === '') {
-      throw new Error('FPL API returned empty response');
-    }
-    
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (parseError) {
-      console.error('Failed to parse FPL response:', text.substring(0, 200));
-      throw new Error('Invalid JSON from FPL API');
-    }
+    const data = await response.json();
 
     const currentEvent = data.events.find(e => e.is_current);
     const nextEvent = data.events.find(e => e.is_next);
 
+    // Check for manual override
+    const { data: manualGWSetting } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'manual_gameweek')
+      .single();
+    
+    const manualGW = manualGWSetting?.value ? JSON.parse(manualGWSetting.value) : null;
+    
+    // Check for last finalised gameweek
+    const { data: lastFinalisedSetting } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'last_finalised_gameweek')
+      .single();
+    
+    const lastFinalised = lastFinalisedSetting?.value ? JSON.parse(lastFinalisedSetting.value) : { gameweek: 0 };
+
+    // Determine system gameweek (respecting manual override and finalisation state)
+    const fplCurrentGW = currentEvent ? currentEvent.id : null;
+    const systemCurrentGW = manualGW?.gameweek || fplCurrentGW;
+    
+    // If we've finalised past the FPL current, use the next gameweek after last finalised
+    const effectiveCurrentGW = Math.max(systemCurrentGW || 0, lastFinalised.gameweek + 1);
+    const effectiveNextGW = effectiveCurrentGW + 1;
+
     const result = {
-      current_gameweek: currentEvent ? currentEvent.id : null,
-      next_gameweek: nextEvent ? nextEvent.id : null,
+      // FPL API values (for reference)
+      fpl_current_gameweek: fplCurrentGW,
+      fpl_next_gameweek: nextEvent ? nextEvent.id : null,
+      
+      // System values (what the app actually uses)
+      current_gameweek: effectiveCurrentGW,
+      next_gameweek: effectiveNextGW,
+      last_finalised_gameweek: lastFinalised.gameweek || 0,
+      
+      // Deadline from FPL (for the next gameweek)
       deadline: nextEvent ? nextEvent.deadline_time : null,
       deadline_epoch: nextEvent ? nextEvent.deadline_time_epoch : null,
+      
+      // FPL status
       finished: currentEvent ? currentEvent.finished : false,
-      data_checked: currentEvent ? currentEvent.data_checked : false
+      data_checked: currentEvent ? currentEvent.data_checked : false,
+      
+      // Override info
+      manual_override: !!manualGW?.gameweek,
+      manual_gameweek: manualGW?.gameweek || null
     };
 
-    // Store in Supabase for caching
+    // Store in Supabase for other functions to use
     await supabase
       .from('settings')
       .upsert({ 
@@ -81,23 +90,6 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Current gameweek error:', error);
-    
-    // LAST RESORT: Try to return cached gameweek even if FPL failed
-    try {
-      const { data: cached } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'current_gameweek')
-        .single();
-      
-      if (cached?.value) {
-        console.log('Returning cached gameweek after FPL error');
-        return res.status(200).json(JSON.parse(cached.value));
-      }
-    } catch (e) {
-      // No cache available
-    }
-    
     return res.status(500).json({ error: 'Failed to fetch gameweek', details: error.message });
   }
 };

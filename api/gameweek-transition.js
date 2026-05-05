@@ -9,7 +9,7 @@ const FPL_FIXTURES_URL = 'https://fantasy.premierleague.com/api/fixtures/';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -34,29 +34,73 @@ module.exports = async (req, res) => {
       return res.status(200).json({ message: 'No current gameweek' });
     }
 
-    // Check if all matches in current GW are finished
+    // Check for manual override in settings
+    const { data: manualGWSetting } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'manual_gameweek')
+      .single();
+    
+    const manualGW = manualGWSetting?.value ? JSON.parse(manualGWSetting.value) : null;
+    
+    // Check for last finalised gameweek
+    const { data: lastFinalisedSetting } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'last_finalised_gameweek')
+      .single();
+    
+    const lastFinalised = lastFinalisedSetting?.value ? JSON.parse(lastFinalisedSetting.value) : { gameweek: 0 };
+
+    // Determine which gameweek to use as "current" for the system
+    // Priority: manual override > FPL API current
+    const systemCurrentGW = manualGW?.gameweek || currentEvent.id;
+    const isManual = !!manualGW?.gameweek;
+
+    // Check if all matches in current GW are finished (from FPL API)
     const fixturesResponse = await fetch(FPL_FIXTURES_URL);
     const fixtures = await fixturesResponse.json();
 
     const currentGWFixtures = fixtures.filter(f => f.event === currentEvent.id);
     const allFinished = currentGWFixtures.length > 0 && currentGWFixtures.every(f => f.finished);
 
+    // Check if manual finalisation is requested
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const isManualFinalise = url.searchParams.get('manual') === 'true';
+
     const result = {
-      current_gameweek: currentEvent.id,
-      next_gameweek: nextEvent?.id,
+      fpl_current_gameweek: currentEvent.id,
+      fpl_next_gameweek: nextEvent?.id,
+      system_current_gameweek: systemCurrentGW,
+      last_finalised_gameweek: lastFinalised.gameweek,
       all_matches_finished: allFinished,
       data_checked: currentEvent.data_checked,
+      is_manual_override: isManual,
+      is_manual_finalise: isManualFinalise,
       actions: []
     };
 
-    // If all finished and data is checked, finalise the gameweek
-    if (allFinished && currentEvent.data_checked) {
+    // Determine which gameweek to finalise
+    let gameweekToFinalise = null;
+    
+    if (isManualFinalise) {
+      // Manual finalisation: finalise the system current gameweek
+      gameweekToFinalise = systemCurrentGW;
+      result.actions.push('manual_finalise_requested');
+    } else if (allFinished && currentEvent.data_checked) {
+      // Auto finalisation based on FPL API
+      gameweekToFinalise = currentEvent.id;
+      result.actions.push('auto_finalise_triggered');
+    }
+
+    // Only finalise if we have a target and it hasn't been finalised yet
+    if (gameweekToFinalise && gameweekToFinalise > lastFinalised.gameweek) {
       // Finalise points
-      await finaliseGameweek(supabase, currentEvent.id);
+      await finaliseGameweek(supabase, gameweekToFinalise);
       result.actions.push('finalised_points');
 
       // Update tournament entries with final rankings
-      await updateTournamentRankings(supabase, currentEvent.id);
+      await updateTournamentRankings(supabase, gameweekToFinalise);
       result.actions.push('updated_tournament_rankings');
 
       // Mark gameweek as processed
@@ -64,39 +108,55 @@ module.exports = async (req, res) => {
         .from('settings')
         .upsert({
           key: 'last_finalised_gameweek',
-          value: JSON.stringify({ gameweek: currentEvent.id, finalised_at: new Date().toISOString() }),
+          value: JSON.stringify({ gameweek: gameweekToFinalise, finalised_at: new Date().toISOString() }),
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
 
       result.actions.push('marked_as_finalised');
+      result.finalised_gameweek = gameweekToFinalise;
+      
+      // Calculate new current gameweek (next one after finalising)
+      const newCurrentGW = gameweekToFinalise + 1;
+      result.new_current_gameweek = newCurrentGW;
+      
+      // Update manual override to the new gameweek if we were in manual mode
+      if (isManual || isManualFinalise) {
+        await supabase
+          .from('settings')
+          .upsert({
+            key: 'manual_gameweek',
+            value: JSON.stringify({ gameweek: newCurrentGW, set_at: new Date().toISOString() }),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' });
+        result.actions.push('updated_manual_gw');
+      }
+    } else if (gameweekToFinalise) {
+      result.actions.push('already_finalised');
+      result.message = `GW${gameweekToFinalise} already finalised`;
     }
 
     // Update current gameweek in settings
-    // If we just finalised, advance to next gameweek immediately (no FPL lag)
-    const isFinalised = result.actions.includes('finalised_points');
-    const effectiveCurrentGW = isFinalised ? nextEvent?.id : currentEvent.id;
-    const effectiveNextGW = isFinalised ? (nextEvent?.id ? nextEvent.id + 1 : null) : nextEvent?.id;
-    
+    const nextGW = Math.max(systemCurrentGW, (result.new_current_gameweek || systemCurrentGW));
     await supabase
       .from('settings')
       .upsert({
         key: 'current_gameweek',
         value: JSON.stringify({
-          current_gameweek: effectiveCurrentGW,
-          next_gameweek: effectiveNextGW,
+          current_gameweek: nextGW,
+          next_gameweek: nextGW + 1,
+          fpl_current_gameweek: currentEvent.id,
+          fpl_next_gameweek: nextEvent?.id,
           deadline: nextEvent?.deadline_time,
           deadline_epoch: nextEvent?.deadline_time_epoch,
-          finished: isFinalised ? false : currentEvent.finished,
-          data_checked: isFinalised ? false : currentEvent.data_checked,
+          finished: currentEvent.finished,
+          data_checked: currentEvent.data_checked,
+          manual_override: isManual,
           updated_at: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
       }, { onConflict: 'key' });
 
     result.actions.push('updated_settings');
-    if (isFinalised) {
-      result.actions.push('advanced_to_next_gameweek');
-    }
 
     return res.status(200).json(result);
 

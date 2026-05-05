@@ -30,9 +30,24 @@ async function refreshStatus() {
     const gwResponse = await fetch('/api/current-gameweek');
     const gwData = await gwResponse.json();
     
-    document.getElementById('api-gw').textContent = gwData.current_gameweek || 'N/A';
-    document.getElementById('next-gw').textContent = gwData.next_gameweek || 'N/A';
+    // Get last finalised gameweek from settings
+    const settingsResponse = await fetch('/api/admin-stats');
+    const settingsData = await settingsResponse.json();
+    const lastFinalised = settingsData.last_finalised_gameweek || 0;
+    
+    // Display logic: if we've manually advanced past FPL API, show system gameweek
+    const systemCurrentGW = Math.max(gwData.current_gameweek || 0, lastFinalised + 1);
+    const systemNextGW = systemCurrentGW + 1;
+    
+    document.getElementById('api-gw').textContent = lastFinalised || 'None';
+    document.getElementById('next-gw').textContent = systemCurrentGW || 'N/A';
     document.getElementById('deadline').textContent = gwData.deadline ? new Date(gwData.deadline).toLocaleString() : 'N/A';
+    
+    // Update labels to reflect system state
+    const lastCompletedLabel = document.querySelector('#status-panel .admin-status-item:nth-child(1) span');
+    const nextGWLabel = document.querySelector('#status-panel .admin-status-item:nth-child(2) span');
+    if (lastCompletedLabel) lastCompletedLabel.textContent = 'Last Finalised Gameweek:';
+    if (nextGWLabel) nextGWLabel.textContent = 'Current Gameweek (Predictions):';
     
   } catch (error) {
     console.error('Error refreshing status:', error);
@@ -179,25 +194,111 @@ async function syncLiveScores() {
 }
 
 async function finalisePoints() {
-  if (!confirm('Finalise all points for current gameweek?')) return;
+  if (!confirm('Finalise all points for current gameweek and advance to next?')) return;
   
   log('Finalising points...');
   
   try {
     const token = localStorage.getItem('gbf_token');
-    const response = await fetch('/api/gameweek-transition', {
+    
+    // Call the finalise endpoint with manual=true to force advancement
+    const response = await fetch('/api/gameweek-transition?manual=true', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
     if (!response.ok) {
-      throw new Error('Failed to finalise points');
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to finalise points');
     }
     
     const data = await response.json();
-    log(`Points finalised: ${data.actions?.join(', ')}`, 'success');
+    log(`Points finalised for GW${data.finalised_gameweek}: ${data.actions?.join(', ')}`, 'success');
+    log(`System advanced to GW${data.new_current_gameweek}`, 'success');
+    
+    // Refresh the status display
+    await refreshStatus();
     
   } catch (error) {
     log(`Finalise error: ${error.message}`, 'error');
+  }
+}
+
+// Manual Gameweek Override Functions
+async function setManualGW() {
+  const select = document.getElementById('manual-gw-select');
+  const gameweek = select.value;
+  
+  if (!gameweek) {
+    log('Please select a gameweek', 'warn');
+    return;
+  }
+  
+  if (!confirm(`Set manual gameweek to GW${gameweek}? This will override the FPL API.`)) return;
+  
+  log(`Setting manual gameweek to GW${gameweek}...`);
+  
+  try {
+    const token = localStorage.getItem('gbf_token');
+    const response = await fetch('/api/admin-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        action: 'set-manual-gw',
+        gameweek: parseInt(gameweek)
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to set manual gameweek');
+    }
+    
+    log(`Manual gameweek set to GW${gameweek}`, 'success');
+    document.getElementById('override-status').textContent = 'ON';
+    document.getElementById('manual-gw').textContent = gameweek;
+    
+    await refreshStatus();
+    
+  } catch (error) {
+    log(`Error setting manual GW: ${error.message}`, 'error');
+  }
+}
+
+async function clearManualGW() {
+  if (!confirm('Clear manual override and revert to FPL API?')) return;
+  
+  log('Clearing manual gameweek override...');
+  
+  try {
+    const token = localStorage.getItem('gbf_token');
+    const response = await fetch('/api/admin-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        action: 'clear-manual-gw'
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to clear manual override');
+    }
+    
+    log('Manual override cleared', 'success');
+    document.getElementById('override-status').textContent = 'OFF';
+    document.getElementById('manual-gw').textContent = 'None';
+    document.getElementById('manual-gw-select').value = '';
+    
+    await refreshStatus();
+    
+  } catch (error) {
+    log(`Error clearing manual GW: ${error.message}`, 'error');
   }
 }
 

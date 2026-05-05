@@ -58,11 +58,21 @@ module.exports = async (req, res) => {
         gwBreakdown[m.gameweek][m.status]++;
       });
 
+      // Get last finalised gameweek
+      const { data: lastFinalisedSetting } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'last_finalised_gameweek')
+        .single();
+      
+      const lastFinalised = lastFinalisedSetting?.value ? JSON.parse(lastFinalisedSetting.value) : { gameweek: 0 };
+
       return res.status(200).json({
         total_matches: totalMatches || 0,
         total_predictions: totalPredictions || 0,
         total_users: totalUsers || 0,
         total_tournaments: totalTournaments || 0,
+        last_finalised_gameweek: lastFinalised.gameweek || 0,
         gameweek_breakdown: gwBreakdown
       });
     }
@@ -194,6 +204,44 @@ module.exports = async (req, res) => {
         });
       }
 
+      // Set manual gameweek override
+      if (action === 'set-manual-gw') {
+        const { gameweek } = req.body;
+        
+        if (!gameweek || gameweek < 1 || gameweek > 38) {
+          return res.status(400).json({ error: 'Invalid gameweek. Must be between 1 and 38.' });
+        }
+        
+        const { error } = await supabase
+          .from('settings')
+          .upsert({
+            key: 'manual_gameweek',
+            value: JSON.stringify({ gameweek, set_at: new Date().toISOString() }),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' });
+        
+        if (error) throw error;
+        
+        return res.status(200).json({
+          message: 'Manual gameweek set',
+          gameweek
+        });
+      }
+      
+      // Clear manual gameweek override
+      if (action === 'clear-manual-gw') {
+        const { error } = await supabase
+          .from('settings')
+          .delete()
+          .eq('key', 'manual_gameweek');
+        
+        if (error) throw error;
+        
+        return res.status(200).json({
+          message: 'Manual gameweek override cleared'
+        });
+      }
+      
       // Recalculate tournament points
       if (action === 'recalculate-tournament-points') {
         const results = {
