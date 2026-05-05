@@ -78,13 +78,16 @@ module.exports = async (req, res) => {
     };
 
     // Store in Supabase for other functions to use
-    await supabase
+    const { error: cacheError } = await supabase
       .from('settings')
       .upsert({ 
         key: 'current_gameweek', 
-        value: JSON.stringify(result),
-        updated_at: new Date().toISOString()
+        value: JSON.stringify(result)
       }, { onConflict: 'key' });
+    
+    if (cacheError) {
+      console.error('Error caching current_gameweek:', cacheError);
+    }
 
     return res.status(200).json(result);
 

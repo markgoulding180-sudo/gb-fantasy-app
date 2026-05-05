@@ -17,3 +17,7 @@ Repo: https://github.com/markgoulding180-sudo/gb-fantasy-app
 - 2026-05-04 13:53 - Update Performance History chart - start from 0, light blue line with filled area
 - 2026-05-04 13:56 - Add rank chart mode with inverted Y-axis showing rank swings over gameweeks
 - 2026-05-04 14:01 - Add User Trends section - shows prediction distribution and most common scores across all users
+- 2026-05-05 04:17 - Add manual gameweek override functions (set/clear) to admin-stats API
+- 2026-05-05 04:17 - Update admin panel labels: Last Finalised / Current Gameweek (Predictions)
+- 2026-05-05 04:17 - Improve finalisePoints() to call gameweek-transition with manual flag
+- 2026-05-05 04:17 - Update profile prediction history to group by gameweek with summaries

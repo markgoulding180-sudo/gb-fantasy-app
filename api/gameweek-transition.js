@@ -104,13 +104,17 @@ module.exports = async (req, res) => {
       result.actions.push('updated_tournament_rankings');
 
       // Mark gameweek as processed
-      await supabase
+      const { error: finaliseError } = await supabase
         .from('settings')
         .upsert({
           key: 'last_finalised_gameweek',
-          value: JSON.stringify({ gameweek: gameweekToFinalise, finalised_at: new Date().toISOString() }),
-          updated_at: new Date().toISOString()
+          value: JSON.stringify({ gameweek: gameweekToFinalise, finalised_at: new Date().toISOString() })
         }, { onConflict: 'key' });
+      
+      if (finaliseError) {
+        console.error('Error saving last_finalised_gameweek:', finaliseError);
+        result.actions.push('finalise_save_error: ' + finaliseError.message);
+      }
 
       result.actions.push('marked_as_finalised');
       result.finalised_gameweek = gameweekToFinalise;
@@ -121,14 +125,19 @@ module.exports = async (req, res) => {
       
       // Update manual override to the new gameweek if we were in manual mode
       if (isManual || isManualFinalise) {
-        await supabase
+        const { error: manualError } = await supabase
           .from('settings')
           .upsert({
             key: 'manual_gameweek',
-            value: JSON.stringify({ gameweek: newCurrentGW, set_at: new Date().toISOString() }),
-            updated_at: new Date().toISOString()
+            value: JSON.stringify({ gameweek: newCurrentGW, set_at: new Date().toISOString() })
           }, { onConflict: 'key' });
-        result.actions.push('updated_manual_gw');
+        
+        if (manualError) {
+          console.error('Error saving manual_gameweek:', manualError);
+          result.actions.push('manual_gw_save_error: ' + manualError.message);
+        } else {
+          result.actions.push('updated_manual_gw');
+        }
       }
     } else if (gameweekToFinalise) {
       result.actions.push('already_finalised');
@@ -137,7 +146,7 @@ module.exports = async (req, res) => {
 
     // Update current gameweek in settings
     const nextGW = Math.max(systemCurrentGW, (result.new_current_gameweek || systemCurrentGW));
-    await supabase
+    const { error: settingsError } = await supabase
       .from('settings')
       .upsert({
         key: 'current_gameweek',
@@ -150,11 +159,14 @@ module.exports = async (req, res) => {
           deadline_epoch: nextEvent?.deadline_time_epoch,
           finished: currentEvent.finished,
           data_checked: currentEvent.data_checked,
-          manual_override: isManual,
-          updated_at: new Date().toISOString()
-        }),
-        updated_at: new Date().toISOString()
+          manual_override: isManual
+        })
       }, { onConflict: 'key' });
+    
+    if (settingsError) {
+      console.error('Error updating current_gameweek setting:', settingsError);
+      result.actions.push('settings_save_error: ' + settingsError.message);
+    }
 
     result.actions.push('updated_settings');
 
