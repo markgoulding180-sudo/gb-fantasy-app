@@ -103,20 +103,35 @@ module.exports = async (req, res) => {
       await updateTournamentRankings(supabase, gameweekToFinalise);
       result.actions.push('updated_tournament_rankings');
 
-      // Mark gameweek as processed
-      const { error: finaliseError } = await supabase
+      // Mark gameweek as processed - try update first, then insert
+      const { error: updateError } = await supabase
         .from('settings')
-        .upsert({
-          key: 'last_finalised_gameweek',
+        .update({
           value: JSON.stringify({ gameweek: gameweekToFinalise, finalised_at: new Date().toISOString() })
-        }, { onConflict: 'key' });
+        })
+        .eq('key', 'last_finalised_gameweek');
       
-      if (finaliseError) {
-        console.error('Error saving last_finalised_gameweek:', finaliseError);
-        result.actions.push('finalise_save_error: ' + finaliseError.message);
+      if (updateError || updateError?.message?.includes('0 rows')) {
+        // Insert if update didn't find the row
+        const { error: insertError } = await supabase
+          .from('settings')
+          .insert({
+            key: 'last_finalised_gameweek',
+            value: JSON.stringify({ gameweek: gameweekToFinalise, finalised_at: new Date().toISOString() })
+          });
+        
+        if (insertError) {
+          console.error('Error inserting last_finalised_gameweek:', insertError);
+          result.actions.push('finalise_save_error: ' + insertError.message);
+        } else {
+          result.actions.push('marked_as_finalised');
+        }
+      } else if (updateError) {
+        console.error('Error updating last_finalised_gameweek:', updateError);
+        result.actions.push('finalise_save_error: ' + updateError.message);
+      } else {
+        result.actions.push('marked_as_finalised');
       }
-
-      result.actions.push('marked_as_finalised');
       result.finalised_gameweek = gameweekToFinalise;
       
       // Calculate new current gameweek (next one after finalising)
