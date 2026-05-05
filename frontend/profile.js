@@ -1046,17 +1046,17 @@ function renderInsights(container, data, label) {
   });
   const total = predictions.length;
   const favResult = total > 0 ? Object.entries(resultCounts).sort((a, b) => b[1] - a[1])[0][0] : '-';
-    
-    const accuracyByResult = {};
-    ['H', 'X', 'A'].forEach(result => {
-      const resultPreds = finishedPreds.filter(p => p.predicted_result === result);
-      const correct = resultPreds.filter(p => (p.points_earned || 0) >= 10).length;
-      accuracyByResult[result] = resultPreds.length > 0 
-        ? Math.round((correct / resultPreds.length) * 100) 
-        : 0;
-    });
-    
-    container.innerHTML = `
+  
+  const accuracyByResult = {};
+  ['H', 'X', 'A'].forEach(result => {
+    const resultPreds = finishedPreds.filter(p => p.predicted_result === result);
+    const correct = resultPreds.filter(p => (p.points_earned || 0) >= 10).length;
+    accuracyByResult[result] = resultPreds.length > 0 
+      ? Math.round((correct / resultPreds.length) * 100) 
+      : 0;
+  });
+  
+  container.innerHTML = `
       <div class="insight-card">
         <div class="insight-label">Best Prediction</div>
         <div class="insight-value" style="color:#22c55e;">${bestMatch}pts</div>
@@ -1092,11 +1092,6 @@ function renderInsights(container, data, label) {
         </div>
       </div>
     `;
-    
-  } catch (error) {
-    console.error('Error loading insights:', error);
-    container.innerHTML = '<p class="text-muted">Could not load insights</p>';
-  }
 }
 
 
