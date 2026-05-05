@@ -14,8 +14,29 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SECRET
+  );
+
   try {
-    // Fetch from FPL API
+    // FIRST: Try to get gameweek from our database (set by admin finalisation)
+    const { data: setting, error: settingError } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'current_gameweek')
+      .single();
+
+    if (!settingError && setting?.value) {
+      const storedGW = JSON.parse(setting.value);
+      // If we have a stored gameweek, use it (allows manual override of FPL)
+      if (storedGW.next_gameweek) {
+        console.log('Using stored gameweek from database:', storedGW);
+        return res.status(200).json(storedGW);
+      }
+    }
+
+    // FALLBACK: Fetch from FPL API if no stored gameweek
     const response = await fetch(FPL_BOOTSTRAP_URL);
     
     if (!response.ok) {
@@ -47,12 +68,7 @@ module.exports = async (req, res) => {
       data_checked: currentEvent ? currentEvent.data_checked : false
     };
 
-    // Store in Supabase for other functions to use
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SECRET
-    );
-
+    // Store in Supabase for caching
     await supabase
       .from('settings')
       .upsert({ 
@@ -65,6 +81,23 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Current gameweek error:', error);
+    
+    // LAST RESORT: Try to return cached gameweek even if FPL failed
+    try {
+      const { data: cached } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'current_gameweek')
+        .single();
+      
+      if (cached?.value) {
+        console.log('Returning cached gameweek after FPL error');
+        return res.status(200).json(JSON.parse(cached.value));
+      }
+    } catch (e) {
+      // No cache available
+    }
+    
     return res.status(500).json({ error: 'Failed to fetch gameweek', details: error.message });
   }
 };

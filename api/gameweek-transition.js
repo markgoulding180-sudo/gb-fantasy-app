@@ -72,23 +72,31 @@ module.exports = async (req, res) => {
     }
 
     // Update current gameweek in settings
+    // If we just finalised, advance to next gameweek immediately (no FPL lag)
+    const isFinalised = result.actions.includes('finalised_points');
+    const effectiveCurrentGW = isFinalised ? nextEvent?.id : currentEvent.id;
+    const effectiveNextGW = isFinalised ? (nextEvent?.id ? nextEvent.id + 1 : null) : nextEvent?.id;
+    
     await supabase
       .from('settings')
       .upsert({
         key: 'current_gameweek',
         value: JSON.stringify({
-          current_gameweek: currentEvent.id,
-          next_gameweek: nextEvent?.id,
+          current_gameweek: effectiveCurrentGW,
+          next_gameweek: effectiveNextGW,
           deadline: nextEvent?.deadline_time,
           deadline_epoch: nextEvent?.deadline_time_epoch,
-          finished: currentEvent.finished,
-          data_checked: currentEvent.data_checked,
+          finished: isFinalised ? false : currentEvent.finished,
+          data_checked: isFinalised ? false : currentEvent.data_checked,
           updated_at: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
       }, { onConflict: 'key' });
 
     result.actions.push('updated_settings');
+    if (isFinalised) {
+      result.actions.push('advanced_to_next_gameweek');
+    }
 
     return res.status(200).json(result);
 
