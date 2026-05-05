@@ -132,17 +132,24 @@ document.addEventListener('DOMContentLoaded', async function() {
               ${pointsDisplay}
             </div>
             
-            <!-- Middle row: [Shirt] Home — Score — Away [Shirt] -->
+            <!-- Middle row: Compact layout for mobile -->
             <div class="fixture-teams">
-              <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
-              <div class="team home">
+              <!-- Home team: Shirt above, name below -->
+              <div class="team-column home">
+                <img src="shirts/${getTeamShirtName(match.home_team)}.webp" alt="${match.home_team}" class="team-shirt" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
                 <div class="team-name ${homeWinnerClass}">${match.home_team}</div>
               </div>
-              ${isFinished ? inlineScoreHTML : '<span class="vs">VS</span>'}
-              <div class="team away">
+              
+              <!-- VS or Score in middle -->
+              <div class="vs-container">
+                ${isFinished ? inlineScoreHTML : '<span class="vs">VS</span>'}
+              </div>
+              
+              <!-- Away team: Shirt above, name below -->
+              <div class="team-column away">
+                <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
                 <div class="team-name ${awayWinnerClass}">${match.away_team}</div>
               </div>
-              <img src="shirts/${getTeamShirtName(match.away_team)}.webp" alt="${match.away_team}" class="team-shirt" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
             </div>
             
             <!-- Bottom row: 1/X/2 buttons and score inputs -->
