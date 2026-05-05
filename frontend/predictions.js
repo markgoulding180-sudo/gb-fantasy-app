@@ -4,17 +4,21 @@ document.addEventListener('DOMContentLoaded', async function() {
   const fixtureList = document.querySelector('.fixture-list');
   const predictionsForm = document.getElementById('predictions-form');
   
-  // Default to current gameweek (or next if current is finished)
-  let currentGameweek = 35;
+  // Default to next gameweek for predictions (users predict upcoming games)
+  let currentGameweek = 36;
   
-  // Fetch current gameweek info
+  // Fetch current gameweek info from FPL
   try {
     const gwResponse = await fetch('/api/current-gameweek');
-    const gwData = await gwResponse.json();
-    // Use current gameweek if not finished, otherwise use next
-    currentGameweek = gwData.finished ? gwData.next_gameweek : (gwData.current_gameweek || gwData.next_gameweek || 35);
+    if (gwResponse.ok) {
+      const gwData = await gwResponse.json();
+      // Always use next_gameweek for predictions page (predict upcoming games)
+      currentGameweek = gwData.next_gameweek || gwData.current_gameweek || 36;
+    }
   } catch (e) {
     console.error('Failed to fetch gameweek:', e);
+    // Default to 36 if API fails
+    currentGameweek = 36;
   }
   
   // Check for URL parameter override
