@@ -401,7 +401,7 @@ async function loadUserPredictions() {
       return data;
     }
     
-    let predictionsHTML = '<div style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">';
+    let predictionsHTML = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
     data.predictions.forEach((pred, index) => {
       const match = data.matches.find(m => m.id === pred.match_id);
       if (match) {
