@@ -178,61 +178,74 @@
         color: var(--text-muted) !important;
       }
       
-      /* Middle row: Compact layout - Shirt/Name columns with VS in middle */
+      /* Middle row: Shirt - VS - Shirt layout with names underneath */
       .fixture-teams {
         display: flex !important;
-        justify-content: center !important;
+        justify-content: space-between !important;
         align-items: flex-start !important;
         gap: 0.5rem !important;
         margin: 0.5rem 0 !important;
         flex-wrap: nowrap !important;
+        padding: 0 0.5rem !important;
       }
       
       .fixture-teams .team-column {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
-        flex: 1 !important;
+        width: 35% !important;
         min-width: 0 !important;
-        max-width: 40% !important;
+      }
+      
+      .fixture-teams .team-column.home {
+        align-items: center !important;
+        margin-left: 5% !important;
+      }
+      
+      .fixture-teams .team-column.away {
+        align-items: center !important;
+        margin-right: 5% !important;
       }
       
       .fixture-teams .team-column .team-shirt {
-        width: 48px !important;
-        height: 48px !important;
-        margin-bottom: 0.25rem !important;
+        width: 55px !important;
+        height: 55px !important;
+        margin-bottom: 0.5rem !important;
         flex-shrink: 0 !important;
         object-fit: contain !important;
       }
       
       .fixture-teams .team-name {
-        font-size: 0.75rem !important;
+        font-size: 0.85rem !important;
         font-weight: 600 !important;
         text-align: center !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
         width: 100% !important;
+        margin-top: 0.25rem !important;
       }
       
       .fixture-teams .vs-container {
         display: flex !important;
+        flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
         flex-shrink: 0 !important;
-        padding-top: 1rem !important;
-        min-width: 40px !important;
+        padding-top: 1.25rem !important;
+        min-width: 50px !important;
       }
       
       .fixture-teams .vs {
-        font-size: 0.7rem !important;
+        font-size: 0.8rem !important;
         color: var(--text-muted) !important;
         font-weight: 500 !important;
+        margin-bottom: 0.25rem !important;
       }
       
       /* Inline score for finished matches */
       .fixture-teams .inline-score {
-        font-size: 0.95rem !important;
+        font-size: 1rem !important;
         font-weight: 700 !important;
         color: var(--accent-green) !important;
       }
