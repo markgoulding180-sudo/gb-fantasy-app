@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async function() {
               
               <!-- Card 2: VS or Score -->
               <div class="score-card">
-                ${isFinished ? `<div class="final-score">${match.home_score}-${match.away_score}</div>` : '<span class="vs">VS</span>'}
+                ${isFinished ? `<div class="match-score">${match.home_score}-${match.away_score}</div>` : '<span class="vs">VS</span>'}
               </div>
               
               <!-- Card 3: Away team -->
