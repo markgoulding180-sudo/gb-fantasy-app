@@ -461,20 +461,8 @@
 
     <!-- Page Header -->
     <div class="flex flex-between items-center mb-3">
-      <h1 style="display: none;"><i class="fas fa-futbol text-green"></i> Your Predictions</h1>
-      <div class="gw-selector">
-        <label for="gameweek" class="text-muted">Gameweek:</label>
-        <select id="gameweek" class="gw-select">
-          <option value="38">Gameweek 38</option>
-          <option value="37">Gameweek 37</option>
-          <option value="36">Gameweek 36</option>
-          <option value="35">Gameweek 35</option>
-          <option value="34" selected>Gameweek 34</option>
-          <option value="33">Gameweek 33</option>
-          <option value="32">Gameweek 32</option>
-          <option value="31">Gameweek 31</option>
-        </select>
-      </div>
+      <h1><i class="fas fa-futbol text-green"></i> GW<span id="current-gw-display">--</span> Predictions</h1>
+      <!-- Gameweek is auto-detected, no selector needed -->
     </div>
 
     <!-- Scoring Info -->

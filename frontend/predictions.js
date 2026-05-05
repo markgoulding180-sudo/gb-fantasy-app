@@ -1,6 +1,5 @@
-// Predictions page - Dynamic gameweek loading
+// Predictions page - Auto-detect current gameweek
 document.addEventListener('DOMContentLoaded', async function() {
-  const gameweekSelect = document.getElementById('gameweek');
   const fixtureList = document.querySelector('.fixture-list');
   const predictionsForm = document.getElementById('predictions-form');
   
@@ -21,27 +20,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     currentGameweek = 36;
   }
   
-  // Check for URL parameter override
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlGameweek = urlParams.get('gameweek');
-  if (urlGameweek) {
-    currentGameweek = parseInt(urlGameweek);
+  // Display current gameweek in header
+  const gwDisplay = document.getElementById('current-gw-display');
+  if (gwDisplay) {
+    gwDisplay.textContent = currentGameweek;
   }
-  
-  gameweekSelect.value = currentGameweek;
   
   // Load initial fixtures
   await loadFixtures(currentGameweek);
-  
-  // Handle gameweek change
-  gameweekSelect.addEventListener('change', async function() {
-    currentGameweek = parseInt(this.value);
-    // Update URL without reloading
-    const newUrl = new URL(window.location);
-    newUrl.searchParams.set('gameweek', currentGameweek);
-    window.history.pushState({}, '', newUrl);
-    await loadFixtures(currentGameweek);
-  });
   
   // Handle form submission
   predictionsForm.addEventListener('submit', async function(e) {
