@@ -389,7 +389,7 @@ async function calculatePointsForGameweek(supabase, gameweek) {
 
     // Recalculate ranks
     console.log(`\n=== RECALCULATING TOURNAMENT RANKS ===`);
-    for (const tournament of tournaments) {
+    for (const tournament of relevantTournaments) {
       const { data: entries } = await supabase
         .from('tournament_entries')
         .select('id, entry_points, rank')

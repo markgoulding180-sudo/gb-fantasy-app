@@ -188,7 +188,7 @@ module.exports = async (req, res) => {
       
       console.log('Tournaments API - User authenticated:', user.id);
 
-      const { action, tournament_id, name, entry_fee, prize_pool, gameweek, max_entries, closes_at } = req.body;
+      const { action, tournament_id, name, entry_fee, prize_pool, gameweek, end_gameweek, max_entries, closes_at } = req.body;
 
       // CREATE tournament (admin action)
       if (action === 'create') {

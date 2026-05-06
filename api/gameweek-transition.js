@@ -351,11 +351,12 @@ async function finaliseGameweek(supabase, gameweek) {
 }
 
 async function updateTournamentRankings(supabase, gameweek) {
-  // Get tournaments for this gameweek
+  // Get tournaments that include this gameweek in their range
   const { data: tournaments } = await supabase
     .from('tournaments')
     .select('*')
-    .eq('gameweek', gameweek);
+    .lte('gameweek', gameweek)
+    .gte('end_gameweek', gameweek);
 
   for (const tournament of tournaments || []) {
     // Get all entries sorted by points

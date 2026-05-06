@@ -21,3 +21,11 @@ Repo: https://github.com/markgoulding180-sudo/gb-fantasy-app
 - 2026-05-05 04:17 - Update admin panel labels: Last Finalised / Current Gameweek (Predictions)
 - 2026-05-05 04:17 - Improve finalisePoints() to call gameweek-transition with manual flag
 - 2026-05-05 04:17 - Update profile prediction history to group by gameweek with summaries
+- 2026-05-06 23:30 - Multi-gameweek tournament fix: add end_gameweek support across all files
+  - frontend/admin.html: Added Start/End Gameweek inputs to Launch Tournament card
+  - frontend/admin.js: Updated launchTournament() to read and send start/end gameweek
+  - api/tournaments.js: Save end_gameweek when creating tournament (defaults to same GW)
+  - api/live-scores.js: Sum points across full GW range using .gte/.lte queries
+  - api/gameweek-transition.js: Only finish tournament when end_gameweek is reached
+  - api/admin-stats.js: Sum points across full GW range in set-score and recalculate actions
+  - frontend/profile.js: Fetch and sum predictions across all GWs in tournament range
