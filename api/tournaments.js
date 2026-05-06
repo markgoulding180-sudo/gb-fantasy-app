@@ -204,6 +204,7 @@ module.exports = async (req, res) => {
             prize_pool: prize_pool || 0,
             top_prize: prize_pool || 0,
             gameweek,
+            end_gameweek: end_gameweek || gameweek,
             max_entries: max_entries || 100,
             current_entries: 0,
             status: 'live',

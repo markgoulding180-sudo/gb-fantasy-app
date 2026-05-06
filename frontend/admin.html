@@ -240,6 +240,16 @@
             <input type="number" id="tournament-fee-input" class="form-input" value="20">
           </div>
         </div>
+        <div class="grid grid-2 mb-2">
+          <div>
+            <label class="form-label">Start Gameweek</label>
+            <input type="number" id="tournament-start-gw" class="form-input" value="35" min="1" max="38">
+          </div>
+          <div>
+            <label class="form-label">End Gameweek</label>
+            <input type="number" id="tournament-end-gw" class="form-input" value="38" min="1" max="38">
+          </div>
+        </div>
         <button class="btn btn-green admin-btn btn-lg" onclick="launchTournament()">
           <i class="fas fa-play"></i> Launch Tournament
         </button>

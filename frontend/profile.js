@@ -95,21 +95,35 @@ async function loadUserTournaments() {
       let scorePct = '--%';
       let tournamentPoints = '--';
       
-      // Calculate points first if entered
+      // Calculate points first if entered - fetch across full tournament GW range
       if (isEntered) {
         try {
-          const predResponse = await fetch(`/api/predictions?gameweek=${tournament.gameweek}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (predResponse.ok) {
-            const predData = await predResponse.json();
-            const gameweekMatchIds = new Set((predData.matches || []).map(m => m.id));
-            const tournamentPreds = (predData.predictions || []).filter(p => 
-              gameweekMatchIds.has(p.match_id)
-            );
-            predictionsCount = tournamentPreds.length;
-            tournamentPoints = tournamentPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+          const startGW = tournament.gameweek;
+          const endGW = tournament.end_gameweek || tournament.gameweek;
+          let allPredictions = [];
+          let allMatches = [];
+          
+          // Fetch predictions for each gameweek in the tournament range
+          for (let gw = startGW; gw <= endGW; gw++) {
+            const predResponse = await fetch(`/api/predictions?gameweek=${gw}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (predResponse.ok) {
+              const predData = await predResponse.json();
+              allPredictions.push(...(predData.predictions || []));
+              allMatches.push(...(predData.matches || []));
+            }
           }
+          
+          // Get unique matches (in case of duplicates across GWs)
+          const uniqueMatches = [...new Map(allMatches.map(m => [m.id, m])).values()];
+          const tournamentMatchIds = new Set(uniqueMatches.map(m => m.id));
+          
+          // Filter predictions to only those for matches in this tournament
+          const tournamentPreds = allPredictions.filter(p => tournamentMatchIds.has(p.match_id));
+          
+          predictionsCount = tournamentPreds.length;
+          tournamentPoints = tournamentPreds.reduce((sum, p) => sum + (p.points_earned || 0), 0);
         } catch (e) {
           console.log('Error fetching predictions for banner:', e);
         }
@@ -137,29 +151,40 @@ async function loadUserTournaments() {
       // Calculate result/score percentages if we have prediction data
       if (isEntered && predictionsCount !== '--') {
         try {
-          const predResponse = await fetch(`/api/predictions?gameweek=${tournament.gameweek}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (predResponse.ok) {
-            const predData = await predResponse.json();
-            const gameweekMatchIds = new Set((predData.matches || []).map(m => m.id));
-            const tournamentPreds = (predData.predictions || []).filter(p => 
-              gameweekMatchIds.has(p.match_id)
-            );
-            
-            const finishedMatches = (predData.matches || []).filter(m => m.status === 'finished');
-            const finishedPreds = tournamentPreds.filter(p => 
-              finishedMatches.some(m => m.id === p.match_id)
-            );
-            const correctResults = finishedPreds.filter(p => (p.points_earned || 0) >= 10).length;
-            const correctScores = finishedPreds.filter(p => (p.points_earned || 0) === 20).length;
-            resultPct = finishedPreds.length > 0 
-              ? Math.round((correctResults / finishedPreds.length) * 100) + '%' 
-              : '--%';
-            scorePct = finishedPreds.length > 0 
-              ? Math.round((correctScores / finishedPreds.length) * 100) + '%' 
-              : '--%';
+          const startGW = tournament.gameweek;
+          const endGW = tournament.end_gameweek || tournament.gameweek;
+          let allPredictions = [];
+          let allMatches = [];
+          
+          // Fetch predictions for each gameweek in the tournament range
+          for (let gw = startGW; gw <= endGW; gw++) {
+            const predResponse = await fetch(`/api/predictions?gameweek=${gw}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (predResponse.ok) {
+              const predData = await predResponse.json();
+              allPredictions.push(...(predData.predictions || []));
+              allMatches.push(...(predData.matches || []));
+            }
           }
+          
+          // Get unique matches
+          const uniqueMatches = [...new Map(allMatches.map(m => [m.id, m])).values()];
+          const tournamentMatchIds = new Set(uniqueMatches.map(m => m.id));
+          const tournamentPreds = allPredictions.filter(p => tournamentMatchIds.has(p.match_id));
+          
+          const finishedMatches = uniqueMatches.filter(m => m.status === 'finished');
+          const finishedPreds = tournamentPreds.filter(p => 
+            finishedMatches.some(m => m.id === p.match_id)
+          );
+          const correctResults = finishedPreds.filter(p => (p.points_earned || 0) >= 10).length;
+          const correctScores = finishedPreds.filter(p => (p.points_earned || 0) === 20).length;
+          resultPct = finishedPreds.length > 0 
+            ? Math.round((correctResults / finishedPreds.length) * 100) + '%' 
+            : '--%';
+          scorePct = finishedPreds.length > 0 
+            ? Math.round((correctScores / finishedPreds.length) * 100) + '%' 
+            : '--%';
         } catch (e) {
           console.log('Could not fetch predictions for tournament', tournament.id);
         }

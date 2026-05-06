@@ -381,20 +381,16 @@ async function updateTournamentRankings(supabase, gameweek) {
         .eq('id', entries[i].id);
     }
 
-    // Only mark tournament as finished if it's a single-gameweek tournament
-    // Multi-week tournaments should have end_gameweek > gameweek
-    if (tournament.end_gameweek && tournament.end_gameweek === gameweek) {
-      await supabase
-        .from('tournaments')
-        .update({ status: 'finished' })
-        .eq('id', tournament.id);
-    } else if (!tournament.end_gameweek || tournament.end_gameweek === tournament.gameweek) {
-      // Single gameweek tournament (no end_gameweek or end_gameweek same as start)
+    // Only mark tournament as finished when the current gameweek matches end_gameweek
+    const tournamentEndGW = tournament.end_gameweek || tournament.gameweek;
+    
+    if (gameweek >= tournamentEndGW) {
+      // All gameweeks complete — mark tournament as finished
       await supabase
         .from('tournaments')
         .update({ status: 'finished' })
         .eq('id', tournament.id);
     }
-    // If it's a multi-week tournament, keep it live
+    // If gameweek < end_gameweek, tournament stays live and keeps accumulating points
   }
 }

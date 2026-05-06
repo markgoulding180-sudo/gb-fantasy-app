@@ -92,6 +92,8 @@ async function launchTournament() {
     log('Creating tournament...');
     const tournamentName = document.getElementById('tournament-name-input')?.value || `GW${currentGameweek} Tournament`;
     const entryFee = parseInt(document.getElementById('tournament-fee-input')?.value) || 20;
+    const startGameweek = parseInt(document.getElementById('tournament-start-gw')?.value) || currentGameweek;
+    const endGameweek = parseInt(document.getElementById('tournament-end-gw')?.value) || currentGameweek;
     
     const tournamentResponse = await fetch('/api/tournaments', {
       method: 'POST',
@@ -104,7 +106,8 @@ async function launchTournament() {
         name: tournamentName,
         entry_fee: entryFee,
         prize_pool: 0,
-        gameweek: currentGameweek,
+        gameweek: startGameweek,
+        end_gameweek: endGameweek,
         max_entries: 100,
         closes_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
       })

@@ -327,18 +327,24 @@ async function calculatePointsForGameweek(supabase, gameweek) {
   console.log(`\n=== UPDATING TOURNAMENT ENTRIES ===`);
   const { data: tournaments } = await supabase
     .from('tournaments')
-    .select('id, gameweek, name')
-    .eq('gameweek', gameweek);
+    .select('id, gameweek, end_gameweek, name');
 
-  console.log(`Found ${tournaments?.length || 0} tournaments for GW${gameweek}`);
+  // Filter tournaments that include this gameweek in their range
+  const relevantTournaments = (tournaments || []).filter(t => {
+    const startGW = t.gameweek;
+    const endGW = t.end_gameweek || t.gameweek;
+    return gameweek >= startGW && gameweek <= endGW;
+  });
 
-  if (tournaments && tournaments.length > 0) {
-    for (const tournament of tournaments) {
-      console.log(`\nTournament: ${tournament.name}`);
+  console.log(`Found ${relevantTournaments.length} tournaments covering GW${gameweek}`);
+
+  if (relevantTournaments.length > 0) {
+    for (const tournament of relevantTournaments) {
+      console.log(`\nTournament: ${tournament.name} (GW${tournament.gameweek}-${tournament.end_gameweek || tournament.gameweek})`);
     }
     
     for (const userId of usersToUpdate) {
-      for (const tournament of tournaments) {
+      for (const tournament of relevantTournaments) {
         const { data: entries } = await supabase
           .from('tournament_entries')
           .select('id, user_id')
@@ -347,20 +353,26 @@ async function calculatePointsForGameweek(supabase, gameweek) {
 
         if (!entries || entries.length === 0) continue;
 
-        const { data: gameweekMatches } = await supabase
+        const startGW = tournament.gameweek;
+        const endGW = tournament.end_gameweek || tournament.gameweek;
+
+        // Get ALL matches across ALL gameweeks in the tournament range
+        const { data: tournamentMatches } = await supabase
           .from('matches')
           .select('id')
-          .eq('gameweek', tournament.gameweek);
+          .gte('gameweek', startGW)
+          .lte('gameweek', endGW);
 
-        const gameweekMatchIds = new Set((gameweekMatches || []).map(m => m.id));
+        const tournamentMatchIds = new Set((tournamentMatches || []).map(m => m.id));
 
         const { data: predPoints } = await supabase
           .from('predictions')
           .select('points_earned, match_id')
           .eq('user_id', userId);
 
+        // Sum points across ALL gameweeks in tournament range
         const totalPoints = (predPoints || [])
-          .filter(p => gameweekMatchIds.has(p.match_id))
+          .filter(p => tournamentMatchIds.has(p.match_id))
           .reduce((sum, p) => sum + (p.points_earned || 0), 0);
 
         const { error } = await supabase

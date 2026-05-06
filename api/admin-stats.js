@@ -158,30 +158,42 @@ module.exports = async (req, res) => {
               })
               .eq('id', userId);
 
-            // Update tournament_entries - need to get gameweek for each tournament
+            // Update tournament_entries - sum points across full tournament GW range
             const { data: entries } = await supabase
               .from('tournament_entries')
               .select('id, tournament_id, entry_points')
               .eq('user_id', userId);
 
             for (const entry of entries || []) {
-              // Get the tournament's gameweek
+              // Get the tournament's gameweek range
               const { data: tournament } = await supabase
                 .from('tournaments')
-                .select('gameweek')
+                .select('gameweek, end_gameweek')
                 .eq('id', entry.tournament_id)
                 .single();
 
-              const tournamentGameweek = tournament?.gameweek;
+              const tournamentStartGW = tournament?.gameweek;
+              const tournamentEndGW = tournament?.end_gameweek || tournament?.gameweek;
 
-              // Get predictions for this user in this tournament's gameweek only
-              const { data: tournamentPreds } = await supabase
+              // Get all match IDs in the tournament's full GW range
+              const { data: tournamentMatches } = await supabase
+                .from('matches')
+                .select('id')
+                .gte('gameweek', tournamentStartGW)
+                .lte('gameweek', tournamentEndGW);
+
+              const tournamentMatchIds = new Set((tournamentMatches || []).map(m => m.id));
+
+              // Get all predictions for this user across the tournament range
+              const { data: allPreds } = await supabase
                 .from('predictions')
-                .select('points_earned')
-                .eq('user_id', userId)
-                .eq('gameweek', tournamentGameweek);
+                .select('points_earned, match_id')
+                .eq('user_id', userId);
 
-              const entryTotal = (tournamentPreds || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
+              // Sum points across all matches in tournament range
+              const entryTotal = (allPreds || [])
+                .filter(p => tournamentMatchIds.has(p.match_id))
+                .reduce((sum, p) => sum + (p.points_earned || 0), 0);
 
               await supabase
                 .from('tournament_entries')
@@ -253,13 +265,25 @@ module.exports = async (req, res) => {
         // Get all tournaments
         const { data: tournaments, error: tournamentError } = await supabase
           .from('tournaments')
-          .select('id, gameweek');
+          .select('id, gameweek, end_gameweek');
         
         if (tournamentError) {
           return res.status(500).json({ error: 'Failed to fetch tournaments', details: tournamentError.message });
         }
         
         for (const tournament of tournaments || []) {
+          const startGW = tournament.gameweek;
+          const endGW = tournament.end_gameweek || tournament.gameweek;
+          
+          // Get all match IDs in the tournament's full GW range
+          const { data: tournamentMatches } = await supabase
+            .from('matches')
+            .select('id')
+            .gte('gameweek', startGW)
+            .lte('gameweek', endGW);
+          
+          const tournamentMatchIds = new Set((tournamentMatches || []).map(m => m.id));
+          
           // Get all entries for this tournament
           const { data: entries, error: entryError } = await supabase
             .from('tournament_entries')
@@ -272,19 +296,21 @@ module.exports = async (req, res) => {
           }
           
           for (const entry of entries || []) {
-            // Get all predictions for this user in this gameweek
+            // Get all predictions for this user across the tournament's full GW range
             const { data: predictions, error: predError } = await supabase
               .from('predictions')
-              .select('points_earned')
-              .eq('user_id', entry.user_id)
-              .eq('gameweek', tournament.gameweek);
+              .select('points_earned, match_id')
+              .eq('user_id', entry.user_id);
             
             if (predError) {
               results.errors.push({ user: entry.user_id, error: predError.message });
               continue;
             }
             
-            const totalPoints = predictions.reduce((sum, p) => sum + (p.points_earned || 0), 0);
+            // Sum points only for matches in the tournament range
+            const totalPoints = (predictions || [])
+              .filter(p => tournamentMatchIds.has(p.match_id))
+              .reduce((sum, p) => sum + (p.points_earned || 0), 0);
             
             if (totalPoints !== entry.entry_points) {
               const { error: updateError } = await supabase
