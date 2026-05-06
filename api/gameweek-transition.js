@@ -328,16 +328,15 @@ async function finaliseGameweek(supabase, gameweek) {
     }
   }
 
-  // Update all user totals (cumulative) from all finished gameweeks
+  // Update all user totals (cumulative) from prediction_history
   for (const userId of userIds) {
-    const { data: allPredictions } = await supabase
-      .from('predictions')
+    const { data: historyPredictions } = await supabase
+      .from('prediction_history')
       .select('points_earned')
-      .eq('user_id', userId)
-      .not('points_earned', 'is', null);
+      .eq('user_id', userId);
 
-    const total = (allPredictions || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
-    const correct = (allPredictions || []).filter(p => p.points_earned === 20).length;
+    const total = (historyPredictions || []).reduce((sum, p) => sum + (p.points_earned || 0), 0);
+    const correct = (historyPredictions || []).filter(p => p.points_earned === 20).length;
 
     await supabase
       .from('users')
@@ -347,6 +346,19 @@ async function finaliseGameweek(supabase, gameweek) {
         updated_at: new Date().toISOString()
       })
       .eq('id', userId);
+  }
+
+  // Clear predictions for this gameweek (they're now in prediction_history)
+  // This prevents users from modifying past predictions and prepares for next GW
+  const { error: deleteError } = await supabase
+    .from('predictions')
+    .delete()
+    .eq('gameweek', gameweek);
+  
+  if (deleteError) {
+    console.error(`Error clearing predictions for GW${gameweek}:`, deleteError);
+  } else {
+    console.log(`Cleared predictions for GW${gameweek}`);
   }
 }
 
