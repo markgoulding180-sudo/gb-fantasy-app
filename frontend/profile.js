@@ -791,13 +791,19 @@ async function loadPredictionHistory() {
     const token = localStorage.getItem('gbf_token');
     
     // Fetch historical data from API
-    const historyResponse = await fetch('/api/predictions?action=history', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
     let historyData = { history: [], summaries: [] };
-    if (historyResponse.ok) {
-      historyData = await historyResponse.json();
+    try {
+      const historyResponse = await fetch('/api/predictions?action=history', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (historyResponse.ok) {
+        historyData = await historyResponse.json();
+      } else {
+        console.error('History API error:', await historyResponse.text());
+      }
+    } catch (e) {
+      console.error('Failed to fetch history:', e);
     }
     
     // Also get current predictions
