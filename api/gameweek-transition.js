@@ -42,14 +42,11 @@ module.exports = async (req, res) => {
     // Check if manual finalisation is requested
     const url = new URL(req.url, `http://${req.headers.host}`);
     const isManualFinalise = url.searchParams.get('manual') === 'true';
-    const isTestMode = url.searchParams.get('test') === 'true';
-    const testGW = url.searchParams.get('gameweek');
 
     const result = {
       master_clock_gameweek: currentGW,
       last_finalised_gameweek: lastFinalisedGW,
       is_manual_finalise: isManualFinalise,
-      is_test_mode: isTestMode,
       actions: []
     };
 
@@ -62,21 +59,18 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Determine which gameweek to finalise
-    const targetGW = isTestMode && testGW ? parseInt(testGW) : currentGW;
-    
-    // Finalise the target gameweek
+    // Finalise the current gameweek
     if (isManualFinalise) {
       // Finalise points
-      await finaliseGameweek(supabase, targetGW, isTestMode);
+      await finaliseGameweek(supabase, currentGW);
       result.actions.push('finalised_points');
 
       // Update tournament entries with final rankings
-      await updateTournamentRankings(supabase, targetGW);
+      await updateTournamentRankings(supabase, currentGW);
       result.actions.push('updated_tournament_rankings');
 
-      // Advance Master Clock to next gameweek (or targetGW + 1 in test mode)
-      const nextGW = targetGW + 1;
+      // Advance Master Clock to next gameweek
+      const nextGW = currentGW + 1;
       const { error: updateError } = await supabase
         .from('master_clock')
         .update({
@@ -107,18 +101,13 @@ module.exports = async (req, res) => {
   }
 };
 
-async function finaliseGameweek(supabase, gameweek, isTestMode = false) {
-  // Get all matches for this gameweek (finished or all in test mode)
-  let matchesQuery = supabase
+async function finaliseGameweek(supabase, gameweek) {
+  // Get all finished matches for this gameweek
+  const { data: matches } = await supabase
     .from('matches')
     .select('*')
-    .eq('gameweek', gameweek);
-  
-  if (!isTestMode) {
-    matchesQuery = matchesQuery.eq('status', 'finished');
-  }
-  
-  const { data: matches } = await matchesQuery;
+    .eq('gameweek', gameweek)
+    .eq('status', 'finished');
 
   if (!matches || matches.length === 0) return;
 

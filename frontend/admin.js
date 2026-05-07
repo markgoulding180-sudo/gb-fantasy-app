@@ -332,52 +332,6 @@ async function finalisePoints() {
   }
 }
 
-async function testFinalisePoints() {
-  const gwInput = document.getElementById('test-finalise-gw');
-  const gameweek = gwInput.value;
-  
-  if (!gameweek) {
-    log('Please enter a gameweek', 'warn');
-    return;
-  }
-  
-  if (!confirm(`TEST MODE: Force finalise GW${gameweek}?\n\nThis will:\n1. Calculate points for all predictions\n2. Save to prediction_history\n3. Create gameweek_summary\n4. Advance Master Clock\n\nUse for testing only!`)) return;
-  
-  log(`TEST: Force finalising GW${gameweek}...`, 'warn');
-  
-  try {
-    const token = localStorage.getItem('gbf_token');
-    
-    // First, ensure all matches have results for testing
-    log('TEST: Setting dummy results for unfinished matches...');
-    
-    // Get matches for this gameweek
-    const matchesResponse = await fetch(`/api/predictions?gameweek=${gameweek}`);
-    const matchesData = await matchesResponse.json();
-    
-    log(`TEST: Found ${matchesData.matches?.length || 0} matches`);
-    
-    // Call gameweek-transition with manual=true and test=true
-    const response = await fetch(`/api/gameweek-transition?manual=true&test=true&gameweek=${gameweek}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Test finalise failed');
-    }
-    
-    const data = await response.json();
-    log(`TEST: Finalised GW${gameweek}`, 'success');
-    log(`Actions: ${data.actions?.join(', ')}`, 'info');
-    
-    await refreshStatus();
-    
-  } catch (error) {
-    log(`TEST Finalise error: ${error.message}`, 'error');
-  }
-}
-
 // Master Clock Functions
 async function initMasterClock() {
   const select = document.getElementById('master-gw-select');
