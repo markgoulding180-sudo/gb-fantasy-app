@@ -97,9 +97,16 @@ module.exports = async (req, res) => {
       errors: []
     };
 
+    console.log('Sync fixtures - Teams object keys count:', Object.keys(teams).length);
+    console.log('Sync fixtures - Teams object sample:', Object.entries(teams).slice(0, 3));
+    console.log('Sync fixtures - First fixture team IDs:', { team_h: gameweekFixtures[0]?.team_h, team_a: gameweekFixtures[0]?.team_a });
+    
     for (const fixture of gameweekFixtures) {
       // Skip if teams not found
-      if (!teams[fixture.team_h] || !teams[fixture.team_a]) continue;
+      if (!teams[fixture.team_h] || !teams[fixture.team_a]) {
+        console.log(`Skipping fixture ${fixture.id}: team not found`, { team_h: fixture.team_h, team_a: fixture.team_a, has_team_h: !!teams[fixture.team_h], has_team_a: !!teams[fixture.team_a] });
+        continue;
+      }
 
       const matchData = {
         id: fixture.id, // Use FPL's fixture ID as primary key
