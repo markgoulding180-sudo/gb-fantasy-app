@@ -267,6 +267,25 @@
         <button class="btn btn-primary admin-btn" onclick="finalisePoints()">
           <i class="fas fa-calculator"></i> Finalise All Points
         </button>
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 0.5rem;">
+            <i class="fas fa-flask"></i> Testing Only
+          </p>
+          <div class="grid grid-2">
+            <div>
+              <label class="form-label">Test Finalise GW</label>
+              <input type="number" id="test-finalise-gw" class="form-input" value="36" min="1" max="38">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+              <button class="btn btn-amber admin-btn" onclick="testFinalisePoints()">
+                <i class="fas fa-vial"></i> Test Finalise
+              </button>
+            </div>
+          </div>
+          <p class="text-muted mt-2" style="font-size: 0.75rem;">
+            Forces finalisation without checking match status. For testing only.
+          </p>
+        </div>
       </div>
     </div>
 
