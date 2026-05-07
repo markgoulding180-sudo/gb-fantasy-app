@@ -418,7 +418,8 @@ async function getTrendsData(supabase, gameweek, res) {
     // Debug: log first few predictions to see their structure
     console.log('Trends Debug - Total predictions:', allPredictions?.length || 0);
     console.log('Trends Debug - First prediction:', allPredictions?.[0]);
-    console.log('Trends Debug - Match IDs in DB:', matches.map(m => ({ id: m.id, teams: `${m.home_team} vs ${m.away_team}` })));
+    console.log('Trends Debug - Prediction match_ids:', allPredictions?.map(p => p.match_id));
+    console.log('Trends Debug - Match IDs in DB:', matches.map(m => m.id));
 
     // Calculate trends for each match
     const trends = matches.map(match => {
@@ -503,7 +504,12 @@ async function getTrendsData(supabase, gameweek, res) {
     return res.status(200).json({
       trends: trends,
       total_users: totalUsers,
-      gameweek: parseInt(gameweek)
+      gameweek: parseInt(gameweek),
+      debug: {
+        predictionsCount: allPredictions?.length || 0,
+        predictionMatchIds: allPredictions?.map(p => p.match_id),
+        matchIds: matches.map(m => m.id)
+      }
     });
 
   } catch (error) {
