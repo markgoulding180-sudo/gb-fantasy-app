@@ -1,10 +1,10 @@
 // Admin panel JavaScript
+// Admin PIN - Change this to your desired PIN
+const ADMIN_PIN = '1234';
+
 document.addEventListener('DOMContentLoaded', function() {
-  // Check admin access
+  // Check admin access with PIN
   checkAdminAccess();
-  
-  // Load initial status
-  refreshStatus();
 });
 
 async function checkAdminAccess() {
@@ -14,8 +14,126 @@ async function checkAdminAccess() {
     return;
   }
   
-  // TODO: Check if user is admin
-  // For now, allow any logged in user
+  // Check if PIN was already verified this session
+  const pinVerified = sessionStorage.getItem('admin_pin_verified');
+  if (pinVerified === 'true') {
+    // PIN already verified, load admin panel
+    refreshStatus();
+    return;
+  }
+  
+  // Show PIN modal
+  showPinModal();
+}
+
+function showPinModal() {
+  // Create PIN modal if it doesn't exist
+  let modal = document.getElementById('pin-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'pin-modal';
+    modal.innerHTML = `
+      <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 1rem; padding: 2rem; max-width: 400px; width: 90%; text-align: center;">
+          <div style="font-size: 3rem; color: var(--accent-amber); margin-bottom: 1rem;">
+            <i class="fas fa-lock"></i>
+          </div>
+          <h2 style="margin-bottom: 0.5rem;">Admin Access</h2>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Enter PIN to access admin panel</p>
+          <div style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
+            <input type="password" id="pin-input-1" maxlength="1" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);" autocomplete="off">
+            <input type="password" id="pin-input-2" maxlength="1" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);" autocomplete="off">
+            <input type="password" id="pin-input-3" maxlength="1" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);" autocomplete="off">
+            <input type="password" id="pin-input-4" maxlength="1" style="width: 50px; height: 60px; text-align: center; font-size: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);" autocomplete="off">
+          </div>
+          <div id="pin-error" style="color: var(--accent-red); font-size: 0.875rem; margin-bottom: 1rem; display: none;">Incorrect PIN</div>
+          <button id="pin-submit" class="btn btn-green" style="width: 100%;">Unlock</button>
+          <button id="pin-cancel" class="btn btn-outline" style="width: 100%; margin-top: 0.5rem;">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Add event listeners
+    setupPinInputs();
+  }
+  
+  modal.style.display = 'block';
+  document.getElementById('pin-input-1').focus();
+}
+
+function setupPinInputs() {
+  const inputs = [
+    document.getElementById('pin-input-1'),
+    document.getElementById('pin-input-2'),
+    document.getElementById('pin-input-3'),
+    document.getElementById('pin-input-4')
+  ];
+  
+  // Auto-focus next input
+  inputs.forEach((input, index) => {
+    input.addEventListener('input', function(e) {
+      if (this.value.length === 1 && index < 3) {
+        inputs[index + 1].focus();
+      }
+      if (this.value.length === 1 && index === 3) {
+        // Last digit entered, auto-submit
+        verifyPin();
+      }
+    });
+    
+    // Handle backspace
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace' && this.value === '' && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+    
+    // Only allow numbers
+    input.addEventListener('keypress', function(e) {
+      if (!/[0-9]/.test(e.key)) {
+        e.preventDefault();
+      }
+    });
+  });
+  
+  // Submit button
+  document.getElementById('pin-submit').addEventListener('click', verifyPin);
+  
+  // Cancel button
+  document.getElementById('pin-cancel').addEventListener('click', function() {
+    window.location.href = '/index.html';
+  });
+}
+
+function verifyPin() {
+  const inputs = [
+    document.getElementById('pin-input-1'),
+    document.getElementById('pin-input-2'),
+    document.getElementById('pin-input-3'),
+    document.getElementById('pin-input-4')
+  ];
+  
+  const enteredPin = inputs.map(input => input.value).join('');
+  
+  if (enteredPin === ADMIN_PIN) {
+    // PIN correct
+    sessionStorage.setItem('admin_pin_verified', 'true');
+    document.getElementById('pin-modal').style.display = 'none';
+    refreshStatus();
+  } else {
+    // PIN incorrect
+    document.getElementById('pin-error').style.display = 'block';
+    inputs.forEach(input => input.value = '');
+    inputs[0].focus();
+    
+    // Shake animation
+    const modal = document.querySelector('#pin-modal > div > div');
+    modal.style.animation = 'shake 0.5s';
+    setTimeout(() => {
+      modal.style.animation = '';
+    }, 500);
+  }
 }
 
 async function refreshStatus() {

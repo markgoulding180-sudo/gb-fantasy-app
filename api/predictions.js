@@ -254,7 +254,7 @@ module.exports = async (req, res) => {
         matchMap[m.id] = m;
       });
 
-      // Validate and format predictions with human-readable data
+      // Validate and format predictions
       const predictionsToInsert = [];
       
       for (let i = 0; i < predictions.length; i++) {
@@ -282,7 +282,7 @@ module.exports = async (req, res) => {
         const homeScore = pred.home_score !== undefined ? parseInt(pred.home_score) : 0;
         const awayScore = pred.away_score !== undefined ? parseInt(pred.away_score) : 0;
 
-        // Get match details for human-readable columns
+        // Get match details
         const match = matchMap[pred.match_id];
         
         // Handle temporary match IDs (format: temp-gameweek-matchnum)
@@ -341,11 +341,7 @@ module.exports = async (req, res) => {
           gameweek: parseInt(gameweek),
           predicted_result: pred.predicted_result,
           home_score: homeScore,
-          away_score: awayScore,
-          // Human-readable columns for debugging
-          home_team: match?.home_team || 'Unknown',
-          away_team: match?.away_team || 'Unknown',
-          username: user.email?.split('@')[0] || user.id.substring(0, 8) // Use email prefix or ID fragment
+          away_score: awayScore
         });
       }
 
