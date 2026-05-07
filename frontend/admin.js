@@ -23,8 +23,8 @@ async function refreshStatus() {
     const response = await fetch('/api/admin-stats');
     const data = await response.json();
     
-    document.getElementById('total-matches').textContent = data.matches || 0;
-    document.getElementById('total-predictions').textContent = data.predictions || 0;
+    document.getElementById('total-matches').textContent = data.total_matches || 0;
+    document.getElementById('total-predictions').textContent = data.total_predictions || 0;
     
     // Get Master Clock
     const gwResponse = await fetch('/api/current-gameweek');
