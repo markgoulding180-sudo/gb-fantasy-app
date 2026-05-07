@@ -46,12 +46,22 @@ module.exports = async (req, res) => {
     
     const lastFinalised = lastFinalisedSetting?.value ? JSON.parse(lastFinalisedSetting.value) : { gameweek: 0 };
 
-    // Determine system gameweek (respecting manual override and finalisation state)
+    // Determine system gameweek
+    // Priority: 1. Manual override, 2. Next gameweek after last finalised, 3. FPL API current
     const fplCurrentGW = currentEvent ? currentEvent.id : null;
-    const systemCurrentGW = manualGW?.gameweek || fplCurrentGW;
     
-    // If we've finalised past the FPL current, use the next gameweek after last finalised
-    const effectiveCurrentGW = Math.max(systemCurrentGW || 0, lastFinalised.gameweek + 1);
+    // If admin has set manual GW, use that
+    // Otherwise, if we've finalised gameweeks, use next after last finalised
+    // Otherwise fall back to FPL API
+    let effectiveCurrentGW;
+    if (manualGW?.gameweek) {
+      effectiveCurrentGW = manualGW.gameweek;
+    } else if (lastFinalised.gameweek > 0) {
+      effectiveCurrentGW = lastFinalised.gameweek + 1;
+    } else {
+      effectiveCurrentGW = fplCurrentGW || 1;
+    }
+    
     const effectiveNextGW = effectiveCurrentGW + 1;
 
     const result = {
