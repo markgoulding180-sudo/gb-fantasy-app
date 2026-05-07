@@ -1,4 +1,4 @@
-// Vercel Function: Master Clock - Single source of truth for current gameweek
+// Vercel Function: Current Gameweek / Master Clock - Single source of truth
 // GET /api/current-gameweek - Get current gameweek
 // POST /api/current-gameweek - Set/advance current gameweek (admin only)
 
