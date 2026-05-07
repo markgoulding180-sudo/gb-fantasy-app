@@ -405,7 +405,7 @@ async function getTrendsData(supabase, gameweek, res) {
     const { data: allPredictions, error: predError } = await supabase
       .from('predictions')
       .select('*, matches:match_id(home_team, away_team)')
-      .eq('gameweek', gameweek);
+      .eq('gameweek', parseInt(gameweek));
 
     if (predError) {
       return res.status(500).json({ error: 'Failed to fetch predictions', details: predError.message });
