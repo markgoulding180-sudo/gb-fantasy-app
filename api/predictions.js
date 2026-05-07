@@ -115,6 +115,12 @@ module.exports = async (req, res) => {
         }
       }
 
+      // Handle trends request - aggregate prediction data for all users
+      const trends = params.get('trends');
+      if (trends === 'true') {
+        return await getTrendsData(supabase, gameweek, res);
+      }
+
       // Get matches for the gameweek
       const { data: matches, error: matchesError } = await supabase
         .from('matches')
@@ -376,3 +382,118 @@ module.exports = async (req, res) => {
 
   return res.status(405).json({ error: 'Method not allowed' });
 };
+
+// Helper function to get trends data - aggregate predictions across all users
+async function getTrendsData(supabase, gameweek, res) {
+  try {
+    // Get all matches for this gameweek
+    const { data: matches, error: matchesError } = await supabase
+      .from('matches')
+      .select('*')
+      .eq('gameweek', gameweek)
+      .order('kickoff_time', { ascending: true });
+
+    if (matchesError) {
+      return res.status(500).json({ error: 'Failed to fetch matches', details: matchesError.message });
+    }
+
+    if (!matches || matches.length === 0) {
+      return res.status(200).json({ trends: [], total_users: 0 });
+    }
+
+    // Get all predictions for this gameweek
+    const { data: allPredictions, error: predError } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('gameweek', gameweek);
+
+    if (predError) {
+      return res.status(500).json({ error: 'Failed to fetch predictions', details: predError.message });
+    }
+
+    // Count unique users who predicted
+    const uniqueUsers = new Set(allPredictions?.map(p => p.user_id) || []);
+    const totalUsers = uniqueUsers.size;
+
+    // Calculate trends for each match
+    const trends = matches.map(match => {
+      const matchPreds = allPredictions?.filter(p => p.match_id === match.id) || [];
+      const totalPredictions = matchPreds.length;
+
+      if (totalPredictions === 0) {
+        return {
+          match_id: match.id,
+          home_team: match.home_team,
+          away_team: match.away_team,
+          total_predictions: 0,
+          result_distribution: { H: 0, D: 0, A: 0 },
+          most_common_result: null,
+          most_common_score: null
+        };
+      }
+
+      // Calculate result distribution
+      const resultCounts = { H: 0, D: 0, A: 0 };
+      matchPreds.forEach(p => {
+        if (resultCounts[p.predicted_result] !== undefined) {
+          resultCounts[p.predicted_result]++;
+        }
+      });
+
+      const resultDistribution = {
+        H: Math.round((resultCounts.H / totalPredictions) * 100),
+        D: Math.round((resultCounts.D / totalPredictions) * 100),
+        A: Math.round((resultCounts.A / totalPredictions) * 100)
+      };
+
+      // Find most common result
+      let mostCommonResult = null;
+      const maxResultCount = Math.max(resultCounts.H, resultCounts.D, resultCounts.A);
+      if (maxResultCount > 0) {
+        const mostCommonKey = Object.keys(resultCounts).find(k => resultCounts[k] === maxResultCount);
+        mostCommonResult = {
+          result: mostCommonKey,
+          percentage: Math.round((maxResultCount / totalPredictions) * 100)
+        };
+      }
+
+      // Find most common score
+      const scoreCounts = {};
+      matchPreds.forEach(p => {
+        const scoreKey = `${p.home_score}-${p.away_score}`;
+        scoreCounts[scoreKey] = (scoreCounts[scoreKey] || 0) + 1;
+      });
+
+      let mostCommonScore = null;
+      const maxScoreCount = Math.max(...Object.values(scoreCounts));
+      if (maxScoreCount > 0) {
+        const mostCommonScoreKey = Object.keys(scoreCounts).find(k => scoreCounts[k] === maxScoreCount);
+        mostCommonScore = {
+          score: mostCommonScoreKey,
+          count: maxScoreCount,
+          percentage: Math.round((maxScoreCount / totalPredictions) * 100)
+        };
+      }
+
+      return {
+        match_id: match.id,
+        home_team: match.home_team,
+        away_team: match.away_team,
+        total_predictions: totalPredictions,
+        result_distribution: resultDistribution,
+        most_common_result: mostCommonResult,
+        most_common_score: mostCommonScore
+      };
+    });
+
+    return res.status(200).json({
+      trends: trends,
+      total_users: totalUsers,
+      gameweek: parseInt(gameweek)
+    });
+
+  } catch (error) {
+    console.error('Trends data error:', error);
+    return res.status(500).json({ error: 'Failed to get trends data', details: error.message });
+  }
+}
