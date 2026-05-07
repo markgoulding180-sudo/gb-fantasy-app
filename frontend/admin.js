@@ -123,19 +123,6 @@ async function launchTournament() {
     const tournamentData = await tournamentResponse.json();
     log(`Tournament created: ${tournamentData.tournament?.name}`, 'success');
     
-    // Step 3: Update settings
-    await fetch('/api/settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        key: 'tournament_active',
-        value: 'true'
-      })
-    });
-    
     log('Tournament launched successfully!', 'success');
     alert('Tournament launched! Users can now register and enter.');
     
