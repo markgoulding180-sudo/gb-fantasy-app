@@ -118,7 +118,7 @@ module.exports = async (req, res) => {
       // Handle trends request - aggregate prediction data for all users
       const trends = params.get('trends');
       if (trends === 'true') {
-        return await getTrendsData(supabase, gameweek, res);
+        return await getTrendsData(supabaseAdmin, gameweek, res);
       }
 
       // Get matches for the gameweek
