@@ -26,28 +26,29 @@ async function refreshStatus() {
     document.getElementById('total-matches').textContent = data.matches || 0;
     document.getElementById('total-predictions').textContent = data.predictions || 0;
     
-    // Get current gameweek
+    // Get Master Clock
     const gwResponse = await fetch('/api/current-gameweek');
     const gwData = await gwResponse.json();
     
-    // Get last finalised gameweek from settings
-    const settingsResponse = await fetch('/api/admin-stats');
-    const settingsData = await settingsResponse.json();
-    const lastFinalised = settingsData.last_finalised_gameweek || 0;
+    if (gwData.error) {
+      // Master clock not initialized
+      document.getElementById('api-gw').textContent = 'Not Set';
+      document.getElementById('next-gw').textContent = '⚠️ Initialize Master Clock';
+      document.getElementById('next-gw').style.color = 'var(--accent-amber)';
+      document.getElementById('deadline').textContent = 'N/A';
+      return;
+    }
     
-    // Display logic: if we've manually advanced past FPL API, show system gameweek
-    const systemCurrentGW = Math.max(gwData.current_gameweek || 0, lastFinalised + 1);
-    const systemNextGW = systemCurrentGW + 1;
-    
-    document.getElementById('api-gw').textContent = lastFinalised || 'None';
-    document.getElementById('next-gw').textContent = systemCurrentGW || 'N/A';
+    document.getElementById('api-gw').textContent = gwData.last_finalised_gameweek || 'None';
+    document.getElementById('next-gw').textContent = `GW${gwData.current_gameweek}`;
+    document.getElementById('next-gw').style.color = '';
     document.getElementById('deadline').textContent = gwData.deadline ? new Date(gwData.deadline).toLocaleString() : 'N/A';
     
-    // Update labels to reflect system state
+    // Update labels
     const lastCompletedLabel = document.querySelector('#status-panel .admin-status-item:nth-child(1) span');
     const nextGWLabel = document.querySelector('#status-panel .admin-status-item:nth-child(2) span');
-    if (lastCompletedLabel) lastCompletedLabel.textContent = 'Last Finalised Gameweek:';
-    if (nextGWLabel) nextGWLabel.textContent = 'Current Gameweek (Predictions):';
+    if (lastCompletedLabel) lastCompletedLabel.textContent = 'Last Finalised:';
+    if (nextGWLabel) nextGWLabel.textContent = 'Current GW (Master Clock):';
     
   } catch (error) {
     console.error('Error refreshing status:', error);
@@ -226,9 +227,9 @@ async function finalisePoints() {
   }
 }
 
-// Manual Gameweek Override Functions
-async function setManualGW() {
-  const select = document.getElementById('manual-gw-select');
+// Master Clock Functions
+async function initMasterClock() {
+  const select = document.getElementById('master-gw-select');
   const gameweek = select.value;
   
   if (!gameweek) {
@@ -236,73 +237,46 @@ async function setManualGW() {
     return;
   }
   
-  if (!confirm(`Set manual gameweek to GW${gameweek}? This will override the FPL API.`)) return;
+  if (!confirm(`Initialize Master Clock to GW${gameweek}?\n\nThis sets the current gameweek for the entire system.`)) return;
   
-  log(`Setting manual gameweek to GW${gameweek}...`);
+  log(`Initializing Master Clock to GW${gameweek}...`);
   
   try {
     const token = localStorage.getItem('gbf_token');
-    const response = await fetch('/api/admin-stats', {
+    const response = await fetch('/api/master-clock', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        action: 'set-manual-gw',
+        action: 'init',
         gameweek: parseInt(gameweek)
       })
     });
     
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to set manual gameweek');
+      throw new Error(error.error || 'Failed to init Master Clock');
     }
     
-    log(`Manual gameweek set to GW${gameweek}`, 'success');
-    document.getElementById('override-status').textContent = 'ON';
-    document.getElementById('manual-gw').textContent = gameweek;
+    const data = await response.json();
+    log(`Master Clock initialized: ${data.message}`, 'success');
     
     await refreshStatus();
     
   } catch (error) {
-    log(`Error setting manual GW: ${error.message}`, 'error');
+    log(`Error initializing Master Clock: ${error.message}`, 'error');
   }
 }
 
+// Manual Gameweek Override Functions (deprecated - use Master Clock)
+async function setManualGW() {
+  log('Use "Initialize Master Clock" instead', 'warn');
+}
+
 async function clearManualGW() {
-  if (!confirm('Clear manual override and revert to FPL API?')) return;
-  
-  log('Clearing manual gameweek override...');
-  
-  try {
-    const token = localStorage.getItem('gbf_token');
-    const response = await fetch('/api/admin-stats', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        action: 'clear-manual-gw'
-      })
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to clear manual override');
-    }
-    
-    log('Manual override cleared', 'success');
-    document.getElementById('override-status').textContent = 'OFF';
-    document.getElementById('manual-gw').textContent = 'None';
-    document.getElementById('manual-gw-select').value = '';
-    
-    await refreshStatus();
-    
-  } catch (error) {
-    log(`Error clearing manual GW: ${error.message}`, 'error');
-  }
+  log('Use "Initialize Master Clock" instead', 'warn');
 }
 
 function log(message, type = 'info') {

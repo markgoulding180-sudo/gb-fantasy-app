@@ -1,5 +1,6 @@
-// Vercel Function: Get current gameweek and deadline info from FPL
+// Vercel Function: Get current gameweek (reads from Master Clock)
 // GET /api/current-gameweek
+// This is a convenience endpoint that reads from master_clock
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -15,89 +16,67 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Initialize Supabase
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SECRET
     );
 
-    // Fetch from FPL API
-    const response = await fetch(FPL_BOOTSTRAP_URL);
-    const data = await response.json();
-
-    const currentEvent = data.events.find(e => e.is_current);
-    const nextEvent = data.events.find(e => e.is_next);
-
-    // Check for manual override
-    const { data: manualGWSetting } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'manual_gameweek')
+    // Get master clock - this is the source of truth
+    const { data: masterClock, error: clockError } = await supabase
+      .from('master_clock')
+      .select('*')
+      .eq('id', 'current')
       .single();
-    
-    const manualGW = manualGWSetting?.value ? JSON.parse(manualGWSetting.value) : null;
-    
-    // Check for last finalised gameweek
-    const { data: lastFinalisedSetting } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'last_finalised_gameweek')
-      .single();
-    
-    const lastFinalised = lastFinalisedSetting?.value ? JSON.parse(lastFinalisedSetting.value) : { gameweek: 0 };
 
-    // Determine system gameweek
-    // Priority: 1. Manual override, 2. Next gameweek after last finalised, 3. FPL API current
-    const fplCurrentGW = currentEvent ? currentEvent.id : null;
-    
-    // If admin has set manual GW, use that
-    // Otherwise, if we've finalised gameweeks, use next after last finalised
-    // Otherwise fall back to FPL API
-    let effectiveCurrentGW;
-    if (manualGW?.gameweek) {
-      effectiveCurrentGW = manualGW.gameweek;
-    } else if (lastFinalised.gameweek > 0) {
-      effectiveCurrentGW = lastFinalised.gameweek + 1;
-    } else {
-      effectiveCurrentGW = fplCurrentGW || 1;
+    // Get FPL data for deadline info only
+    let fplDeadline = null;
+    let fplDeadlineEpoch = null;
+    let fplCurrentGW = null;
+    try {
+      const response = await fetch(FPL_BOOTSTRAP_URL);
+      const data = await response.json();
+      const nextEvent = data.events.find(e => e.is_next);
+      const currentEvent = data.events.find(e => e.is_current);
+      if (nextEvent) {
+        fplDeadline = nextEvent.deadline_time;
+        fplDeadlineEpoch = nextEvent.deadline_time_epoch;
+      }
+      if (currentEvent) {
+        fplCurrentGW = currentEvent.id;
+      }
+    } catch (e) {
+      console.log('FPL API fetch failed');
     }
-    
-    const effectiveNextGW = effectiveCurrentGW + 1;
+
+    // If master clock not set, return error with instructions
+    if (!masterClock) {
+      return res.status(200).json({
+        error: 'Master clock not initialized',
+        message: 'Admin must set current gameweek in Master Clock first',
+        current_gameweek: null,
+        next_gameweek: null,
+        fpl_current_gameweek: fplCurrentGW,
+        status: 'not_initialized'
+      });
+    }
 
     const result = {
-      // FPL API values (for reference)
+      // Master Clock values (source of truth)
+      current_gameweek: masterClock.current_gameweek,
+      next_gameweek: masterClock.current_gameweek + 1,
+      last_finalised_gameweek: masterClock.last_finalised_gameweek || 0,
+      status: masterClock.status || 'active',
+      
+      // Deadline (from Master Clock, fallback to FPL)
+      deadline: masterClock.deadline || fplDeadline,
+      deadline_epoch: masterClock.deadline_epoch || fplDeadlineEpoch,
+      
+      // FPL reference (for info only)
       fpl_current_gameweek: fplCurrentGW,
-      fpl_next_gameweek: nextEvent ? nextEvent.id : null,
       
-      // System values (what the app actually uses)
-      current_gameweek: effectiveCurrentGW,
-      next_gameweek: effectiveNextGW,
-      last_finalised_gameweek: lastFinalised.gameweek || 0,
-      
-      // Deadline from FPL (for the next gameweek)
-      deadline: nextEvent ? nextEvent.deadline_time : null,
-      deadline_epoch: nextEvent ? nextEvent.deadline_time_epoch : null,
-      
-      // FPL status
-      finished: currentEvent ? currentEvent.finished : false,
-      data_checked: currentEvent ? currentEvent.data_checked : false,
-      
-      // Override info
-      manual_override: !!manualGW?.gameweek,
-      manual_gameweek: manualGW?.gameweek || null
+      // Metadata
+      master_clock_updated_at: masterClock.updated_at
     };
-
-    // Store in Supabase for other functions to use
-    const { error: cacheError } = await supabase
-      .from('settings')
-      .upsert({ 
-        key: 'current_gameweek', 
-        value: JSON.stringify(result)
-      }, { onConflict: 'key' });
-    
-    if (cacheError) {
-      console.error('Error caching current_gameweek:', cacheError);
-    }
 
     return res.status(200).json(result);
 

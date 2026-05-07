@@ -171,13 +171,13 @@
     </div>
 
     <div class="grid grid-2">
-      <!-- Gameweek Setup -->
+      <!-- Master Clock Setup -->
       <div class="admin-card" style="border: 2px solid var(--accent-amber);">
-        <h3><i class="fas fa-sliders-h text-amber"></i> Step 1: Set Current Gameweek</h3>
-        <p class="text-muted mb-2">FPL API lags behind reality. You control the gameweek.</p>
-        <div class="override-mode" id="override-panel">
-          <label class="form-label">Select Current Gameweek for Predictions</label>
-          <select id="manual-gw-select" class="form-input mb-2">
+        <h3><i class="fas fa-clock text-amber"></i> Step 1: Master Clock Setup</h3>
+        <p class="text-muted mb-2">Set the current gameweek. This is the source of truth for the entire system.</p>
+        <div class="override-mode" id="master-clock-panel">
+          <label class="form-label">Current Gameweek (Master Clock)</label>
+          <select id="master-gw-select" class="form-input mb-2">
             <option value="">-- Select Gameweek --</option>
             <option value="1">Gameweek 1</option>
             <option value="2">Gameweek 2</option>
@@ -214,16 +214,16 @@
             <option value="33">Gameweek 33</option>
             <option value="34">Gameweek 34</option>
             <option value="35">Gameweek 35</option>
-            <option value="36" selected>Gameweek 36</option>
+            <option value="36">Gameweek 36</option>
             <option value="37">Gameweek 37</option>
             <option value="38">Gameweek 38</option>
           </select>
-          <button class="btn btn-amber admin-btn" onclick="setManualGW()">
-            <i class="fas fa-check"></i> Set Current Gameweek
+          <button class="btn btn-amber admin-btn btn-lg" onclick="initMasterClock()">
+            <i class="fas fa-play"></i> Initialize Master Clock
           </button>
-          <button class="btn btn-secondary admin-btn" onclick="clearManualGW()">
-            <i class="fas fa-times"></i> Clear & Use FPL API
-          </button>
+          <p class="text-muted mt-2" style="font-size: 0.8rem;">
+            <i class="fas fa-info-circle"></i> This sets the current GW for predictions. FPL API is only used for match data.
+          </p>
         </div>
       </div>
 
