@@ -48,9 +48,42 @@ module.exports = async (req, res) => {
     const fixtures = await fixturesResponse.json();
 
     // Filter by gameweek if specified
-    const gameweekFixtures = gameweek 
+    let gameweekFixtures = gameweek 
       ? fixtures.filter(f => f.event === parseInt(gameweek))
       : fixtures;
+    
+    // If no fixtures found for requested gameweek, try to find by date range
+    // This handles the case where FPL hasn't assigned fixtures to gameweeks yet
+    if (gameweek && gameweekFixtures.length === 0) {
+      const targetGW = parseInt(gameweek);
+      const currentEvent = bootstrapData.events.find(e => e.is_current);
+      const nextEvent = bootstrapData.events.find(e => e.is_next);
+      
+      // Calculate which gameweek we're looking for relative to current
+      const currentGW = currentEvent?.id || 1;
+      const gwOffset = targetGW - currentGW;
+      
+      // Look for fixtures with null event that fall in the expected date range
+      // or use the next event's deadline as a reference
+      if (nextEvent && gwOffset === 1) {
+        // Looking for next gameweek - use fixtures between current and next deadline
+        const currentDeadline = currentEvent?.deadline_time_epoch || 0;
+        const nextDeadline = nextEvent.deadline_time_epoch;
+        
+        gameweekFixtures = fixtures.filter(f => {
+          // Include fixtures with null event that kick off after current deadline
+          // and before next deadline
+          if (f.event === null && f.kickoff_time) {
+            const kickoffEpoch = new Date(f.kickoff_time).getTime() / 1000;
+            return kickoffEpoch > currentDeadline && kickoffEpoch <= nextDeadline + 86400; // +1 day buffer
+          }
+          return false;
+        });
+        
+        // Assign the target gameweek to these fixtures
+        gameweekFixtures = gameweekFixtures.map(f => ({ ...f, event: targetGW }));
+      }
+    }
 
     const results = {
       created: 0,
