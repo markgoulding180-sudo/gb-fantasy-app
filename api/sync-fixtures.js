@@ -48,9 +48,15 @@ module.exports = async (req, res) => {
     const fixtures = await fixturesResponse.json();
 
     // Filter by gameweek if specified
+    console.log('Sync fixtures - Total fixtures from FPL:', fixtures.length);
+    console.log('Sync fixtures - Requested gameweek:', gameweek);
+    
     let gameweekFixtures = gameweek 
       ? fixtures.filter(f => f.event === parseInt(gameweek))
       : fixtures;
+    
+    console.log('Sync fixtures - Filtered fixtures:', gameweekFixtures.length);
+    console.log('Sync fixtures - Sample fixture events:', fixtures.slice(0, 5).map(f => f.event));
     
     // If no fixtures found for requested gameweek, try to find by date range
     // This handles the case where FPL hasn't assigned fixtures to gameweeks yet
