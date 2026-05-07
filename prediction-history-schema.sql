@@ -3,7 +3,7 @@ CREATE TABLE prediction_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   gameweek INTEGER NOT NULL,
-  match_id UUID REFERENCES matches(id),
+  match_id INTEGER REFERENCES matches(id),
   home_team VARCHAR(100),
   away_team VARCHAR(100),
   predicted_home_score INTEGER,

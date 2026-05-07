@@ -96,6 +96,7 @@ module.exports = async (req, res) => {
       if (!teams[fixture.team_h] || !teams[fixture.team_a]) continue;
 
       const matchData = {
+        id: fixture.id, // Use FPL's fixture ID as primary key
         gameweek: fixture.event,
         home_team: teams[fixture.team_h].name,
         away_team: teams[fixture.team_a].name,
@@ -112,13 +113,11 @@ module.exports = async (req, res) => {
         matchData.result = calculateResult(fixture.team_h_score, fixture.team_a_score);
       }
 
-      // Check if match already exists
+      // Use FPL fixture ID to check if match exists
       const { data: existingMatch } = await supabase
         .from('matches')
         .select('id')
-        .eq('gameweek', fixture.event)
-        .eq('home_team', teams[fixture.team_h].name)
-        .eq('away_team', teams[fixture.team_a].name)
+        .eq('id', fixture.id)
         .single();
 
       if (existingMatch) {
@@ -126,7 +125,7 @@ module.exports = async (req, res) => {
         const { error } = await supabase
           .from('matches')
           .update(matchData)
-          .eq('id', existingMatch.id);
+          .eq('id', fixture.id);
 
         if (error) {
           results.errors.push({ match: `${matchData.home_team} vs ${matchData.away_team}`, error: error.message });
@@ -134,7 +133,7 @@ module.exports = async (req, res) => {
           results.updated++;
         }
       } else {
-        // Create new match
+        // Create new match with FPL fixture ID
         const { error } = await supabase
           .from('matches')
           .insert(matchData);

@@ -18,8 +18,9 @@ CREATE TABLE users (
 );
 
 -- Matches table (Premier League fixtures)
+-- Uses FPL fixture ID as primary key (integer)
 CREATE TABLE matches (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id INTEGER PRIMARY KEY, -- FPL fixture ID
   gameweek INTEGER NOT NULL,
   home_team VARCHAR(50) NOT NULL,
   away_team VARCHAR(50) NOT NULL,
@@ -38,7 +39,7 @@ CREATE TABLE matches (
 CREATE TABLE predictions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  match_id UUID REFERENCES matches(id) ON DELETE CASCADE,
+  match_id INTEGER REFERENCES matches(id) ON DELETE CASCADE,
   gameweek INTEGER NOT NULL,
   predicted_result VARCHAR(1) NOT NULL, -- H, D, or A
   home_score INTEGER NOT NULL,
