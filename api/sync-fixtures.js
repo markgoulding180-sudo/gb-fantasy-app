@@ -167,7 +167,19 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       message: 'Fixtures synced successfully',
       gameweek: gameweek || 'all',
-      results
+      results,
+      debug: {
+        totalFixtures: fixtures.length,
+        filteredFixtures: gameweekFixtures.length,
+        teamsLoaded: Object.keys(teams).length,
+        sampleTeams: Object.entries(teams).slice(0, 3),
+        sampleFixture: gameweekFixtures[0] ? {
+          id: gameweekFixtures[0].id,
+          event: gameweekFixtures[0].event,
+          team_h: gameweekFixtures[0].team_h,
+          team_a: gameweekFixtures[0].team_a
+        } : null
+      }
     });
 
   } catch (error) {
