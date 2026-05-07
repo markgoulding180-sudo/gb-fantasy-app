@@ -230,7 +230,7 @@ async function initMasterClock() {
   
   try {
     const token = localStorage.getItem('gbf_token');
-    const response = await fetch('/api/master-clock', {
+    const response = await fetch('/api/current-gameweek', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
