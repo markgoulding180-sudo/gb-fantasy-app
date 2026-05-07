@@ -21,6 +21,7 @@ Repo: https://github.com/markgoulding180-sudo/gb-fantasy-app
 - 2026-05-05 04:17 - Update admin panel labels: Last Finalised / Current Gameweek (Predictions)
 - 2026-05-05 04:17 - Improve finalisePoints() to call gameweek-transition with manual flag
 - 2026-05-05 04:17 - Update profile prediction history to group by gameweek with summaries
+- 2026-05-07 04:14 - Add trends endpoint to predictions API - shows aggregate prediction distribution across all users per match
 - 2026-05-07 04:09 - Fix predictions API 500 error - removed username/home_team/away_team columns that don't exist in schema
 - 2026-05-07 04:09 - Add PIN protection to admin panel - 4-digit PIN modal, shake animation on wrong PIN, session-based verification
 - 2026-05-06 23:30 - Multi-gameweek tournament fix: add end_gameweek support across all files
