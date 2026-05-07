@@ -111,14 +111,18 @@ async function finaliseGameweek(supabase, gameweek) {
 
   if (!matches || matches.length === 0) return;
 
-  // Get all users who made predictions this gameweek
+  // Get all users who made predictions this gameweek (with usernames)
   const { data: userPredictions } = await supabase
     .from('predictions')
-    .select('user_id')
+    .select('user_id, username')
     .eq('gameweek', gameweek);
 
-  // Get unique user IDs
-  const userIds = [...new Set(userPredictions?.map(p => p.user_id) || [])];
+  // Get unique user IDs and their usernames
+  const userMap = {};
+  userPredictions?.forEach(p => {
+    userMap[p.user_id] = p.username;
+  });
+  const userIds = Object.keys(userMap);
 
   for (const userId of userIds) {
     let gwTotalPoints = 0;
@@ -154,6 +158,7 @@ async function finaliseGameweek(supabase, gameweek) {
           .from('prediction_history')
           .upsert({
             user_id: userId,
+            username: userMap[userId] || 'Unknown',
             gameweek: gameweek,
             match_id: match.id,
             home_team: match.home_team,
@@ -183,6 +188,7 @@ async function finaliseGameweek(supabase, gameweek) {
       .from('gameweek_summary')
       .upsert({
         user_id: userId,
+        username: userMap[userId] || 'Unknown',
         gameweek: gameweek,
         total_predictions: gwTotalPredictions,
         correct_results: gwCorrectResults,

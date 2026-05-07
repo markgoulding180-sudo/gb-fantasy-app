@@ -344,7 +344,8 @@ module.exports = async (req, res) => {
           away_score: awayScore,
           // Human-readable columns for debugging
           home_team: match?.home_team || 'Unknown',
-          away_team: match?.away_team || 'Unknown'
+          away_team: match?.away_team || 'Unknown',
+          username: user.email?.split('@')[0] || user.id.substring(0, 8) // Use email prefix or ID fragment
         });
       }
 
