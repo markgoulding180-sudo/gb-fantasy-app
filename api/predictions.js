@@ -81,7 +81,7 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'Invalid token' });
           }
           
-          // Get prediction history for this user
+          // Get prediction history for this user (with match details for readability)
           const { data: history, error: historyError } = await supabaseAdmin
             .from('prediction_history')
             .select('*')
@@ -150,6 +150,7 @@ module.exports = async (req, res) => {
           
           console.log('Predictions GET - User authenticated:', user.id);
           
+          // Get predictions with match details for human readability
           const { data: predictions, error: predError } = await supabaseAdmin
             .from('predictions')
             .select('*')
@@ -170,80 +171,6 @@ module.exports = async (req, res) => {
         }
       } else {
         console.log('Predictions GET - No auth header');
-      }
-
-      // Handle trends request - aggregate all users' predictions
-      const trendsParam = params.get('trends');
-      if (trendsParam === 'true') {
-        // Get all predictions for this gameweek (across all users)
-        const { data: allPredictions, error: allPredError } = await supabaseAdmin
-          .from('predictions')
-          .select('*')
-          .eq('gameweek', gameweek);
-        
-        if (allPredError) {
-          console.error('Trends - Error fetching all predictions:', allPredError);
-        }
-        
-        // Get unique user count
-        const uniqueUsers = new Set((allPredictions || []).map(p => p.user_id));
-        const totalUsers = uniqueUsers.size;
-        
-        // Aggregate trends per match
-        const trends = (matches || []).map(match => {
-          const matchPreds = (allPredictions || []).filter(p => p.match_id === match.id);
-          const totalPreds = matchPreds.length;
-          
-          // Result distribution (H/D/A)
-          const resultDist = { H: 0, D: 0, A: 0 };
-          matchPreds.forEach(p => {
-            if (p.predicted_result && resultDist.hasOwnProperty(p.predicted_result)) {
-              resultDist[p.predicted_result]++;
-            }
-          });
-          
-          // Convert to percentages
-          const H = totalPreds > 0 ? Math.round((resultDist.H / totalPreds) * 100) : 0;
-          const D = totalPreds > 0 ? Math.round((resultDist.D / totalPreds) * 100) : 0;
-          const A = totalPreds > 0 ? Math.round((resultDist.A / totalPreds) * 100) : 0;
-          
-          // Most common score
-          const scoreCounts = {};
-          matchPreds.forEach(p => {
-            const scoreKey = `${p.home_score}-${p.away_score}`;
-            scoreCounts[scoreKey] = (scoreCounts[scoreKey] || 0) + 1;
-          });
-          let mostCommonScore = '-';
-          let maxScoreCount = 0;
-          Object.entries(scoreCounts).forEach(([score, count]) => {
-            if (count > maxScoreCount) {
-              maxScoreCount = count;
-              mostCommonScore = score;
-            }
-          });
-          
-          // Most common result
-          let mostCommonResult = '-';
-          if (resultDist.H >= resultDist.D && resultDist.H >= resultDist.A) mostCommonResult = 'H';
-          else if (resultDist.D >= resultDist.H && resultDist.D >= resultDist.A) mostCommonResult = 'D';
-          else mostCommonResult = 'A';
-          
-          return {
-            match_id: match.id,
-            home_team: match.home_team,
-            away_team: match.away_team,
-            total_predictions: totalPreds,
-            result_distribution: { H, D, A },
-            most_common_result: mostCommonResult,
-            most_common_score: mostCommonScore
-          };
-        });
-        
-        return res.status(200).json({
-          gameweek: parseInt(gameweek),
-          trends: trends,
-          total_users: totalUsers
-        });
       }
 
       return res.status(200).json({
@@ -315,7 +242,19 @@ module.exports = async (req, res) => {
         }
       }
 
-      // Validate and format predictions
+      // Get match details for human-readable columns
+      const matchIds = predictions.map(p => p.match_id);
+      const { data: matches } = await supabase
+        .from('matches')
+        .select('id, home_team, away_team, gameweek')
+        .in('id', matchIds);
+      
+      const matchMap = {};
+      matches?.forEach(m => {
+        matchMap[m.id] = m;
+      });
+
+      // Validate and format predictions with human-readable data
       const predictionsToInsert = [];
       
       for (let i = 0; i < predictions.length; i++) {
@@ -340,10 +279,12 @@ module.exports = async (req, res) => {
         }
         
         // Scores can be any value - no validation against result
-        // User can predict home win (H) with score 0-1 if they want
         const homeScore = pred.home_score !== undefined ? parseInt(pred.home_score) : 0;
         const awayScore = pred.away_score !== undefined ? parseInt(pred.away_score) : 0;
 
+        // Get match details for human-readable columns
+        const match = matchMap[pred.match_id];
+        
         // Handle temporary match IDs (format: temp-gameweek-matchnum)
         let matchId = pred.match_id;
         if (typeof matchId === 'string' && matchId.startsWith('temp-')) {
@@ -400,7 +341,10 @@ module.exports = async (req, res) => {
           gameweek: parseInt(gameweek),
           predicted_result: pred.predicted_result,
           home_score: homeScore,
-          away_score: awayScore
+          away_score: awayScore,
+          // Human-readable columns for debugging
+          home_team: match?.home_team || 'Unknown',
+          away_team: match?.away_team || 'Unknown'
         });
       }
 
