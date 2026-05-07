@@ -401,10 +401,10 @@ async function getTrendsData(supabase, gameweek, res) {
       return res.status(200).json({ trends: [], total_users: 0 });
     }
 
-    // Get all predictions for this gameweek
+    // Get all predictions for this gameweek (with match details for matching)
     const { data: allPredictions, error: predError } = await supabase
       .from('predictions')
-      .select('*')
+      .select('*, matches:match_id(home_team, away_team)')
       .eq('gameweek', gameweek);
 
     if (predError) {
@@ -415,9 +415,23 @@ async function getTrendsData(supabase, gameweek, res) {
     const uniqueUsers = new Set(allPredictions?.map(p => p.user_id) || []);
     const totalUsers = uniqueUsers.size;
 
+    // Debug: log first few predictions to see their structure
+    console.log('Trends Debug - Total predictions:', allPredictions?.length || 0);
+    console.log('Trends Debug - First prediction:', allPredictions?.[0]);
+    console.log('Trends Debug - Match IDs in DB:', matches.map(m => ({ id: m.id, teams: `${m.home_team} vs ${m.away_team}` })));
+
     // Calculate trends for each match
     const trends = matches.map(match => {
-      const matchPreds = allPredictions?.filter(p => p.match_id === match.id) || [];
+      // Match predictions by match_id OR by team names (for temp ID cases)
+      const matchPreds = allPredictions?.filter(p => {
+        // Direct match_id match
+        if (p.match_id === match.id) return true;
+        // Fallback: match by team names if predictions have match details
+        if (p.matches) {
+          return p.matches.home_team === match.home_team && p.matches.away_team === match.away_team;
+        }
+        return false;
+      }) || [];
       const totalPredictions = matchPreds.length;
 
       if (totalPredictions === 0) {
